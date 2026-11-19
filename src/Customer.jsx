@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import Sidebar from "./Sidebar";
 
 function Customer() {
   const [products, setProducts] = useState([]);
@@ -398,7 +399,52 @@ function handleMenuClick(menuId) {
     setShowProfile(false);
     setShowCheckout(false);
   }
+
+  // Home / Categories / Cart live on the same page: scroll to the right place
+  const scrollTargets = {
+    home: null,
+    categories: "products-section",
+    cart: "cart-section"
+  };
+  if (menuId in scrollTargets) {
+    setTimeout(() => {
+      const el = scrollTargets[menuId]
+        ? document.getElementById(scrollTargets[menuId]) ||
+          document.getElementById("products-section")
+        : null;
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 60);
+  }
 }
+
+// Sidebar layout wrapper for every logged-in screen
+const cartCount = cart.reduce((n, item) => n + (item.quantity || 1), 0);
+const activeNow = showProfile
+  ? "profile"
+  : showMyOrders
+  ? "orders"
+  : showCheckout
+  ? "cart"
+  : activeMenu === "categories" || activeMenu === "cart"
+  ? activeMenu
+  : "home";
+
+const withSidebar = (content) => (
+  <Sidebar
+    items={menuItems}
+    active={activeNow}
+    onSelect={handleMenuClick}
+    cartCount={cartCount}
+    userName={customerName || user?.email || ""}
+    onLogout={handleLogout}
+  >
+    {content}
+  </Sidebar>
+);
   // Logout
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -540,7 +586,7 @@ fontWeight: "bold"
 
   // Customer Home Page
   if (showMyOrders) {
-    return (
+    return withSidebar(
       <div style={{
   maxWidth: 450,
   width: "calc(100% - 32px)",
@@ -739,7 +785,7 @@ fontWeight: "bold"
   0
 );
   if (showCheckout) {
-  return (
+  return withSidebar(
     <div style={{
       minHeight: "100vh",
       background: "#f4f8f4",
@@ -977,7 +1023,7 @@ fontWeight: "bold"
   );
 }
 if (showProfile) {
-  return (
+  return withSidebar(
     <div style={{
       minHeight: "100vh",
       background: "#f4f8f4",
@@ -1107,7 +1153,7 @@ function updateQuantity(productId, change) {
 }
   
   
-  return (
+  return withSidebar(
     <div style={{
       minHeight: "100vh",
       background: "#f4f8f4",
