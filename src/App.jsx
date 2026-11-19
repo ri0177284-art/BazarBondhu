@@ -406,8 +406,10 @@ async function editProduct(product) {
     "Settings"
   ];
 
-// Customer App
-if (window.location.pathname.includes("customer")) {
+// Customer App is the public home page.
+// Keep the admin panel on /admin so customers open the shop by default.
+const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+if (!currentPath.startsWith("/admin")) {
   return <Customer />;
 }
 
