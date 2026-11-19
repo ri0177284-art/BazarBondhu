@@ -1,0 +1,299 @@
+.bb-shell {
+  display: flex;
+  min-height: 100vh;
+  text-align: left;
+  background: #f4f8f4;
+}
+
+/* ---------- Sidebar ---------- */
+.bb-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  flex: none;
+  width: 240px;
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 12px;
+  background: #ffffff;
+  border-right: 1px solid #e8f0e9;
+  z-index: 30;
+  transition: width 0.2s ease;
+}
+
+.bb-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 16px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #e8f0e9;
+}
+.bb-logo {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #087f45, #20a464);
+  font-size: 22px;
+}
+.bb-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #087f45;
+  white-space: nowrap;
+}
+
+.bb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.bb-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #5b6b61;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.bb-item:hover {
+  background: #f0f7f2;
+  color: #087f45;
+}
+.bb-item.bb-active {
+  background: #e8f5ed;
+  color: #087f45;
+}
+.bb-item svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bb-emoji {
+  width: 22px;
+  text-align: center;
+  flex: none;
+}
+.bb-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: #087f45;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.bb-item:focus-visible,
+.bb-collapse:focus-visible,
+.bb-menu-btn:focus-visible,
+.bb-logout:focus-visible {
+  outline: 2px solid #087f45;
+  outline-offset: 2px;
+}
+
+.bb-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 4px;
+  border-top: 1px solid #e8f0e9;
+}
+.bb-avatar {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e8f5ed;
+  color: #087f45;
+  font-weight: 700;
+}
+.bb-user-info {
+  min-width: 0;
+  flex: 1;
+}
+.bb-user-info b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1d2b22;
+  font-size: 14px;
+}
+.bb-logout {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #8a978f;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bb-logout:hover {
+  color: #dc3545;
+}
+
+.bb-collapse {
+  align-self: flex-end;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2ece4;
+  border-radius: 10px;
+  background: #fff;
+  color: #5b6b61;
+  cursor: pointer;
+}
+.bb-collapse:hover {
+  background: #f0f7f2;
+}
+.bb-collapse svg,
+.bb-menu-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+/* ---------- Main area ---------- */
+.bb-main {
+  flex: 1;
+  min-width: 0;
+}
+.bb-topbar,
+.bb-overlay {
+  display: none;
+}
+
+/* ---------- Desktop: collapsed (icons only) ---------- */
+@media (min-width: 801px) {
+  .bb-collapsed .bb-sidebar {
+    width: 72px;
+  }
+  .bb-collapsed .bb-label,
+  .bb-collapsed .bb-brand-name,
+  .bb-collapsed .bb-user-info {
+    display: none;
+  }
+  .bb-collapsed .bb-item {
+    justify-content: center;
+    position: relative;
+  }
+  .bb-collapsed .bb-badge {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    min-width: 16px;
+    padding: 1px 5px;
+    font-size: 10px;
+  }
+  .bb-collapsed .bb-brand,
+  .bb-collapsed .bb-user {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .bb-collapsed .bb-collapse {
+    align-self: center;
+  }
+  .bb-collapsed .bb-collapse svg {
+    transform: rotate(180deg);
+  }
+}
+
+/* ---------- Mobile: slide-in drawer ---------- */
+@media (max-width: 800px) {
+  .bb-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 270px;
+    height: auto;
+    padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .bb-open .bb-sidebar {
+    transform: none;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.25);
+  }
+  .bb-collapse {
+    display: none;
+  }
+  .bb-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.45);
+  }
+  .bb-open .bb-overlay {
+    display: block;
+  }
+  .bb-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    background: #ffffff;
+    border-bottom: 1px solid #e8f0e9;
+  }
+  .bb-menu-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e2ece4;
+    border-radius: 12px;
+    background: #fff;
+    color: #087f45;
+    cursor: pointer;
+  }
+  .bb-menu-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .bb-topbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #087f45;
+  }
+}
