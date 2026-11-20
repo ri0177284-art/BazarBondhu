@@ -145,6 +145,9 @@ const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
 const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
 const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
 const [monthlySpend, setMonthlySpend] = useState(0);
+const [monthlyProductCount, setMonthlyProductCount] = useState(0);
+const [deliveredOrdersCount, setDeliveredOrdersCount] = useState(0);
+const [previousMonthSpend, setPreviousMonthSpend] = useState(0);
 
 const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
@@ -276,26 +279,32 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
     if (!user) return;
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const { data, error } = await supabase
       .from("orders")
-      .select("total, order_status")
+      .select("total, order_status, created_at, order_items(quantity)")
       .eq("user_id", user.id)
-      .gte("created_at", monthStart)
-      .lt("created_at", nextMonthStart);
+      .gte("created_at", previousMonthStart.toISOString())
+      .lt("created_at", nextMonthStart.toISOString());
 
     if (error) {
       console.warn("Monthly spend could not be loaded:", error.message);
       return;
     }
 
-    const spent = (data || []).reduce((sum, order) => {
+    const isNotCancelled = (order) => {
       const status = String(order.order_status || "").toLowerCase();
-      if (["cancelled", "canceled", "বাতিল"].includes(status)) return sum;
-      return sum + Math.max(0, Number(order.total) || 0);
-    }, 0);
-    setMonthlySpend(spent);
+      return !["cancelled", "canceled", "বাতিল"].includes(status);
+    };
+    const currentOrders = (data || []).filter((order) => new Date(order.created_at) >= monthStart && isNotCancelled(order));
+    const previousOrders = (data || []).filter((order) => new Date(order.created_at) >= previousMonthStart && new Date(order.created_at) < monthStart && isNotCancelled(order));
+    const sumOrderTotals = (orders) => orders.reduce((sum, order) => sum + Math.max(0, Number(order.total) || 0), 0);
+    setMonthlySpend(sumOrderTotals(currentOrders));
+    setMonthlyProductCount(currentOrders.reduce((sum, order) => sum + (order.order_items || []).reduce((quantity, item) => quantity + Math.max(0, Number(item.quantity) || 0), 0), 0));
+    setDeliveredOrdersCount(currentOrders.filter((order) => order.order_status === "delivered").length);
+    setPreviousMonthSpend(sumOrderTotals(previousOrders));
   }
 
   async function saveFamilyPreferences() {
@@ -1451,6 +1460,12 @@ const estimatedDaysUntilBudgetEnds = averageDailySpend > 0
 const estimatedBudgetEndDate = estimatedDaysUntilBudgetEnds === null
   ? null
   : new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + estimatedDaysUntilBudgetEnds);
+const monthlySpendComparison = previousMonthSpend > 0
+  ? Math.round(((monthlySpend - previousMonthSpend) / previousMonthSpend) * 100)
+  : null;
+const monthlySpendComparisonLabel = monthlySpendComparison === null
+  ? monthlySpend > 0 ? "নতুন" : "তথ্য নেই"
+  : `${monthlySpendComparison > 0 ? "+" : ""}${monthlySpendComparison.toLocaleString("bn-BD")}%`;
 const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
   .toLocaleDateString("bn-BD", { month: "long" });
 const productPickerItems = products.filter((product) => {
@@ -1751,6 +1766,31 @@ const productPickerItems = products.filter((product) => {
           <button type="button" onClick={() => setShowFamilyShopping(true)}>
             এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
           </button>
+        </div>
+      </section>
+
+      <section className="bb-monthly-report-card" aria-labelledby="bb-monthly-report-title">
+        <div className="bb-monthly-report-heading">
+          <span aria-hidden="true">▮</span>
+          <h2 id="bb-monthly-report-title">এই মাসের বাজারের হিসাব</h2>
+        </div>
+        <div className="bb-monthly-report-grid">
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon" aria-hidden="true">🛒</span>
+            <div><span>মোট খরচ</span><strong>৳ {monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}</strong></div>
+          </div>
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon" aria-hidden="true">📦</span>
+            <div><span>মোট পণ্য</span><strong>{monthlyProductCount.toLocaleString("bn-BD")} টি</strong></div>
+          </div>
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon bb-report-check" aria-hidden="true">✓</span>
+            <div><span>ডেলিভারি সম্পন্ন</span><strong>{deliveredOrdersCount.toLocaleString("bn-BD")} টি অর্ডার</strong></div>
+          </div>
+          <div className={`bb-monthly-report-stat ${monthlySpendComparison !== null && monthlySpendComparison < 0 ? "is-down" : "is-up"}`}>
+            <span className="bb-report-icon" aria-hidden="true">↗</span>
+            <div><span>গত মাসের তুলনায়</span><strong>{monthlySpendComparisonLabel}</strong></div>
+          </div>
         </div>
       </section>
 
