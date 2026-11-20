@@ -1,6 +1,37 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
+import "./Customer.css";
+
+const FAMILY_PACKAGES = [
+  { id: "family-monthly", label: "মাসিক পরিবার", detail: "মাসের বাজার একসাথে" },
+  { id: "weekly-family", label: "সাপ্তাহিক বাজার", detail: "সপ্তাহ ধরে পরিকল্পনা" },
+  { id: "budget-smart", label: "বাজেট স্মার্ট", detail: "খরচে থাকুন নিয়ন্ত্রণে" },
+];
+
+const DEFAULT_FAMILY_PREFERENCES = {
+  familyMembers: 4,
+  monthlyBudget: 5000,
+  packageId: "family-monthly",
+};
+
+function normalizeFamilyPreferences(value = {}) {
+  const familyMembers = Number(value.familyMembers);
+  const monthlyBudget = Number(value.monthlyBudget);
+  const packageId = FAMILY_PACKAGES.some((item) => item.id === value.packageId)
+    ? value.packageId
+    : DEFAULT_FAMILY_PREFERENCES.packageId;
+
+  return {
+    familyMembers: Number.isInteger(familyMembers) && familyMembers >= 1 && familyMembers <= 30
+      ? familyMembers
+      : DEFAULT_FAMILY_PREFERENCES.familyMembers,
+    monthlyBudget: Number.isFinite(monthlyBudget) && monthlyBudget >= 0
+      ? monthlyBudget
+      : DEFAULT_FAMILY_PREFERENCES.monthlyBudget,
+    packageId,
+  };
+}
 
 function Customer() {
   const [products, setProducts] = useState([]);
@@ -29,6 +60,11 @@ const [showProfile, setShowProfile] = useState(false);
 const [activeMenu, setActiveMenu] = useState("home");
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
+const [familyPreferences, setFamilyPreferences] = useState(DEFAULT_FAMILY_PREFERENCES);
+const [familyPreferencesDraft, setFamilyPreferencesDraft] = useState(DEFAULT_FAMILY_PREFERENCES);
+const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
+const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
+const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
 
   // Load products
   useEffect(() => {
@@ -132,6 +168,49 @@ const [customerPhone, setCustomerPhone] = useState("");
 
   loadProfile();
 }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const preferences = normalizeFamilyPreferences(user.user_metadata?.family_preferences);
+    setFamilyPreferences(preferences);
+    setFamilyPreferencesDraft(preferences);
+  }, [user?.id, user?.user_metadata?.family_preferences]);
+
+  async function saveFamilyPreferences() {
+    if (!user) return;
+
+    const monthlyBudget = Number(familyPreferencesDraft.monthlyBudget);
+    if (!Number.isFinite(monthlyBudget) || monthlyBudget < 0) {
+      setFamilyPreferencesMessage("মাসিক বাজেট ০ বা তার বেশি লিখুন।");
+      return;
+    }
+
+    const preferences = normalizeFamilyPreferences({
+      ...familyPreferencesDraft,
+      monthlyBudget,
+    });
+    setSavingFamilyPreferences(true);
+    setFamilyPreferencesMessage("");
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          family_preferences: preferences,
+        },
+      });
+      if (error) throw error;
+
+      setFamilyPreferences(preferences);
+      setFamilyPreferencesDraft(preferences);
+      setEditingFamilyPreferences(false);
+      setFamilyPreferencesMessage("পরিবারের পছন্দ সেভ হয়েছে।");
+      if (data.user) setUser(data.user);
+    } catch {
+      setFamilyPreferencesMessage("সেটিংস সেভ হয়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setSavingFamilyPreferences(false);
+    }
+  }
 
   // Login and Registration
   async function handleAuth(e) {
@@ -1155,6 +1234,100 @@ function updateQuantity(productId, change) {
             🛍️ বাজার শুরু করুন <span aria-hidden="true">→</span>
           </button>
         </div>
+      </section>
+
+      <section className="bb-family-card" aria-labelledby="bb-family-title">
+        <div className="bb-family-card-heading">
+          <span className="bb-family-icon" aria-hidden="true">⌂</span>
+          <div className="bb-family-heading-copy">
+            <h2 id="bb-family-title">আমাদের পরিবার প্যাকেজ</h2>
+            <span>{FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label}</span>
+          </div>
+          {!editingFamilyPreferences && (
+            <button
+              type="button"
+              className="bb-family-edit-button"
+              onClick={() => {
+                setFamilyPreferencesDraft(familyPreferences);
+                setFamilyPreferencesMessage("");
+                setEditingFamilyPreferences(true);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z" /></svg>
+              পরিবর্তন করুন
+            </button>
+          )}
+        </div>
+
+        {!editingFamilyPreferences ? (
+          <div className="bb-family-summary">
+            <div><span>পরিবারের সদস্য</span><strong>{familyPreferences.familyMembers} জন</strong></div>
+            <i aria-hidden="true" />
+            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <p>আপনার মাসিক বাজারের পরিকল্পনা এখানে রাখুন।</p>
+          </div>
+        ) : (
+          <div className="bb-family-editor">
+            <div className="bb-family-fields">
+              <label className="bb-family-field">
+                <span>পরিবারের সদস্য</span>
+                <span className="bb-stepper">
+                  <button type="button" aria-label="সদস্য সংখ্যা কমান" onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.max(1, value.familyMembers - 1) }))}>−</button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    inputMode="numeric"
+                    value={familyPreferencesDraft.familyMembers}
+                    onChange={(event) => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.min(30, Math.max(1, Number(event.target.value) || 1)) }))}
+                  />
+                  <button type="button" aria-label="সদস্য সংখ্যা বাড়ান" onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.min(30, value.familyMembers + 1) }))}>+</button>
+                </span>
+              </label>
+              <label className="bb-family-field">
+                <span>মাসিক বাজেট</span>
+                <span className="bb-budget-input">
+                  <b>৳</b>
+                  <input
+                    type="number"
+                    min="0"
+                    step="500"
+                    inputMode="decimal"
+                    value={familyPreferencesDraft.monthlyBudget}
+                    onChange={(event) => setFamilyPreferencesDraft((value) => ({ ...value, monthlyBudget: event.target.value }))}
+                    placeholder="৫,০০০"
+                  />
+                </span>
+              </label>
+            </div>
+            <fieldset className="bb-package-options">
+              <legend>আপনার বাজারের প্যাকেজ বেছে নিন</legend>
+              <div className="bb-package-grid">
+                {FAMILY_PACKAGES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={familyPreferencesDraft.packageId === item.id}
+                    className={familyPreferencesDraft.packageId === item.id ? "bb-package-option is-selected" : "bb-package-option"}
+                    onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, packageId: item.id }))}
+                  >
+                    <strong>{item.label}</strong>
+                    <small>{item.detail}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <div className="bb-family-editor-footer">
+              <span role="status" aria-live="polite">{familyPreferencesMessage}</span>
+              <div>
+                <button type="button" className="bb-family-cancel" onClick={() => { setFamilyPreferencesDraft(familyPreferences); setFamilyPreferencesMessage(""); setEditingFamilyPreferences(false); }}>বাতিল</button>
+                <button type="button" className="bb-family-save" disabled={savingFamilyPreferences} onClick={saveFamilyPreferences}>
+                  {savingFamilyPreferences ? "সেভ হচ্ছে…" : "পছন্দ সেভ করুন"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
 
 <button
