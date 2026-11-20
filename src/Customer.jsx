@@ -338,15 +338,12 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
   function addProductToShoppingList(product) {
     const current = shoppingList.find((item) => item.productId === product.id);
     if (current) {
-      if (Number(current.quantity) >= Number(product.stock)) {
-        setShoppingListMessage("এই পণ্যের সব স্টক তালিকায় যোগ করা আছে।");
-        return;
-      }
-      changeShoppingQuantity(product, 1);
-    } else {
-      setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
-      setShoppingListMessage("");
+      setShoppingList((items) => items.filter((item) => item.productId !== product.id));
+      setShoppingListMessage(`${product.name} তালিকা থেকে সরানো হয়েছে।`);
+      return;
     }
+    setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
+    setShoppingListMessage(`${product.name} তালিকায় যোগ হয়েছে। পরিমাণ +/− দিয়ে বদলান।`);
   }
 
   function autoFillShoppingBudget(selectedProducts, currentTotal) {
@@ -1530,7 +1527,7 @@ const productPickerItems = products.filter((product) => {
           <div className="bb-planner-heading">
             <div>
               <h3>আপনার মাসিক বাজারের তালিকা</h3>
-              <p>পণ্য বাছুন, দাম দেখুন, বাজেটের মধ্যে বাজার সাজান।</p>
+              <p>সহজে পণ্য যোগ বা বাদ দিন, পরিমাণ ঠিক করুন—মোট খরচ নিজে থেকেই হিসাব হবে।</p>
             </div>
             <button
               type="button"
@@ -1539,7 +1536,7 @@ const productPickerItems = products.filter((product) => {
               onClick={() => { setShowProductPicker((visible) => !visible); setShoppingListMessage(""); }}
             >
               <span aria-hidden="true">{showProductPicker ? "−" : "+"}</span>
-              {showProductPicker ? "পণ্য বাছাই বন্ধ" : "পণ্য যোগ করুন"}
+              {showProductPicker ? "পণ্য বাছাই বন্ধ" : `পণ্য বাছুন${shoppingList.length ? ` · ${shoppingList.length}টি যোগ` : ""}`}
             </button>
           </div>
 
@@ -1569,7 +1566,7 @@ const productPickerItems = products.filter((product) => {
                   </div>
                   <div className="bb-shopping-quantity" aria-label={`${product.name} এর পরিমাণ`}>
                     <button type="button" aria-label={`${product.name} এক কমান`} onClick={() => changeShoppingQuantity(product, -1)}>−</button>
-                    <strong>{item.quantity}</strong>
+                    <strong><span>{item.quantity}</span><small>{product.unit || "টি"}</small></strong>
                     <button type="button" aria-label={`${product.name} এক বাড়ান`} disabled={Number(item.quantity) >= Number(product.stock)} onClick={() => changeShoppingQuantity(product, 1)}>+</button>
                   </div>
                   <strong className="bb-shopping-subtotal">৳{(Number(product.price || 0) * Number(item.quantity)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
@@ -1606,8 +1603,8 @@ const productPickerItems = products.filter((product) => {
                           <strong>{product.name}</strong>
                           <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
                         </div>
-                        <button type="button" disabled={alreadyAdded} onClick={() => addProductToShoppingList(product)}>
-                          {alreadyAdded ? "তালিকায় আছে" : "+ যোগ করুন"}
+                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(product)}>
+                          {alreadyAdded ? "✓ যোগ হয়েছে · বাদ দিন" : "+ তালিকায় যোগ"}
                         </button>
                       </article>
                     );
