@@ -144,6 +144,8 @@ const [familyPreferencesDraft, setFamilyPreferencesDraft] = useState(DEFAULT_FAM
 const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
 const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
 const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
+const [monthlySpend, setMonthlySpend] = useState(0);
+
 const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
 const [productSearch, setProductSearch] = useState("");
@@ -261,6 +263,40 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
     setFamilyPreferencesDraft(preferences);
     setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
   }, [user?.id, user?.user_metadata?.family_preferences]);
+
+  useEffect(() => {
+    if (!user) {
+      setMonthlySpend(0);
+      return;
+    }
+    loadMonthlySpend();
+  }, [user?.id]);
+
+  async function loadMonthlySpend() {
+    if (!user) return;
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+    const { data, error } = await supabase
+      .from("orders")
+      .select("total, order_status")
+      .eq("user_id", user.id)
+      .gte("created_at", monthStart)
+      .lt("created_at", nextMonthStart);
+
+    if (error) {
+      console.warn("Monthly spend could not be loaded:", error.message);
+      return;
+    }
+
+    const spent = (data || []).reduce((sum, order) => {
+      const status = String(order.order_status || "").toLowerCase();
+      if (["cancelled", "canceled", "বাতিল"].includes(status)) return sum;
+      return sum + Math.max(0, Number(order.total) || 0);
+    }, 0);
+    setMonthlySpend(spent);
+  }
 
   async function saveFamilyPreferences() {
     if (!user) return;
@@ -1405,6 +1441,18 @@ const shoppingBudgetRemaining = Number(familyPreferences.monthlyBudget) - shoppi
 const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
   ? Math.min(100, Math.round((shoppingListTotal / familyPreferences.monthlyBudget) * 100))
   : 0;
+const monthlySpendProgress = familyPreferences.monthlyBudget > 0
+  ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
+  : monthlySpend > 0 ? 100 : 0;
+const averageDailySpend = monthlySpend / Math.max(1, new Date().getDate());
+const estimatedDaysUntilBudgetEnds = averageDailySpend > 0
+  ? Math.ceil(Math.max(0, familyPreferences.monthlyBudget - monthlySpend) / averageDailySpend)
+  : null;
+const estimatedBudgetEndDate = estimatedDaysUntilBudgetEnds === null
+  ? null
+  : new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + estimatedDaysUntilBudgetEnds);
+const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+  .toLocaleDateString("bn-BD", { month: "long" });
 const productPickerItems = products.filter((product) => {
   const matchesSearch = !productSearch.trim() || String(product.name || "")
     .toLocaleLowerCase()
@@ -1651,6 +1699,59 @@ const productPickerItems = products.filter((product) => {
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
         )}
+      </section>
+
+      <section className="bb-monthly-insight" aria-label="মাসিক বাজারের অগ্রগতি ও রিমাইন্ডার">
+        <div className="bb-monthly-progress-panel">
+          <div
+            className="bb-monthly-progress-ring"
+            role="progressbar"
+            aria-label="মাসিক বাজেট ব্যবহারের অগ্রগতি"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={monthlySpendProgress}
+            style={{ "--bb-monthly-progress": `${monthlySpendProgress}%` }}
+          >
+            <div className="bb-monthly-progress-inner">
+              <span aria-hidden="true">🛒</span>
+              <strong>{monthlySpendProgress}%</strong>
+            </div>
+          </div>
+          <strong className="bb-monthly-progress-label">
+            {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
+          </strong>
+          <span className="bb-monthly-spend-caption">
+            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{Number(familyPreferences.monthlyBudget).toLocaleString("bn-BD")}
+          </span>
+        </div>
+
+        <div className="bb-monthly-estimate-panel">
+          <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
+          {estimatedBudgetEndDate ? (
+            <>
+              <strong className="bb-monthly-estimate-date">
+                {estimatedBudgetEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
+              </strong>
+              <span className="bb-monthly-estimate-countdown">
+                {estimatedDaysUntilBudgetEnds === 0 ? "বাজেট আজই পূর্ণ হতে পারে" : `আর প্রায় ${estimatedDaysUntilBudgetEnds.toLocaleString("bn-BD")} দিন বাকি`}
+              </span>
+            </>
+          ) : (
+            <p className="bb-monthly-estimate-empty">এই মাসে অর্ডার হলে আনুমানিক সময় দেখাবে</p>
+          )}
+        </div>
+
+        <div className="bb-monthly-reminder-panel">
+          <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
+          <p>
+            {monthlySpendProgress >= 75
+              ? `আপনার মাসিক বাজার শেষ পর্যায়ে। ${nextMonthName} মাসের তালিকাটি কি দেখে নেবেন?`
+              : `আগে থেকেই ${nextMonthName} মাসের বাজারের তালিকা গুছিয়ে রাখুন।`}
+          </p>
+          <button type="button" onClick={() => setShowFamilyShopping(true)}>
+            এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
+          </button>
+        </div>
       </section>
 
       <div style={{
