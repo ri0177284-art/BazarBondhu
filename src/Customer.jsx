@@ -28,10 +28,6 @@ const [showMyOrders, setShowMyOrders] = useState(false);
 const [showProfile, setShowProfile] = useState(false);
 const [activeMenu, setActiveMenu] = useState("home");
 const [customerName, setCustomerName] = useState("");
-useEffect(() => {
-  setCustomerName(fullName);
-  setCustomerPhone(phone);
-}, [fullName, phone]);
 const [customerPhone, setCustomerPhone] = useState("");
 
   // Load products
@@ -120,17 +116,12 @@ const [customerPhone, setCustomerPhone] = useState("");
       .eq("id", user.id)
       .maybeSingle();
 
-    setFullName(
-      data?.full_name ||
-      user.user_metadata?.full_name ||
-      ""
-    );
-
-    setPhone(
-      data?.phone ||
-      user.user_metadata?.phone ||
-      ""
-    );
+    const profileName = data?.full_name || user.user_metadata?.full_name || "";
+    const profilePhone = data?.phone || user.user_metadata?.phone || "";
+    setFullName(profileName);
+    setPhone(profilePhone);
+    setCustomerName(profileName);
+    setCustomerPhone(profilePhone);
 
     setDeliveryAddress(data?.address || "");
 
@@ -239,12 +230,6 @@ if (
   setPlacingOrder(true);
 
   try {
-    const subtotal = cart.reduce(
-  (sum, item) =>
-    sum + Number(item.price || 0) * (item.quantity || 1),
-  0
-);
-
     const { data: settings, error: settingsError } = await supabase
       .from("app_settings")
       .select("*")
@@ -255,7 +240,6 @@ if (
 
     const serviceCharge = Number(settings.service_charge || 0);
     const deliveryFee = Number(settings.delivery_fee || 0);
-    const total = subtotal + serviceCharge + deliveryFee;
     // Check latest product stock before placing order
     for (const item of cart) {
       const { data: latestProduct, error: stockError } = await supabase
@@ -278,7 +262,7 @@ if (
       }
     }
 
-    const { data: orderId, error: orderError } = await supabase.rpc(
+    const { error: orderError } = await supabase.rpc(
   "create_order_with_payment_atomic",
   {
     p_customer_name: customerName.trim(),
@@ -439,6 +423,7 @@ const withSidebar = (content) => (
     active={activeNow}
     onSelect={handleMenuClick}
     cartCount={cartCount}
+    notificationCount={myOrders.filter((order) => order.order_status === "pending").length}
     userName={customerName || user?.email || ""}
     onLogout={handleLogout}
   >
@@ -1911,3 +1896,4 @@ const buttonStyle = {
 };
 
 export default Customer;
+

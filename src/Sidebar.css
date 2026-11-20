@@ -193,9 +193,105 @@
   flex: 1;
   min-width: 0;
 }
-.bb-topbar,
 .bb-overlay {
   display: none;
+}
+.bb-topbar {
+  position: sticky;
+  top: 12px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 76px;
+  margin: 12px 20px 0;
+  padding: 10px 20px;
+  border: 1px solid #e8f0e9;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 22px rgba(20, 67, 39, 0.06);
+  backdrop-filter: blur(12px);
+}
+.bb-menu-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: #173d2a;
+  cursor: pointer;
+}
+.bb-menu-btn:hover,
+.bb-action-btn:hover,
+.bb-profile-btn:hover { background: #f0f7f2; }
+.bb-menu-btn svg { width: 25px; height: 25px; }
+.bb-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.bb-topbar-logo {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex: none;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #0b9b4b, #08783d);
+  color: #fff;
+}
+.bb-topbar-logo svg { width: 35px; height: 35px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bb-topbar-copy { display: flex; flex-direction: column; min-width: 0; }
+.bb-topbar-copy b { color: #087f45; font-size: clamp(20px, 2.5vw, 30px); line-height: 1.1; }
+.bb-topbar-copy small { margin-top: 4px; color: #526158; font-size: 14px; white-space: nowrap; }
+.bb-topbar-actions { display: flex; align-items: center; gap: 14px; }
+.bb-action-btn,
+.bb-profile-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #182b20;
+  cursor: pointer;
+}
+.bb-action-btn svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.bb-notification-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e22f36;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.bb-profile-btn .bb-avatar {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 2px solid #d9f1dc;
+  border-radius: 50%;
+  background: #e8f6e9;
+  color: #087f45;
+  font-size: 20px;
+  font-weight: 800;
 }
 
 /* ---------- Desktop: collapsed (icons only) ---------- */
@@ -265,35 +361,40 @@
     display: block;
   }
   .bb-topbar {
-    position: sticky;
     top: 0;
-    z-index: 15;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    gap: 8px;
+    min-height: 68px;
+    margin: 0 8px;
+    padding: 8px 10px;
     padding-top: calc(10px + env(safe-area-inset-top, 0px));
-    background: #ffffff;
-    border-bottom: 1px solid #e8f0e9;
+    border-radius: 0 0 20px 20px;
   }
-  .bb-menu-btn {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid #e2ece4;
-    border-radius: 12px;
-    background: #fff;
-    color: #087f45;
-    cursor: pointer;
-  }
-  .bb-menu-btn svg {
-    width: 20px;
-    height: 20px;
-  }
-  .bb-topbar-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #087f45;
-  }
+  .bb-topbar-logo { width: 44px; height: 44px; border-radius: 12px; }
+  .bb-topbar-logo svg { width: 29px; height: 29px; }
+  .bb-topbar-copy b { font-size: 19px; }
+  .bb-topbar-copy small { font-size: 10px; }
+  .bb-topbar-actions { gap: 3px; }
+  .bb-action-btn,
+  .bb-profile-btn { width: 40px; height: 40px; }
+  .bb-action-btn svg { width: 25px; height: 25px; }
+  .bb-profile-btn .bb-avatar { width: 38px; height: 38px; font-size: 17px; }
+  .bb-menu-btn { width: 36px; height: 40px; }
+  .bb-menu-btn svg { width: 22px; height: 22px; }
 }
+
+@media (min-width: 801px) {
+  .bb-topbar { margin-left: 20px; }
+}
+
+@media (max-width: 400px) {
+  .bb-topbar { gap: 4px; margin-inline: 4px; padding-inline: 7px; }
+  .bb-topbar-copy b { font-size: 17px; }
+  .bb-topbar-copy small { font-size: 9px; }
+  .bb-topbar-logo { width: 40px; height: 40px; }
+  .bb-topbar-actions { gap: 0; }
+  .bb-action-btn,
+  .bb-profile-btn { width: 36px; height: 36px; }
+  .bb-profile-btn .bb-avatar { width: 34px; height: 34px; }
+  .bb-menu-btn { width: 30px; }
+}
+

@@ -19,6 +19,7 @@ export default function Sidebar({
   active,
   onSelect,
   cartCount = 0,
+  notificationCount = 0,
   userName = "",
   onLogout,
   children,
@@ -141,10 +142,40 @@ export default function Sidebar({
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="bb-topbar-title">{activeItem.label}</span>
+          <div className="bb-topbar-brand" aria-label="BazarBondhu">
+            <span className="bb-topbar-logo" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 4h2l2.4 11h10.2L20 8H6M9 20h.01M17 20h.01M8 8l1 4h7l1-4" /></svg>
+            </span>
+            <span className="bb-topbar-copy">
+              <b>BazarBondhu</b>
+              <small>আপনার বিশ্বস্ত অনলাইন বাজার</small>
+            </span>
+          </div>
+          <div className="bb-topbar-actions">
+            <button
+              type="button"
+              className="bb-action-btn bb-notification-btn"
+              onClick={() => select("orders")}
+              aria-label={notificationCount > 0 ? `অর্ডার নোটিফিকেশন, ${notificationCount}টি অপেক্ষমাণ অর্ডার` : "অর্ডার নোটিফিকেশন"}
+              title="অর্ডার নোটিফিকেশন"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4" /></svg>
+              {notificationCount > 0 && <span className="bb-notification-count">{notificationCount > 9 ? "9+" : notificationCount}</span>}
+            </button>
+            <button
+              type="button"
+              className="bb-profile-btn"
+              onClick={() => select("profile")}
+              aria-label={`${userName || "কাস্টমার"} প্রোফাইল`}
+              title="প্রোফাইল"
+            >
+              <span className="bb-avatar">{initial}</span>
+            </button>
+          </div>
         </div>
         {children}
       </div>
     </div>
   );
 }
+
