@@ -131,7 +131,8 @@
 .bb-shopping-quantity { display: flex; align-items: center; gap: 8px; }
 .bb-shopping-quantity button { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid #dcebe0; border-radius: 8px; background: #f1f8f2; color: #087f45; font-size: 17px; cursor: pointer; }
 .bb-shopping-quantity button:disabled { cursor: not-allowed; opacity: .42; }
-.bb-shopping-quantity strong { min-width: 17px; color: #324638; font-size: 12px; text-align: center; }
+.bb-shopping-quantity strong { display: flex; min-width: 23px; flex-direction: column; align-items: center; color: #324638; font-size: 12px; line-height: 1.05; text-align: center; }
+.bb-shopping-quantity small { margin-top: 2px; color: #849087; font-size: 8px; font-weight: 500; }
 .bb-shopping-subtotal { color: #087f45; font-size: 12px; text-align: right; white-space: nowrap; }
 .bb-remove-shopping-item { width: 24px; height: 26px; border: 0; border-radius: 8px; background: #fff2f1; color: #bb514a; font-size: 19px; cursor: pointer; }
 .bb-shopping-empty { display: flex; align-items: center; gap: 11px; margin-top: 14px; padding: 13px; border: 1px dashed #dce9df; border-radius: 13px; background: #fbfdfb; }
@@ -149,7 +150,9 @@
 .bb-picker-product strong { overflow: hidden; color: #394b3e; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .bb-picker-product span { color: #7e8b82; font-size: 10px; white-space: nowrap; }
 .bb-picker-product button { min-height: 32px; flex: none; padding: 0 9px; border: 1px solid #d7ebda; border-radius: 9px; background: #eff8f0; color: #087f45; font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
-.bb-picker-product button:disabled { border-color: #e7eee8; background: #f3f5f3; color: #7e8980; cursor: default; }
+.bb-picker-product button:hover { background: #e4f4e6; }
+.bb-picker-product button.is-selected { border-color: #f2d8d5; background: #fff4f2; color: #a54840; }
+.bb-picker-product button.is-selected:hover { background: #ffe9e6; }
 .bb-no-products { margin: 12px 2px 2px; color: #78867c; font-size: 11px; }
 
 .bb-planner-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
@@ -193,9 +196,11 @@
   .bb-shopping-item-name strong { font-size: 11px; }
   .bb-shopping-quantity { gap: 5px; }
   .bb-shopping-quantity button { width: 25px; height: 25px; }
+  .bb-shopping-quantity strong { min-width: 20px; }
   .bb-shopping-subtotal { font-size: 10px; }
   .bb-remove-shopping-item { position: absolute; top: 7px; right: 7px; }
   .bb-product-picker-grid { grid-template-columns: 1fr; }
+  .bb-picker-product button { min-height: 36px; padding: 0 8px; font-size: 9px; }
   .bb-planner-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .bb-planner-actions button { min-height: 43px; padding: 0 8px; font-size: 10px; }
   .bb-cart-list-button { grid-column: 1 / -1; margin-left: 0; }
