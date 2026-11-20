@@ -193,6 +193,17 @@
   flex: 1;
   min-width: 0;
 }
+.bb-storefront-content {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100vh - 100px);
+  padding: 20px;
+  background: #f4f8f4;
+  font-family: Arial, "Noto Sans Bengali", sans-serif;
+}
+.bb-storefront-content img { max-width: 100%; }
+#products-section { scroll-margin-top: 110px; }
 .bb-overlay {
   display: none;
 }
@@ -332,6 +343,18 @@
 
 /* ---------- Mobile: slide-in drawer ---------- */
 @media (max-width: 800px) {
+  .bb-shell {
+    display: block;
+    width: 100%;
+    overflow-x: clip;
+  }
+  .bb-main { width: 100%; }
+  .bb-storefront-content {
+    min-height: calc(100vh - 68px);
+    padding: 12px 12px 28px;
+  }
+  .bb-storefront-content > div:first-child { margin-top: 10px !important; }
+  .bb-storefront-content #products-section { scroll-margin-top: 82px; }
   .bb-sidebar {
     position: fixed;
     left: 0;
@@ -396,5 +419,8 @@
   .bb-profile-btn { width: 36px; height: 36px; }
   .bb-profile-btn .bb-avatar { width: 34px; height: 34px; }
   .bb-menu-btn { width: 30px; }
+  .bb-storefront-content { padding: 10px 10px 24px; }
+  .bb-storefront-content > div:first-child { padding: 22px 18px !important; }
+  .bb-storefront-content > div:first-child h2 { font-size: 22px !important; }
 }
 

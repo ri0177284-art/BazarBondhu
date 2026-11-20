@@ -1139,78 +1139,7 @@ function updateQuantity(productId, change) {
   
   
   return withSidebar(
-    <div style={{
-      minHeight: "100vh",
-      background: "#f4f8f4",
-      fontFamily: "Arial",
-      padding: 20
-    }}>
-
-      <div style={{
-  background: "white",
-  padding: "15px 18px",
-  borderRadius: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  boxShadow: "0 4px 18px rgba(0,0,0,0.06)",
-  border: "1px solid #e8f0e9"
-}}>
-  <div style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 12
-  }}>
-    <div style={{
-      width: 48,
-      height: 48,
-      borderRadius: 14,
-      background: "linear-gradient(135deg, #087f45, #20a464)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 27
-    }}>
-      🛒
-    </div>
-
-    <div>
-      <h1 style={{
-        color: "#087f45",
-        margin: 0,
-        fontSize: 23,
-        fontWeight: "bold"
-      }}>
-        BazarBondhu
-      </h1>
-
-      <small style={{
-        color: "#777",
-        fontSize: 12
-      }}>
-        আপনার বিশ্বস্ত অনলাইন বাজার
-      </small>
-    </div>
-  </div>
-
-  <div
-    onClick={() => setShowProfile(true)}
-    style={{
-      background: "#e8f5ed",
-      width: 46,
-      height: 46,
-      borderRadius: 14,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 24,
-      cursor: "pointer",
-      border: "1px solid #cce8d5"
-    }}
-  >
-    👤
-  </div>
-</div>
+    <div className="bb-storefront-content">
 
       <div style={{
   background: "linear-gradient(135deg, #056b3a 0%, #0b9b58 55%, #36c982 100%)",
@@ -1278,63 +1207,6 @@ function updateQuantity(productId, change) {
     }}
   >
     🛍️ বাজার শুরু করুন →
-  </button>
-</div>
-
-<p style={{
-  color: "#555",
-  fontSize: 14,
-  marginTop: 10,
-  marginBottom: 15
-}}>
-  স্বাগতম, {user.user_metadata?.full_name || user.email}
-</p>
-
-      <div style={{
-  background: "white",
-  padding: "16px",
-  borderRadius: 16,
-  marginTop: 15,
-  marginBottom: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-  gap: 12,
-  border: "1px solid #e5eee7",
-  boxShadow: "0 3px 12px rgba(0,0,0,0.04)"
-}}>
-  <div>
-    <div style={{
-      color: "#087f45",
-      fontWeight: "bold",
-      fontSize: 16
-    }}>
-      👋 স্বাগতম!
-    </div>
-
-    <div style={{
-      color: "#666",
-      fontSize: 13,
-      marginTop: 5
-    }}>
-      {user.user_metadata?.full_name || user.email}
-    </div>
-  </div>
-
-  <button
-    onClick={handleLogout}
-    style={{
-      background: "#fff0f0",
-      color: "#dc3545",
-      padding: "10px 14px",
-      border: "1px solid #ffd5d5",
-      borderRadius: 10,
-      fontWeight: "bold",
-      cursor: "pointer"
-    }}
-  >
-    লগআউট
   </button>
 </div>
 
