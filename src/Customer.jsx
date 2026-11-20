@@ -27,10 +27,89 @@ function normalizeFamilyPreferences(value = {}) {
       ? familyMembers
       : DEFAULT_FAMILY_PREFERENCES.familyMembers,
     monthlyBudget: Number.isFinite(monthlyBudget) && monthlyBudget >= 0
-      ? monthlyBudget
+      ? Math.min(monthlyBudget, 100000)
       : DEFAULT_FAMILY_PREFERENCES.monthlyBudget,
     packageId,
   };
+}
+
+function normalizeShoppingList(value = []) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item?.productId && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0)
+    .map((item) => ({ productId: String(item.productId), quantity: Math.min(10000, Number(item.quantity)) }));
+}
+
+function suggestBudgetFill(selectedProducts, budget, currentTotal) {
+  const remaining = Number(budget) - Number(currentTotal);
+  if (remaining < 0) return { error: "আপনার তালিকার খরচ বাজেট ছাড়িয়েছে। আগে পরিমাণ কমিয়ে নিন।" };
+  const limit = Math.floor(remaining);
+  if (limit === 0) return { additions: new Map(), total: Number(currentTotal) };
+
+  const chunks = [];
+  selectedProducts.forEach(({ product, item }, itemIndex) => {
+    const stockLeft = Math.max(0, Math.floor(Number(product.stock) - Number(item.quantity)));
+    const unitPrice = Number(product.price);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0 || stockLeft === 0) return;
+    let remainingStock = stockLeft;
+    let batch = 1;
+    while (remainingStock > 0) {
+      const quantity = Math.min(batch, remainingStock);
+      const cost = Math.ceil(unitPrice) * quantity;
+      if (cost <= limit) chunks.push({ itemIndex, quantity, cost });
+      remainingStock -= quantity;
+      batch *= 2;
+    }
+  });
+
+  const reachable = new Uint8Array(limit + 1);
+  const previousAmount = new Int32Array(limit + 1);
+  const previousChunk = new Int32Array(limit + 1);
+  previousAmount.fill(-1);
+  previousChunk.fill(-1);
+  reachable[0] = 1;
+
+  chunks.forEach((chunk, chunkIndex) => {
+    for (let amount = limit; amount >= chunk.cost; amount -= 1) {
+      if (!reachable[amount] && reachable[amount - chunk.cost]) {
+        reachable[amount] = 1;
+        previousAmount[amount] = amount - chunk.cost;
+        previousChunk[amount] = chunkIndex;
+      }
+    }
+  });
+
+  let best = limit;
+  while (best > 0 && !reachable[best]) best -= 1;
+  const additions = new Map();
+  let amount = best;
+  while (amount > 0 && previousChunk[amount] >= 0) {
+    const chunk = chunks[previousChunk[amount]];
+    const productId = selectedProducts[chunk.itemIndex].product.id;
+    additions.set(productId, (additions.get(productId) || 0) + chunk.quantity);
+    amount = previousAmount[amount];
+  }
+
+  let total = selectedProducts.reduce((sum, { product, item }) => {
+    return sum + Number(product.price) * (Number(item.quantity) + (additions.get(product.id) || 0));
+  }, 0);
+  let available = Number(budget) - total;
+  selectedProducts
+    .filter(({ product }) => Number(product.price) > 0)
+    .slice()
+    .sort((a, b) => Number(a.product.price) - Number(b.product.price))
+    .forEach(({ product, item }) => {
+      const room = Math.max(0, Math.floor(Number(product.stock) - Number(item.quantity) - (additions.get(product.id) || 0)));
+      const extra = Math.min(room, Math.floor((available + 0.000001) / Number(product.price)));
+      if (extra > 0) {
+        additions.set(product.id, (additions.get(product.id) || 0) + extra);
+        const cost = extra * Number(product.price);
+        total += cost;
+        available -= cost;
+      }
+    });
+
+  return { additions, total };
 }
 
 function Customer() {
@@ -65,6 +144,11 @@ const [familyPreferencesDraft, setFamilyPreferencesDraft] = useState(DEFAULT_FAM
 const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
 const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
 const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
+const [shoppingList, setShoppingList] = useState([]);
+const [productSearch, setProductSearch] = useState("");
+const [showProductPicker, setShowProductPicker] = useState(false);
+const [savingShoppingList, setSavingShoppingList] = useState(false);
+const [shoppingListMessage, setShoppingListMessage] = useState("");
 
   // Load products
   useEffect(() => {
@@ -174,6 +258,7 @@ const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
     const preferences = normalizeFamilyPreferences(user.user_metadata?.family_preferences);
     setFamilyPreferences(preferences);
     setFamilyPreferencesDraft(preferences);
+    setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
   }, [user?.id, user?.user_metadata?.family_preferences]);
 
   async function saveFamilyPreferences() {
@@ -195,7 +280,11 @@ const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
       const { data, error } = await supabase.auth.updateUser({
         data: {
           ...user.user_metadata,
-          family_preferences: preferences,
+          family_preferences: {
+            ...user.user_metadata?.family_preferences,
+            ...preferences,
+            shoppingList,
+          },
         },
       });
       if (error) throw error;
@@ -210,6 +299,96 @@ const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
     } finally {
       setSavingFamilyPreferences(false);
     }
+  }
+
+  async function saveShoppingList() {
+    if (!user) return;
+    setSavingShoppingList(true);
+    setShoppingListMessage("");
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          family_preferences: {
+            ...user.user_metadata?.family_preferences,
+            ...familyPreferences,
+            shoppingList,
+          },
+        },
+      });
+      if (error) throw error;
+      setShoppingListMessage("আপনার বাজারের তালিকা সেভ হয়েছে।");
+      if (data.user) setUser(data.user);
+    } catch {
+      setShoppingListMessage("তালিকা সেভ হয়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setSavingShoppingList(false);
+    }
+  }
+
+  function changeShoppingQuantity(product, change) {
+    setShoppingList((current) => current
+      .map((item) => item.productId !== product.id
+        ? item
+        : { ...item, quantity: Math.min(Number(product.stock), Math.max(0, Number(item.quantity) + change)) })
+      .filter((item) => item.quantity > 0));
+    setShoppingListMessage("");
+  }
+
+  function addProductToShoppingList(product) {
+    const current = shoppingList.find((item) => item.productId === product.id);
+    if (current) {
+      if (Number(current.quantity) >= Number(product.stock)) {
+        setShoppingListMessage("এই পণ্যের সব স্টক তালিকায় যোগ করা আছে।");
+        return;
+      }
+      changeShoppingQuantity(product, 1);
+    } else {
+      setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
+      setShoppingListMessage("");
+    }
+  }
+
+  function autoFillShoppingBudget(selectedProducts, currentTotal) {
+    if (!selectedProducts.length) {
+      setShoppingListMessage("বাজেট সাজাতে আগে তালিকায় কিছু পণ্য যোগ করুন।");
+      return;
+    }
+    const result = suggestBudgetFill(selectedProducts, familyPreferences.monthlyBudget, currentTotal);
+    if (result.error) {
+      setShoppingListMessage(result.error);
+      return;
+    }
+    const additions = result.additions;
+    setShoppingList((items) => items.map((item) => ({
+      ...item,
+      quantity: item.quantity + (additions.get(item.productId) || 0),
+    })));
+    const filled = Math.round(result.total);
+    setShoppingListMessage(filled > currentTotal
+      ? `বাজেট অনুযায়ী পরিমাণ সাজানো হয়েছে — ${filled.toLocaleString("en-IN")} টাকার বাজার।`
+      : "নির্বাচিত পণ্যের স্টক অনুযায়ী তালিকাটি বাজেটের সবচেয়ে কাছাকাছি আছে।");
+  }
+
+  function addShoppingListToCart(selectedProducts) {
+    if (!selectedProducts.length) return;
+    setCart((current) => {
+      const next = [...current];
+      selectedProducts.forEach(({ product, item }) => {
+        const index = next.findIndex((cartItem) => cartItem.id === product.id);
+        if (index >= 0) {
+          next[index] = {
+            ...next[index],
+            quantity: Math.min(Number(product.stock), Number(next[index].quantity || 0) + Number(item.quantity)),
+          };
+        } else {
+          next.push({ ...product, quantity: Number(item.quantity) });
+        }
+      });
+      return next;
+    });
+    setShoppingListMessage("নির্বাচিত পণ্যগুলো কার্টে যোগ হয়েছে।");
+    handleMenuClick("cart");
   }
 
   // Login and Registration
@@ -1217,6 +1396,24 @@ function updateQuantity(productId, change) {
 }
   
   
+const selectedShoppingProducts = shoppingList
+  .map((item) => ({ item, product: products.find((product) => product.id === item.productId) }))
+  .filter(({ product }) => Boolean(product));
+const shoppingListTotal = selectedShoppingProducts.reduce(
+  (sum, { product, item }) => sum + Number(product.price || 0) * Number(item.quantity || 0),
+  0,
+);
+const shoppingBudgetRemaining = Number(familyPreferences.monthlyBudget) - shoppingListTotal;
+const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
+  ? Math.min(100, Math.round((shoppingListTotal / familyPreferences.monthlyBudget) * 100))
+  : 0;
+const productPickerItems = products.filter((product) => {
+  const matchesSearch = !productSearch.trim() || String(product.name || "")
+    .toLocaleLowerCase()
+    .includes(productSearch.trim().toLocaleLowerCase());
+  return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
+});
+
   return withSidebar(
     <div className="bb-storefront-content">
 
@@ -1328,6 +1525,118 @@ function updateQuantity(productId, change) {
             </div>
           </div>
         )}
+
+        <div className="bb-shopping-planner">
+          <div className="bb-planner-heading">
+            <div>
+              <h3>আপনার মাসিক বাজারের তালিকা</h3>
+              <p>পণ্য বাছুন, দাম দেখুন, বাজেটের মধ্যে বাজার সাজান।</p>
+            </div>
+            <button
+              type="button"
+              className="bb-add-product-toggle"
+              aria-expanded={showProductPicker}
+              onClick={() => { setShowProductPicker((visible) => !visible); setShoppingListMessage(""); }}
+            >
+              <span aria-hidden="true">{showProductPicker ? "−" : "+"}</span>
+              {showProductPicker ? "পণ্য বাছাই বন্ধ" : "পণ্য যোগ করুন"}
+            </button>
+          </div>
+
+          <div className="bb-budget-overview">
+            <div><span>তালিকার মোট</span><strong>৳{shoppingListTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
+            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <div className={shoppingBudgetRemaining < 0 ? "bb-budget-left is-over" : "bb-budget-left"}>
+              <span>{shoppingBudgetRemaining < 0 ? "বাজেটের বেশি" : "বাকি আছে"}</span>
+              <strong>৳{Math.abs(shoppingBudgetRemaining).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
+            </div>
+          </div>
+          <div className="bb-budget-progress" role="progressbar" aria-label="মাসিক বাজেটের ব্যবহার" aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
+            <span className={shoppingBudgetRemaining < 0 ? "is-over" : ""} style={{ width: `${shoppingBudgetProgress}%` }} />
+          </div>
+          <div className="bb-budget-caption">
+            <span>{shoppingBudgetProgress}% বাজেট ব্যবহার</span>
+            <span>সদস্য: {familyPreferences.familyMembers} জন</span>
+          </div>
+
+          {selectedShoppingProducts.length > 0 ? (
+            <div className="bb-shopping-items">
+              {selectedShoppingProducts.map(({ product, item }) => (
+                <article className="bb-shopping-item" key={product.id}>
+                  <div className="bb-shopping-item-name">
+                    <strong>{product.name}</strong>
+                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                  </div>
+                  <div className="bb-shopping-quantity" aria-label={`${product.name} এর পরিমাণ`}>
+                    <button type="button" aria-label={`${product.name} এক কমান`} onClick={() => changeShoppingQuantity(product, -1)}>−</button>
+                    <strong>{item.quantity}</strong>
+                    <button type="button" aria-label={`${product.name} এক বাড়ান`} disabled={Number(item.quantity) >= Number(product.stock)} onClick={() => changeShoppingQuantity(product, 1)}>+</button>
+                  </div>
+                  <strong className="bb-shopping-subtotal">৳{(Number(product.price || 0) * Number(item.quantity)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
+                  <button type="button" className="bb-remove-shopping-item" aria-label={`${product.name} তালিকা থেকে সরান`} onClick={() => setShoppingList((items) => items.filter((entry) => entry.productId !== product.id))}>×</button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="bb-shopping-empty">
+              <span aria-hidden="true">🧺</span>
+              <div><strong>আপনার বাজারের তালিকা এখনো খালি</strong><p>পণ্য যোগ করে দাম ও মোট খরচ একসাথে দেখুন।</p></div>
+            </div>
+          )}
+
+          {showProductPicker && (
+            <div className="bb-product-picker">
+              <label className="bb-product-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={productSearch}
+                  onChange={(event) => setProductSearch(event.target.value)}
+                  placeholder="পণ্যের নাম লিখে খুঁজুন"
+                  aria-label="পণ্য খুঁজুন"
+                />
+              </label>
+              {productPickerItems.length > 0 ? (
+                <div className="bb-product-picker-grid">
+                  {productPickerItems.map((product) => {
+                    const alreadyAdded = shoppingList.some((item) => item.productId === product.id);
+                    return (
+                      <article className="bb-picker-product" key={product.id}>
+                        <div>
+                          <strong>{product.name}</strong>
+                          <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                        </div>
+                        <button type="button" disabled={alreadyAdded} onClick={() => addProductToShoppingList(product)}>
+                          {alreadyAdded ? "তালিকায় আছে" : "+ যোগ করুন"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="bb-no-products">মিল থাকা স্টকে পণ্য পাওয়া যায়নি।</p>
+              )}
+            </div>
+          )}
+
+          <div className="bb-planner-actions">
+            <button
+              type="button"
+              className="bb-fill-budget-button"
+              disabled={!selectedShoppingProducts.length}
+              onClick={() => autoFillShoppingBudget(selectedShoppingProducts, shoppingListTotal)}
+            >
+              ✨ বাজেট অনুযায়ী পরিমাণ সাজান
+            </button>
+            <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
+              {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
+            </button>
+            <button type="button" className="bb-cart-list-button" disabled={!selectedShoppingProducts.length} onClick={() => addShoppingListToCart(selectedShoppingProducts)}>
+              🛒 কার্টে যোগ করুন
+            </button>
+          </div>
+          <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
+        </div>
       </section>
 
 <button
