@@ -1653,21 +1653,6 @@ const productPickerItems = products.filter((product) => {
         )}
       </section>
 
-<button
-  onClick={() => {
-    setShowMyOrders(true);
-    loadMyOrders();
-  }}
-  style={{
-    ...buttonStyle,
-    background: "linear-gradient(135deg, #087f45, #20a464)",
-    borderRadius: 12,
-    boxShadow: "0 4px 12px rgba(8,127,69,0.15)"
-  }}
->
-  📦 আমার অর্ডারসমূহ
-</button>
-
       <div style={{
   background: "white",
   border: "1px solid #dcebe0",
