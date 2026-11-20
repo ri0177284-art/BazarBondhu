@@ -144,6 +144,7 @@ const [familyPreferencesDraft, setFamilyPreferencesDraft] = useState(DEFAULT_FAM
 const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
 const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
 const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
+const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
 const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
@@ -1440,6 +1441,28 @@ const productPickerItems = products.filter((product) => {
           {!editingFamilyPreferences && (
             <button
               type="button"
+              className="bb-my-market-button"
+              aria-expanded={showFamilyShopping}
+              aria-controls="bb-family-shopping"
+              onClick={() => setShowFamilyShopping((visible) => !visible)}
+            >
+              <span aria-hidden="true">🛒</span>
+              {showFamilyShopping ? "বাজার বন্ধ করুন" : "আমার বাজার"}
+            </button>
+          )}
+        </div>
+
+        {!editingFamilyPreferences ? (
+          <>
+          <div className="bb-family-summary">
+            <div><span>পরিবারের সদস্য</span><strong>{familyPreferences.familyMembers} জন</strong></div>
+            <i aria-hidden="true" />
+            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <p>আপনার মাসিক বাজারের পরিকল্পনা এখানে রাখুন।</p>
+          </div>
+          <div className="bb-family-actions">
+            <button
+              type="button"
               className="bb-family-edit-button"
               onClick={() => {
                 setFamilyPreferencesDraft(familyPreferences);
@@ -1448,18 +1471,10 @@ const productPickerItems = products.filter((product) => {
               }}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z" /></svg>
-              পরিবর্তন করুন
+              প্যাকেজ ও বাজেট পরিবর্তন
             </button>
-          )}
-        </div>
-
-        {!editingFamilyPreferences ? (
-          <div className="bb-family-summary">
-            <div><span>পরিবারের সদস্য</span><strong>{familyPreferences.familyMembers} জন</strong></div>
-            <i aria-hidden="true" />
-            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
-            <p>আপনার মাসিক বাজারের পরিকল্পনা এখানে রাখুন।</p>
           </div>
+          </>
         ) : (
           <div className="bb-family-editor">
             <div className="bb-family-fields">
@@ -1523,7 +1538,8 @@ const productPickerItems = products.filter((product) => {
           </div>
         )}
 
-        <div className="bb-shopping-planner">
+        {showFamilyShopping && !editingFamilyPreferences && (
+        <div className="bb-shopping-planner" id="bb-family-shopping">
           <div className="bb-planner-heading">
             <div>
               <h3>আপনার মাসিক বাজারের তালিকা</h3>
@@ -1634,6 +1650,7 @@ const productPickerItems = products.filter((product) => {
           </div>
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
+        )}
       </section>
 
 <button
