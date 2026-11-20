@@ -1141,74 +1141,21 @@ function updateQuantity(productId, change) {
   return withSidebar(
     <div className="bb-storefront-content">
 
-      <div style={{
-  background: "linear-gradient(135deg, #056b3a 0%, #0b9b58 55%, #36c982 100%)",
-  color: "white",
-  padding: "28px 22px",
-  borderRadius: 22,
-  marginTop: 20,
-  marginBottom: 22,
-  boxShadow: "0 8px 24px rgba(8,127,69,0.20)",
-  position: "relative",
-  overflow: "hidden"
-}}>
-  <div style={{
-    position: "absolute",
-    right: -15,
-    top: -25,
-    fontSize: 110,
-    opacity: 0.13
-  }}>
-    🛒
-  </div>
-
-  <div style={{
-    fontSize: 13,
-    background: "rgba(255,255,255,0.18)",
-    display: "inline-block",
-    padding: "6px 12px",
-    borderRadius: 20,
-    marginBottom: 13
-  }}>
-    🥬 আপনার বিশ্বস্ত অনলাইন বাজার
-  </div>
-
-  <h2 style={{
-    fontSize: 25,
-    lineHeight: 1.4,
-    margin: "0 0 12px",
-    maxWidth: 280
-  }}>
-    প্রতিদিনের বাজার এখন আপনার হাতেই!
-  </h2>
-
-  <p style={{
-    fontSize: 14,
-    lineHeight: 1.8,
-    margin: "0 0 20px",
-    maxWidth: 290,
-    color: "#effff5"
-  }}>
-    টাটকা পণ্য, সাশ্রয়ী দাম এবং সহজ অর্ডার। বাজার করুন ঘরে বসেই।
-  </p>
-
-  <button
-    onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth" })}
-    style={{
-      background: "white",
-      color: "#087f45",
-      padding: "13px 20px",
-      border: "none",
-      borderRadius: 12,
-      fontWeight: "bold",
-      fontSize: 15,
-      cursor: "pointer",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.12)"
-    }}
-  >
-    🛍️ বাজার শুরু করুন →
-  </button>
-</div>
+      <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
+        <div className="bb-campaign-copy">
+          <span className="bb-campaign-kicker">🏠 Family Monthly Package</span>
+          <h2 id="bb-campaign-title">
+            আপনার পরিবারের মাসিক বাজার এখন <em>আরও সহজ!</em>
+          </h2>
+          <p>একবার লিস্ট দিন, প্রতি মাসে বাজার পৌঁছে যাবে আপনার পরিবারের দরজায়।</p>
+          <button
+            type="button"
+            onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            🛍️ বাজার শুরু করুন <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
 
 <button
   onClick={() => {

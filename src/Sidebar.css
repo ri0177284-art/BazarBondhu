@@ -204,6 +204,78 @@
 }
 .bb-storefront-content img { max-width: 100%; }
 #products-section { scroll-margin-top: 110px; }
+.bb-campaign-banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 2.12 / 1;
+  margin: 0 0 22px;
+  overflow: hidden;
+  border: 1px solid #d8efd7;
+  border-radius: 24px;
+  background: #eaf8e8 url("/family-shopping-banner.jpg") no-repeat right bottom / cover;
+  box-shadow: 0 8px 24px rgba(8, 127, 69, 0.14);
+}
+.bb-campaign-banner::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: linear-gradient(90deg, #f0ffe9 0%, #efffea 38%, rgba(239, 255, 234, 0.94) 48%, rgba(239, 255, 234, 0.2) 68%, transparent 78%);
+  content: "";
+}
+.bb-campaign-copy {
+  width: min(56%, 560px);
+  padding: clamp(20px, 3.5vw, 38px);
+}
+.bb-campaign-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: #0d9548;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.bb-campaign-copy h2 {
+  max-width: 520px;
+  margin: 0 0 12px;
+  color: #18271d;
+  font-size: clamp(24px, 3.2vw, 38px);
+  font-weight: 800;
+  line-height: 1.28;
+  letter-spacing: -.5px;
+}
+.bb-campaign-copy h2 em {
+  color: #0b8b43;
+  font-style: normal;
+}
+.bb-campaign-copy p {
+  max-width: 430px;
+  margin: 0 0 16px;
+  color: #34483a;
+  font-size: clamp(12px, 1.4vw, 15px);
+  line-height: 1.6;
+}
+.bb-campaign-copy button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #087f45;
+  box-shadow: 0 5px 14px rgba(8, 127, 69, 0.2);
+  color: #fff;
+  font-weight: 750;
+  cursor: pointer;
+}
+.bb-campaign-copy button:hover { background: #056b3a; }
 .bb-overlay {
   display: none;
 }
@@ -355,6 +427,20 @@
   }
   .bb-storefront-content > div:first-child { margin-top: 10px !important; }
   .bb-storefront-content #products-section { scroll-margin-top: 82px; }
+  .bb-campaign-banner {
+    min-height: 260px;
+    aspect-ratio: auto;
+    border-radius: 20px;
+    background-position: right bottom;
+  }
+  .bb-campaign-banner::before {
+    background: linear-gradient(90deg, #f0ffe9 0%, rgba(240, 255, 233, .98) 45%, rgba(240, 255, 233, .76) 63%, rgba(240, 255, 233, .08) 86%, transparent 100%);
+  }
+  .bb-campaign-copy { width: 69%; padding: 20px 16px; }
+  .bb-campaign-kicker { margin-bottom: 10px; padding: 6px 10px; font-size: 11px; }
+  .bb-campaign-copy h2 { margin-bottom: 9px; font-size: clamp(22px, 6vw, 27px); line-height: 1.28; }
+  .bb-campaign-copy p { margin-bottom: 12px; font-size: 12px; line-height: 1.5; }
+  .bb-campaign-copy button { min-height: 40px; padding: 0 12px; font-size: 12px; }
   .bb-sidebar {
     position: fixed;
     left: 0;
@@ -422,5 +508,9 @@
   .bb-storefront-content { padding: 10px 10px 24px; }
   .bb-storefront-content > div:first-child { padding: 22px 18px !important; }
   .bb-storefront-content > div:first-child h2 { font-size: 22px !important; }
+  .bb-campaign-banner { min-height: 248px; }
+  .bb-campaign-copy { width: 74%; padding: 16px 12px; }
+  .bb-campaign-copy h2 { font-size: 21px; }
+  .bb-campaign-copy p { font-size: 11px; }
 }
 
