@@ -239,7 +239,7 @@ function App() {
   async function updateOrder(orderId, patch) {
     const currentOrder = orders.find((order) => order.id === orderId);
     const update = { ...patch };
-    if (patch.order_status === "confirmed" && currentOrder?.order_status !== "confirmed") {
+    if (patch.order_status === "confirmed" && (currentOrder?.order_status !== "confirmed" || !currentOrder?.confirmed_at)) {
       update.confirmed_at = new Date().toISOString();
     }
     const { error } = await supabase.from("orders").update(update).eq("id", orderId);
