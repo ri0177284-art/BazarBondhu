@@ -1492,6 +1492,8 @@ const packageCycleEndDate = getPackageCycleEnd(latestConfirmedAt, familyPreferen
 const daysUntilCycleEnds = packageCycleEndDate
   ? Math.max(0, Math.ceil((new Date(packageCycleEndDate.getFullYear(), packageCycleEndDate.getMonth(), packageCycleEndDate.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 86400000))
   : null;
+const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+  .toLocaleDateString("bn-BD", { month: "long" });
 const nextPackagePeriodName = isWeeklyPackage ? "পরের সপ্তাহের" : `${nextMonthName} মাসের`;
 const productPickerItems = products.filter((product) => {
   const matchesSearch = !productSearch.trim() || String(product.name || "")
