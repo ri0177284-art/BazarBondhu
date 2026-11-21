@@ -237,7 +237,12 @@ function App() {
   }
 
   async function updateOrder(orderId, patch) {
-    const { error } = await supabase.from("orders").update(patch).eq("id", orderId);
+    const currentOrder = orders.find((order) => order.id === orderId);
+    const update = { ...patch };
+    if (patch.order_status === "confirmed" && currentOrder?.order_status !== "confirmed") {
+      update.confirmed_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from("orders").update(update).eq("id", orderId);
     if (error) {
       notify(`অর্ডার আপডেট হয়নি: ${error.message}`, "error");
       return;
