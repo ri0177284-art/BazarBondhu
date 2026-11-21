@@ -40,6 +40,24 @@ function normalizeShoppingList(value = []) {
     .map((item) => ({ productId: String(item.productId), quantity: Math.min(10000, Number(item.quantity)) }));
 }
 
+function getPackageCycleEnd(confirmedAt, packageId) {
+  if (!confirmedAt) return null;
+  const endDate = new Date(confirmedAt);
+  if (Number.isNaN(endDate.getTime())) return null;
+
+  if (packageId === "weekly-family") {
+    endDate.setDate(endDate.getDate() + 7);
+    return endDate;
+  }
+
+  const startDay = endDate.getDate();
+  endDate.setDate(1);
+  endDate.setMonth(endDate.getMonth() + 1);
+  const lastDayOfNextMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0).getDate();
+  endDate.setDate(Math.min(startDay, lastDayOfNextMonth));
+  return endDate;
+}
+
 function suggestBudgetFill(selectedProducts, budget, currentTotal) {
   const remaining = Number(budget) - Number(currentTotal);
   if (remaining < 0) return { error: "আপনার তালিকার খরচ বাজেট ছাড়িয়েছে। আগে পরিমাণ কমিয়ে নিন।" };
@@ -148,6 +166,7 @@ const [monthlySpend, setMonthlySpend] = useState(0);
 const [monthlyProductCount, setMonthlyProductCount] = useState(0);
 const [deliveredOrdersCount, setDeliveredOrdersCount] = useState(0);
 const [previousMonthSpend, setPreviousMonthSpend] = useState(0);
+const [latestConfirmedAt, setLatestConfirmedAt] = useState(null);
 
 const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
@@ -305,6 +324,21 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
     setMonthlyProductCount(currentOrders.reduce((sum, order) => sum + (order.order_items || []).reduce((quantity, item) => quantity + Math.max(0, Number(item.quantity) || 0), 0), 0));
     setDeliveredOrdersCount(currentOrders.filter((order) => order.order_status === "delivered").length);
     setPreviousMonthSpend(sumOrderTotals(previousOrders));
+
+    const { data: latestConfirmedOrder, error: confirmationError } = await supabase
+      .from("orders")
+      .select("confirmed_at")
+      .eq("user_id", user.id)
+      .not("confirmed_at", "is", null)
+      .neq("order_status", "cancelled")
+      .order("confirmed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (confirmationError) {
+      console.warn("Latest package confirmation could not be loaded:", confirmationError.message);
+      return;
+    }
+    setLatestConfirmedAt(latestConfirmedOrder?.confirmed_at || null);
   }
 
   async function saveFamilyPreferences() {
@@ -1453,21 +1487,12 @@ const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
 const monthlySpendProgress = familyPreferences.monthlyBudget > 0
   ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
   : monthlySpend > 0 ? 100 : 0;
-const averageDailySpend = monthlySpend / Math.max(1, new Date().getDate());
-const estimatedDaysUntilBudgetEnds = averageDailySpend > 0
-  ? Math.ceil(Math.max(0, familyPreferences.monthlyBudget - monthlySpend) / averageDailySpend)
+const isWeeklyPackage = familyPreferences.packageId === "weekly-family";
+const packageCycleEndDate = getPackageCycleEnd(latestConfirmedAt, familyPreferences.packageId);
+const daysUntilCycleEnds = packageCycleEndDate
+  ? Math.max(0, Math.ceil((new Date(packageCycleEndDate.getFullYear(), packageCycleEndDate.getMonth(), packageCycleEndDate.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 86400000))
   : null;
-const estimatedBudgetEndDate = estimatedDaysUntilBudgetEnds === null
-  ? null
-  : new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + estimatedDaysUntilBudgetEnds);
-const monthlySpendComparison = previousMonthSpend > 0
-  ? Math.round(((monthlySpend - previousMonthSpend) / previousMonthSpend) * 100)
-  : null;
-const monthlySpendComparisonLabel = monthlySpendComparison === null
-  ? monthlySpend > 0 ? "নতুন" : "তথ্য নেই"
-  : `${monthlySpendComparison > 0 ? "+" : ""}${monthlySpendComparison.toLocaleString("bn-BD")}%`;
-const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
-  .toLocaleDateString("bn-BD", { month: "long" });
+const nextPackagePeriodName = isWeeklyPackage ? "পরের সপ্তাহের" : `${nextMonthName} মাসের`;
 const productPickerItems = products.filter((product) => {
   const matchesSearch = !productSearch.trim() || String(product.name || "")
     .toLocaleLowerCase()
@@ -1742,17 +1767,17 @@ const productPickerItems = products.filter((product) => {
 
         <div className="bb-monthly-estimate-panel">
           <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
-          {estimatedBudgetEndDate ? (
+          {packageCycleEndDate ? (
             <>
               <strong className="bb-monthly-estimate-date">
-                {estimatedBudgetEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
+                {packageCycleEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
               </strong>
               <span className="bb-monthly-estimate-countdown">
-                {estimatedDaysUntilBudgetEnds === 0 ? "বাজেট আজই পূর্ণ হতে পারে" : `আর প্রায় ${estimatedDaysUntilBudgetEnds.toLocaleString("bn-BD")} দিন বাকি`}
+                {daysUntilCycleEnds === 0 ? "প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}
               </span>
             </>
           ) : (
-            <p className="bb-monthly-estimate-empty">এই মাসে অর্ডার হলে আনুমানিক সময় দেখাবে</p>
+            <p className="bb-monthly-estimate-empty">অর্ডার কনফার্ম হলে {isWeeklyPackage ? "৭ দিনের" : "এক মাসের"} হিসাব শুরু হবে</p>
           )}
         </div>
 
@@ -1760,8 +1785,8 @@ const productPickerItems = products.filter((product) => {
           <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
           <p>
             {monthlySpendProgress >= 75
-              ? `আপনার মাসিক বাজার শেষ পর্যায়ে। ${nextMonthName} মাসের তালিকাটি কি দেখে নেবেন?`
-              : `আগে থেকেই ${nextMonthName} মাসের বাজারের তালিকা গুছিয়ে রাখুন।`}
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক"} বাজার শেষ পর্যায়ে। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
           </p>
           <button type="button" onClick={() => setShowFamilyShopping(true)}>
             এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
