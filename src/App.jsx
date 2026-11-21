@@ -339,7 +339,7 @@ function App() {
   const totalSales = deliveredOrders.reduce((total, order) => total + (Number(order.total) || 0), 0);
   const lowStockProducts = products.filter((product) => Number(product.stock) > 0 && Number(product.stock) <= 5);
 
-  if (isCustomerRoute) return <Suspense fallback={<div className="bb-loading-screen"><span className="bb-spinner" />অ্যাপ লোড হচ্ছে…</div>}><Customer /></Suspense>;
+  if (isCustomerRoute) return <Suspense fallback={<div className="bb-customer-loading-screen" role="status" aria-live="polite"><div className="bb-customer-loading-card"><span className="bb-customer-loading-mark" aria-hidden="true">🛒</span><span className="bb-spinner" /><div><strong>BazarBondhu</strong><p>আপনার বাজারের তথ্য প্রস্তুত হচ্ছে…</p></div></div></div>}><Customer /></Suspense>;
 
   if (checking) {
     return <div className="bb-loading-screen"><span className="bb-spinner" />অ্যাডমিন অ্যাক্সেস যাচাই হচ্ছে…</div>;
