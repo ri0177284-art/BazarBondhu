@@ -1484,6 +1484,12 @@ const shoppingBudgetRemaining = Number(familyPreferences.monthlyBudget) - shoppi
 const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
   ? Math.min(100, Math.round((shoppingListTotal / familyPreferences.monthlyBudget) * 100))
   : 0;
+const monthlySpendComparison = previousMonthSpend > 0
+  ? Math.round(((monthlySpend - previousMonthSpend) / previousMonthSpend) * 100)
+  : null;
+const monthlySpendComparisonLabel = monthlySpendComparison === null
+  ? monthlySpend > 0 ? "নতুন" : "তথ্য নেই"
+  : `${monthlySpendComparison > 0 ? "+" : ""}${monthlySpendComparison.toLocaleString("bn-BD")}%`;
 const monthlySpendProgress = familyPreferences.monthlyBudget > 0
   ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
   : monthlySpend > 0 ? 100 : 0;
