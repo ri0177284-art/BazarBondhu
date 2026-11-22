@@ -787,8 +787,8 @@ if (
     p_phone: customerPhone.trim(),
     p_delivery_address: deliveryAddress.trim(),
     p_payment_method: paymentMethod,
-    p_service_charge: serviceCharge,
-    p_delivery_fee: deliveryFee,
+    p_service_charge: monthlySpecialCharges || weeklySpecialCharges ? checkoutServiceCharge : baseServiceCharge,
+    p_delivery_fee: monthlySpecialCharges || weeklySpecialCharges ? checkoutDeliveryFee : baseDeliveryFee,
     p_items: cart.map(item => ({
       product_id: item.id,
       product_name: item.name,
