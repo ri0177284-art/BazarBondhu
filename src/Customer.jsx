@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
+import "./Customer.css";
+
+const FAMILY_PACKAGES = [
+  { id: "family-monthly", label: "মাসিক পরিবার", detail: "মাসের বাজার একসাথে" },
+  { id: "weekly-family", label: "সাপ্তাহিক বাজার", detail: "সপ্তাহ ধরে পরিকল্পনা" },
+  { id: "budget-smart", label: "বাজেট স্মার্ট", detail: "খরচে থাকুন নিয়ন্ত্রণে" },
+];
 
 const FAMILY_PACKAGE_MINIMUMS = {
   "weekly-family": 1000,
@@ -11,17 +18,134 @@ function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
 
+const DEFAULT_FAMILY_PREFERENCES = {
+  familyMembers: 4,
+  monthlyBudget: 5000,
+  packageId: "family-monthly",
+};
+
+function normalizeFamilyPreferences(value = {}) {
+  const familyMembers = Number(value.familyMembers);
+  const monthlyBudget = Number(value.monthlyBudget);
+  const packageId = FAMILY_PACKAGES.some((item) => item.id === value.packageId)
+    ? value.packageId
+    : DEFAULT_FAMILY_PREFERENCES.packageId;
+
+  return {
+    familyMembers: Number.isInteger(familyMembers) && familyMembers >= 1 && familyMembers <= 30
+      ? familyMembers
+      : DEFAULT_FAMILY_PREFERENCES.familyMembers,
+    monthlyBudget: Number.isFinite(monthlyBudget) && monthlyBudget >= 0
+      ? Math.min(monthlyBudget, 100000)
+      : DEFAULT_FAMILY_PREFERENCES.monthlyBudget,
+    packageId,
+  };
+}
+
+function normalizeShoppingList(value = []) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item) => item?.productId && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0)
+    .map((item) => ({ productId: String(item.productId), quantity: Math.min(10000, Number(item.quantity)) }));
+}
+
+function getPackageCycleEnd(confirmedAt, packageId) {
+  if (!confirmedAt) return null;
+  const endDate = new Date(confirmedAt);
+  if (Number.isNaN(endDate.getTime())) return null;
+
+  if (packageId === "weekly-family") {
+    endDate.setDate(endDate.getDate() + 7);
+    return endDate;
+  }
+
+  const startDay = endDate.getDate();
+  endDate.setDate(1);
+  endDate.setMonth(endDate.getMonth() + 1);
+  const lastDayOfNextMonth = new Date(endDate.getFullYear(), endDate.getMonth() + 1, 0).getDate();
+  endDate.setDate(Math.min(startDay, lastDayOfNextMonth));
+  return endDate;
+}
+
+function suggestBudgetFill(selectedProducts, budget, currentTotal) {
+  const remaining = Number(budget) - Number(currentTotal);
+  if (remaining < 0) return { error: "আপনার তালিকার খরচ বাজেট ছাড়িয়েছে। আগে পরিমাণ কমিয়ে নিন।" };
+  const limit = Math.floor(remaining);
+  if (limit === 0) return { additions: new Map(), total: Number(currentTotal) };
+
+  const chunks = [];
+  selectedProducts.forEach(({ product, item }, itemIndex) => {
+    const stockLeft = Math.max(0, Math.floor(Number(product.stock) - Number(item.quantity)));
+    const unitPrice = Number(product.price);
+    if (!Number.isFinite(unitPrice) || unitPrice <= 0 || stockLeft === 0) return;
+    let remainingStock = stockLeft;
+    let batch = 1;
+    while (remainingStock > 0) {
+      const quantity = Math.min(batch, remainingStock);
+      const cost = Math.ceil(unitPrice) * quantity;
+      if (cost <= limit) chunks.push({ itemIndex, quantity, cost });
+      remainingStock -= quantity;
+      batch *= 2;
+    }
+  });
+
+  const reachable = new Uint8Array(limit + 1);
+  const previousAmount = new Int32Array(limit + 1);
+  const previousChunk = new Int32Array(limit + 1);
+  previousAmount.fill(-1);
+  previousChunk.fill(-1);
+  reachable[0] = 1;
+
+  chunks.forEach((chunk, chunkIndex) => {
+    for (let amount = limit; amount >= chunk.cost; amount -= 1) {
+      if (!reachable[amount] && reachable[amount - chunk.cost]) {
+        reachable[amount] = 1;
+        previousAmount[amount] = amount - chunk.cost;
+        previousChunk[amount] = chunkIndex;
+      }
+    }
+  });
+
+  let best = limit;
+  while (best > 0 && !reachable[best]) best -= 1;
+  const additions = new Map();
+  let amount = best;
+  while (amount > 0 && previousChunk[amount] >= 0) {
+    const chunk = chunks[previousChunk[amount]];
+    const productId = selectedProducts[chunk.itemIndex].product.id;
+    additions.set(productId, (additions.get(productId) || 0) + chunk.quantity);
+    amount = previousAmount[amount];
+  }
+
+  let total = selectedProducts.reduce((sum, { product, item }) => {
+    return sum + Number(product.price) * (Number(item.quantity) + (additions.get(product.id) || 0));
+  }, 0);
+  let available = Number(budget) - total;
+  selectedProducts
+    .filter(({ product }) => Number(product.price) > 0)
+    .slice()
+    .sort((a, b) => Number(a.product.price) - Number(b.product.price))
+    .forEach(({ product, item }) => {
+      const room = Math.max(0, Math.floor(Number(product.stock) - Number(item.quantity) - (additions.get(product.id) || 0)));
+      const extra = Math.min(room, Math.floor((available + 0.000001) / Number(product.price)));
+      if (extra > 0) {
+        additions.set(product.id, (additions.get(product.id) || 0) + extra);
+        const cost = extra * Number(product.price);
+        total += cost;
+        available -= cost;
+      }
+    });
+
+  return { additions, total };
+}
+
 function Customer() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
-  const [selectedPackageId, setSelectedPackageId] = useState(null);
-
-  useEffect(() => {
-    if (cart.length === 0) setSelectedPackageId(null);
-  }, [cart.length]);
+  const [cartPackageId, setCartPackageId] = useState(null);
   const [serviceCharge, setServiceCharge] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
@@ -39,14 +163,34 @@ const [transactionId, setTransactionId] = useState("");
 const [placingOrder, setPlacingOrder] = useState(false);
 const [myOrders, setMyOrders] = useState([]);
 const [showMyOrders, setShowMyOrders] = useState(false);
+const [cancelOrderId, setCancelOrderId] = useState(null);
+const [cancelReason, setCancelReason] = useState("");
+const [cancellingOrder, setCancellingOrder] = useState(false);
 const [showProfile, setShowProfile] = useState(false);
 const [activeMenu, setActiveMenu] = useState("home");
 const [customerName, setCustomerName] = useState("");
-useEffect(() => {
-  setCustomerName(fullName);
-  setCustomerPhone(phone);
-}, [fullName, phone]);
 const [customerPhone, setCustomerPhone] = useState("");
+const [familyPreferences, setFamilyPreferences] = useState(DEFAULT_FAMILY_PREFERENCES);
+const [familyPreferencesDraft, setFamilyPreferencesDraft] = useState(DEFAULT_FAMILY_PREFERENCES);
+const [editingFamilyPreferences, setEditingFamilyPreferences] = useState(false);
+const [savingFamilyPreferences, setSavingFamilyPreferences] = useState(false);
+const [familyPreferencesMessage, setFamilyPreferencesMessage] = useState("");
+const [monthlySpend, setMonthlySpend] = useState(0);
+const [monthlyProductCount, setMonthlyProductCount] = useState(0);
+const [deliveredOrdersCount, setDeliveredOrdersCount] = useState(0);
+const [previousMonthSpend, setPreviousMonthSpend] = useState(0);
+const [latestConfirmedAt, setLatestConfirmedAt] = useState(null);
+
+const [showFamilyShopping, setShowFamilyShopping] = useState(false);
+const [shoppingList, setShoppingList] = useState([]);
+const [productSearch, setProductSearch] = useState("");
+const [showProductPicker, setShowProductPicker] = useState(false);
+const [savingShoppingList, setSavingShoppingList] = useState(false);
+const [shoppingListMessage, setShoppingListMessage] = useState("");
+
+  useEffect(() => {
+    if (cart.length === 0) setCartPackageId(null);
+  }, [cart.length]);
 
   // Load products
   useEffect(() => {
@@ -134,17 +278,12 @@ const [customerPhone, setCustomerPhone] = useState("");
       .eq("id", user.id)
       .maybeSingle();
 
-    setFullName(
-      data?.full_name ||
-      user.user_metadata?.full_name ||
-      ""
-    );
-
-    setPhone(
-      data?.phone ||
-      user.user_metadata?.phone ||
-      ""
-    );
+    const profileName = data?.full_name || user.user_metadata?.full_name || "";
+    const profilePhone = data?.phone || user.user_metadata?.phone || "";
+    setFullName(profileName);
+    setPhone(profilePhone);
+    setCustomerName(profileName);
+    setCustomerPhone(profilePhone);
 
     setDeliveryAddress(data?.address || "");
 
@@ -155,6 +294,197 @@ const [customerPhone, setCustomerPhone] = useState("");
 
   loadProfile();
 }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const preferences = normalizeFamilyPreferences(user.user_metadata?.family_preferences);
+    setFamilyPreferences(preferences);
+    setFamilyPreferencesDraft(preferences);
+    setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
+  }, [user?.id, user?.user_metadata?.family_preferences]);
+
+  useEffect(() => {
+    if (!user) {
+      setMonthlySpend(0);
+      return;
+    }
+    loadMonthlySpend();
+  }, [user?.id]);
+
+  async function loadMonthlySpend() {
+    if (!user) return;
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("total, order_status, created_at, order_items(quantity)")
+      .eq("user_id", user.id)
+      .gte("created_at", previousMonthStart.toISOString())
+      .lt("created_at", nextMonthStart.toISOString());
+
+    if (error) {
+      console.warn("Monthly spend could not be loaded:", error.message);
+      return;
+    }
+
+    const isNotCancelled = (order) => {
+      const status = String(order.order_status || "").toLowerCase();
+      return !["cancelled", "canceled", "বাতিল"].includes(status);
+    };
+    const currentOrders = (data || []).filter((order) => new Date(order.created_at) >= monthStart && isNotCancelled(order));
+    const previousOrders = (data || []).filter((order) => new Date(order.created_at) >= previousMonthStart && new Date(order.created_at) < monthStart && isNotCancelled(order));
+    const sumOrderTotals = (orders) => orders.reduce((sum, order) => sum + Math.max(0, Number(order.total) || 0), 0);
+    setMonthlySpend(sumOrderTotals(currentOrders));
+    setMonthlyProductCount(currentOrders.reduce((sum, order) => sum + (order.order_items || []).reduce((quantity, item) => quantity + Math.max(0, Number(item.quantity) || 0), 0), 0));
+    setDeliveredOrdersCount(currentOrders.filter((order) => order.order_status === "delivered").length);
+    setPreviousMonthSpend(sumOrderTotals(previousOrders));
+
+    const { data: latestConfirmedOrder, error: confirmationError } = await supabase
+      .from("orders")
+      .select("confirmed_at")
+      .eq("user_id", user.id)
+      .not("confirmed_at", "is", null)
+      .neq("order_status", "cancelled")
+      .order("confirmed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (confirmationError) {
+      console.warn("Latest package confirmation could not be loaded:", confirmationError.message);
+      return;
+    }
+    setLatestConfirmedAt(latestConfirmedOrder?.confirmed_at || null);
+  }
+
+  async function saveFamilyPreferences() {
+    if (!user) return;
+
+    const monthlyBudget = Number(familyPreferencesDraft.monthlyBudget);
+    if (!Number.isFinite(monthlyBudget) || monthlyBudget < 0) {
+      setFamilyPreferencesMessage("মাসিক বাজেট ০ বা তার বেশি লিখুন।");
+      return;
+    }
+
+    const preferences = normalizeFamilyPreferences({
+      ...familyPreferencesDraft,
+      monthlyBudget,
+    });
+    setSavingFamilyPreferences(true);
+    setFamilyPreferencesMessage("");
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          family_preferences: {
+            ...user.user_metadata?.family_preferences,
+            ...preferences,
+            shoppingList,
+          },
+        },
+      });
+      if (error) throw error;
+
+      setFamilyPreferences(preferences);
+      setFamilyPreferencesDraft(preferences);
+      setEditingFamilyPreferences(false);
+      setFamilyPreferencesMessage("পরিবারের পছন্দ সেভ হয়েছে।");
+      if (data.user) setUser(data.user);
+    } catch {
+      setFamilyPreferencesMessage("সেটিংস সেভ হয়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setSavingFamilyPreferences(false);
+    }
+  }
+
+  async function saveShoppingList() {
+    if (!user) return;
+    setSavingShoppingList(true);
+    setShoppingListMessage("");
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          ...user.user_metadata,
+          family_preferences: {
+            ...user.user_metadata?.family_preferences,
+            ...familyPreferences,
+            shoppingList,
+          },
+        },
+      });
+      if (error) throw error;
+      setShoppingListMessage("আপনার বাজারের তালিকা সেভ হয়েছে।");
+      if (data.user) setUser(data.user);
+    } catch {
+      setShoppingListMessage("তালিকা সেভ হয়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setSavingShoppingList(false);
+    }
+  }
+
+  function changeShoppingQuantity(product, change) {
+    setShoppingList((current) => current
+      .map((item) => item.productId !== product.id
+        ? item
+        : { ...item, quantity: Math.min(Number(product.stock), Math.max(0, Number(item.quantity) + change)) })
+      .filter((item) => item.quantity > 0));
+    setShoppingListMessage("");
+  }
+
+  function addProductToShoppingList(product) {
+    const current = shoppingList.find((item) => item.productId === product.id);
+    if (current) {
+      setShoppingList((items) => items.filter((item) => item.productId !== product.id));
+      setShoppingListMessage(`${product.name} তালিকা থেকে সরানো হয়েছে।`);
+      return;
+    }
+    setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
+    setShoppingListMessage(`${product.name} তালিকায় যোগ হয়েছে। পরিমাণ +/− দিয়ে বদলান।`);
+  }
+
+  function autoFillShoppingBudget(selectedProducts, currentTotal) {
+    if (!selectedProducts.length) {
+      setShoppingListMessage("বাজেট সাজাতে আগে তালিকায় কিছু পণ্য যোগ করুন।");
+      return;
+    }
+    const result = suggestBudgetFill(selectedProducts, familyPreferences.monthlyBudget, currentTotal);
+    if (result.error) {
+      setShoppingListMessage(result.error);
+      return;
+    }
+    const additions = result.additions;
+    setShoppingList((items) => items.map((item) => ({
+      ...item,
+      quantity: item.quantity + (additions.get(item.productId) || 0),
+    })));
+    const filled = Math.round(result.total);
+    setShoppingListMessage(filled > currentTotal
+      ? `বাজেট অনুযায়ী পরিমাণ সাজানো হয়েছে — ${filled.toLocaleString("en-IN")} টাকার বাজার।`
+      : "নির্বাচিত পণ্যের স্টক অনুযায়ী তালিকাটি বাজেটের সবচেয়ে কাছাকাছি আছে।");
+  }
+
+  function addShoppingListToCart(selectedProducts) {
+    if (!selectedProducts.length) return;
+    setCart((current) => {
+      const next = [...current];
+      selectedProducts.forEach(({ product, item }) => {
+        const index = next.findIndex((cartItem) => cartItem.id === product.id);
+        if (index >= 0) {
+          next[index] = {
+            ...next[index],
+            quantity: Math.min(Number(product.stock), Number(next[index].quantity || 0) + Number(item.quantity)),
+          };
+        } else {
+          next.push({ ...product, quantity: Number(item.quantity) });
+        }
+      });
+      return next;
+    });
+    setCartPackageId(familyPreferences.packageId);
+    setShoppingListMessage("নির্বাচিত পণ্যগুলো কার্টে যোগ হয়েছে।");
+    handleMenuClick("cart");
+  }
 
   // Login and Registration
   async function handleAuth(e) {
@@ -250,23 +580,20 @@ if (
     alert("দয়া করে Transaction ID লিখুন");
     return;
   }
+
+  const packageMinimum = getFamilyPackageMinimum(cartPackageId);
+  if (packageMinimum > 0 && cartTotal < packageMinimum) {
+    const remaining = packageMinimum - cartTotal;
+    const packageLabel = FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label || "প্যাকেজ";
+    alert(
+      `${packageLabel} অর্ডার করতে পণ্যের মূল্য কমপক্ষে ৳${packageMinimum.toLocaleString("en-IN")} হতে হবে। ডেলিভারি ও সার্ভিস চার্জ বাদে আরও ৳${remaining.toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`
+    );
+    return;
+  }
+
   setPlacingOrder(true);
 
   try {
-    const subtotal = cart.reduce(
-  (sum, item) =>
-    sum + Number(item.price || 0) * (item.quantity || 1),
-  0
-);
-
-    const packageMinimum = getFamilyPackageMinimum(selectedPackageId);
-    if (packageMinimum > 0 && subtotal < packageMinimum) {
-      alert(
-        `এই প্যাকেজে পণ্যের ন্যূনতম মূল্য ৳${packageMinimum.toLocaleString("bn-BD")}। আরও ৳${(packageMinimum - subtotal).toLocaleString("bn-BD")} টাকার পণ্য যোগ করুন। ডেলিভারি ও সার্ভিস চার্জ এই হিসাবে ধরা হবে না।`
-      );
-      return;
-    }
-
     const { data: settings, error: settingsError } = await supabase
       .from("app_settings")
       .select("*")
@@ -277,7 +604,6 @@ if (
 
     const serviceCharge = Number(settings.service_charge || 0);
     const deliveryFee = Number(settings.delivery_fee || 0);
-    const total = subtotal + serviceCharge + deliveryFee;
     // Check latest product stock before placing order
     for (const item of cart) {
       const { data: latestProduct, error: stockError } = await supabase
@@ -300,7 +626,7 @@ if (
       }
     }
 
-    const { data: orderId, error: orderError } = await supabase.rpc(
+    const { error: orderError } = await supabase.rpc(
   "create_order_with_payment_atomic",
   {
     p_customer_name: customerName.trim(),
@@ -316,16 +642,18 @@ if (
       unit_price: Number(item.price)
     })),
     p_transaction_id: transactionId.trim() || null,
-    ...(selectedPackageId ? { p_package_id: selectedPackageId } : {})
+     p_package_id: cartPackageId
   }
 );
 
 if (orderError) throw orderError;
 
+    await loadMonthlySpend();
+
     alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
-    setSelectedPackageId(null);
+    setCartPackageId(null);
     setShowCheckout(false);
     setCustomerName("");
     setCustomerPhone("");
@@ -353,33 +681,43 @@ async function loadMyOrders() {
 
   setMyOrders(data || []);
 }
-// Cancel Order
-async function cancelOrder(orderId) {
-  const reason = window.prompt("অর্ডার বাতিল করার কারণ লিখুন:");
+// Open the in-app order cancellation dialog
+function cancelOrder(orderId) {
+  setCancelOrderId(orderId);
+  setCancelReason("");
+}
 
-  if (reason === null) return;
+// Confirm order cancellation
+async function confirmOrderCancellation() {
+  if (!cancelOrderId || cancellingOrder) return;
 
-  if (!reason.trim()) {
+  if (!cancelReason.trim()) {
     alert("দয়া করে বাতিলের কারণ লিখুন।");
     return;
   }
 
-  const { error } = await supabase.rpc(
-    "cancel_order_atomic",
-    {
-      p_order_id: orderId,
-      p_cancel_reason: reason.trim()
-    }
-  );
+  setCancellingOrder(true);
+  try {
+    const { error } = await supabase.rpc(
+      "cancel_order_atomic",
+      {
+        p_order_id: cancelOrderId,
+        p_cancel_reason: cancelReason.trim()
+      }
+    );
 
-  if (error) {
-    alert("অর্ডার বাতিল করা যায়নি: " + error.message);
-    return;
+    if (error) throw error;
+
+    await loadMonthlySpend();
+    await loadMyOrders();
+    setCancelOrderId(null);
+    setCancelReason("");
+    alert("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত এসেছে!");
+  } catch (error) {
+    alert("অর্ডার বাতিল করা যায়নি: " + (error?.message || "আবার চেষ্টা করুন।"));
+  } finally {
+    setCancellingOrder(false);
   }
-
-  alert("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত এসেছে!");
-
-  loadMyOrders();
 }
 // Bottom Navigation Menu
 const menuItems = [
@@ -463,6 +801,7 @@ const withSidebar = (content) => (
     active={activeNow}
     onSelect={handleMenuClick}
     cartCount={cartCount}
+    notificationCount={myOrders.filter((order) => order.order_status === "pending").length}
     userName={customerName || user?.email || ""}
     onLogout={handleLogout}
   >
@@ -783,6 +1122,99 @@ fontWeight: "bold"
           ))
         )}
 
+        {cancelOrderId && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 10000,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              boxSizing: "border-box"
+            }}
+          >
+            <div style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "white",
+              borderRadius: 18,
+              padding: 20,
+              boxSizing: "border-box",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.22)"
+            }}>
+              <h3 id="cancel-order-title" style={{ color: "#dc3545", margin: "0 0 10px", fontSize: 20 }}>
+                অর্ডার বাতিল করবেন?
+              </h3>
+              <p style={{ color: "#666", fontSize: 14, lineHeight: 1.6, margin: "0 0 12px" }}>
+                অর্ডার বাতিলের কারণ লিখুন। নিশ্চিত করলে অর্ডার বাতিলের অনুরোধ পাঠানো হবে।
+              </p>
+              <textarea
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder="বাতিলের কারণ লিখুন..."
+                rows={4}
+                disabled={cancellingOrder}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  border: "1px solid #d8e2da",
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outlineColor: "#198754"
+                }}
+              />
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button
+                  type="button"
+                  disabled={cancellingOrder}
+                  onClick={() => {
+                    setCancelOrderId(null);
+                    setCancelReason("");
+                  }}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    border: "1px solid #dce5df",
+                    borderRadius: 10,
+                    background: "#f3f5f4",
+                    color: "#555",
+                    fontWeight: "bold",
+                    cursor: cancellingOrder ? "not-allowed" : "pointer"
+                  }}
+                >
+                  ফিরে যান
+                </button>
+                <button
+                  type="button"
+                  disabled={cancellingOrder}
+                  onClick={confirmOrderCancellation}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    border: "none",
+                    borderRadius: 10,
+                    background: cancellingOrder ? "#999" : "#dc3545",
+                    color: "white",
+                    fontWeight: "bold",
+                    cursor: cancellingOrder ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {cancellingOrder ? "অপেক্ষা করুন..." : "হ্যাঁ, বাতিল করুন"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={() => setShowMyOrders(false)}
           style={{
@@ -861,26 +1293,6 @@ fontWeight: "bold"
         </div>
 
         <h3 style={{ color: "#176b40", fontSize: 16 }}>
-          📦 অর্ডারের ধরন
-        </h3>
-
-        <select
-          value={selectedPackageId || ""}
-          onChange={e => setSelectedPackageId(e.target.value || null)}
-          style={inputStyle}
-        >
-          <option value="">সাধারণ অর্ডার</option>
-          <option value="weekly-family">সাপ্তাহিক পরিবার প্যাকেজ — ন্যূনতম ৳১,০০০</option>
-          <option value="family-monthly">মাসিক পরিবার প্যাকেজ — ন্যূনতম ৳২,০০০</option>
-          <option value="budget-smart">বাজেট স্মার্ট প্যাকেজ — নির্দিষ্ট ন্যূনতম নেই</option>
-        </select>
-        {getFamilyPackageMinimum(selectedPackageId) > 0 && (
-          <p style={{ color: "#777", fontSize: 12, marginTop: 8 }}>
-            ন্যূনতম হিসাব শুধু পণ্যের মূল্যের ওপর হবে; ডেলিভারি ও সার্ভিস চার্জ এতে যোগ হবে না।
-          </p>
-        )}
-
-        <h3 style={{ color: "#176b40", fontSize: 16, marginTop: 22 }}>
           👤 কাস্টমারের তথ্য
         </h3>
 
@@ -961,6 +1373,23 @@ fontWeight: "bold"
           }}>
             🧾 অর্ডারের হিসাব
           </h3>
+          {getFamilyPackageMinimum(cartPackageId) > 0 && (
+            <p role="status" style={{
+              color: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#087f45" : "#9a5b00",
+              background: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#e8f5ed" : "#fff6e5",
+              borderRadius: 10,
+              padding: 11,
+              fontSize: 13,
+              lineHeight: 1.6,
+              margin: "0 0 14px"
+            }}>
+              {FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(cartPackageId).toLocaleString("en-IN")}।
+              {cartTotal >= getFamilyPackageMinimum(cartPackageId)
+                ? " আপনার পণ্যমূল্য ন্যূনতম সীমা পূরণ করেছে।"
+                : ` আরও ৳${(getFamilyPackageMinimum(cartPackageId) - cartTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`}
+              {" "}ডেলিভারি ও সার্ভিস চার্জ এই হিসাবের বাইরে।
+            </p>
+          )}
 
           <div style={{
             display: "flex",
@@ -971,12 +1400,6 @@ fontWeight: "bold"
             <span>পণ্যের মূল্য</span>
             <strong>৳{cartTotal}</strong>
           </div>
-          {getFamilyPackageMinimum(selectedPackageId) > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, color: cartTotal >= getFamilyPackageMinimum(selectedPackageId) ? "#087f45" : "#b45309" }}>
-              <span>প্যাকেজের ন্যূনতম মূল্য</span>
-              <strong>৳{getFamilyPackageMinimum(selectedPackageId)}</strong>
-            </div>
-          )}
 
           <div style={{
   display: "flex",
@@ -1203,220 +1626,364 @@ function updateQuantity(productId, change) {
 }
   
   
+const selectedShoppingProducts = shoppingList
+  .map((item) => ({ item, product: products.find((product) => product.id === item.productId) }))
+  .filter(({ product }) => Boolean(product));
+const shoppingListTotal = selectedShoppingProducts.reduce(
+  (sum, { product, item }) => sum + Number(product.price || 0) * Number(item.quantity || 0),
+  0,
+);
+const shoppingBudgetRemaining = Number(familyPreferences.monthlyBudget) - shoppingListTotal;
+const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
+  ? Math.min(100, Math.round((shoppingListTotal / familyPreferences.monthlyBudget) * 100))
+  : 0;
+const monthlySpendComparison = previousMonthSpend > 0
+  ? Math.round(((monthlySpend - previousMonthSpend) / previousMonthSpend) * 100)
+  : null;
+const monthlySpendComparisonLabel = monthlySpendComparison === null
+  ? monthlySpend > 0 ? "নতুন" : "তথ্য নেই"
+  : `${monthlySpendComparison > 0 ? "+" : ""}${monthlySpendComparison.toLocaleString("bn-BD")}%`;
+const monthlySpendProgress = familyPreferences.monthlyBudget > 0
+  ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
+  : monthlySpend > 0 ? 100 : 0;
+const isWeeklyPackage = familyPreferences.packageId === "weekly-family";
+const packageCycleEndDate = getPackageCycleEnd(latestConfirmedAt, familyPreferences.packageId);
+const daysUntilCycleEnds = packageCycleEndDate
+  ? Math.max(0, Math.ceil((new Date(packageCycleEndDate.getFullYear(), packageCycleEndDate.getMonth(), packageCycleEndDate.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 86400000))
+  : null;
+const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
+  .toLocaleDateString("bn-BD", { month: "long" });
+const nextPackagePeriodName = isWeeklyPackage ? "পরের সপ্তাহের" : `${nextMonthName} মাসের`;
+const productPickerItems = products.filter((product) => {
+  const matchesSearch = !productSearch.trim() || String(product.name || "")
+    .toLocaleLowerCase()
+    .includes(productSearch.trim().toLocaleLowerCase());
+  return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
+});
+
   return withSidebar(
-    <div style={{
-      minHeight: "100vh",
-      background: "#f4f8f4",
-      fontFamily: "Arial",
-      padding: 20
-    }}>
+    <div className="bb-storefront-content">
 
-      <div style={{
-  background: "white",
-  padding: "15px 18px",
-  borderRadius: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  boxShadow: "0 4px 18px rgba(0,0,0,0.06)",
-  border: "1px solid #e8f0e9"
-}}>
-  <div style={{
-    display: "flex",
-    alignItems: "center",
-    gap: 12
-  }}>
-    <div style={{
-      width: 48,
-      height: 48,
-      borderRadius: 14,
-      background: "linear-gradient(135deg, #087f45, #20a464)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 27
-    }}>
-      🛒
-    </div>
+      <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
+        <div className="bb-campaign-copy">
+          <span className="bb-campaign-kicker">🏠 Family Monthly Package</span>
+          <h2 id="bb-campaign-title">
+            আপনার পরিবারের মাসিক বাজার এখন <em>আরও সহজ!</em>
+          </h2>
+          <p>একবার লিস্ট দিন, প্রতি মাসে বাজার পৌঁছে যাবে আপনার পরিবারের দরজায়।</p>
+          <button
+            type="button"
+            onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            🛍️ বাজার শুরু করুন <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
 
-    <div>
-      <h1 style={{
-        color: "#087f45",
-        margin: 0,
-        fontSize: 23,
-        fontWeight: "bold"
-      }}>
-        BazarBondhu
-      </h1>
+      <section className="bb-family-card" aria-labelledby="bb-family-title">
+        <div className="bb-family-card-heading">
+          <span className="bb-family-icon" aria-hidden="true">⌂</span>
+          <div className="bb-family-heading-copy">
+            <h2 id="bb-family-title">আমাদের পরিবার প্যাকেজ</h2>
+            <span>{FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label}</span>
+          </div>
+          {!editingFamilyPreferences && (
+            <button
+              type="button"
+              className="bb-my-market-button"
+              aria-expanded={showFamilyShopping}
+              aria-controls="bb-family-shopping"
+              onClick={() => setShowFamilyShopping((visible) => !visible)}
+            >
+              <span aria-hidden="true">🛒</span>
+              {showFamilyShopping ? "বাজার বন্ধ করুন" : "আমার বাজার"}
+            </button>
+          )}
+        </div>
 
-      <small style={{
-        color: "#777",
-        fontSize: 12
-      }}>
-        আপনার বিশ্বস্ত অনলাইন বাজার
-      </small>
-    </div>
-  </div>
+        {!editingFamilyPreferences ? (
+          <>
+          <div className="bb-family-summary">
+            <div><span>পরিবারের সদস্য</span><strong>{familyPreferences.familyMembers} জন</strong></div>
+            <i aria-hidden="true" />
+            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <p>আপনার মাসিক বাজারের পরিকল্পনা এখানে রাখুন।</p>
+          </div>
+          <div className="bb-family-actions">
+            <button
+              type="button"
+              className="bb-family-edit-button"
+              onClick={() => {
+                setFamilyPreferencesDraft(familyPreferences);
+                setFamilyPreferencesMessage("");
+                setEditingFamilyPreferences(true);
+              }}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z" /></svg>
+              প্যাকেজ ও বাজেট পরিবর্তন
+            </button>
+          </div>
+          </>
+        ) : (
+          <div className="bb-family-editor">
+            <div className="bb-family-fields">
+              <label className="bb-family-field">
+                <span>পরিবারের সদস্য</span>
+                <span className="bb-stepper">
+                  <button type="button" aria-label="সদস্য সংখ্যা কমান" onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.max(1, value.familyMembers - 1) }))}>−</button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="30"
+                    inputMode="numeric"
+                    value={familyPreferencesDraft.familyMembers}
+                    onChange={(event) => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.min(30, Math.max(1, Number(event.target.value) || 1)) }))}
+                  />
+                  <button type="button" aria-label="সদস্য সংখ্যা বাড়ান" onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, familyMembers: Math.min(30, value.familyMembers + 1) }))}>+</button>
+                </span>
+              </label>
+              <label className="bb-family-field">
+                <span>মাসিক বাজেট</span>
+                <span className="bb-budget-input">
+                  <b>৳</b>
+                  <input
+                    type="number"
+                    min="0"
+                    step="500"
+                    inputMode="decimal"
+                    value={familyPreferencesDraft.monthlyBudget}
+                    onChange={(event) => setFamilyPreferencesDraft((value) => ({ ...value, monthlyBudget: event.target.value }))}
+                    placeholder="৫,০০০"
+                  />
+                </span>
+              </label>
+            </div>
+            <fieldset className="bb-package-options">
+              <legend>আপনার বাজারের প্যাকেজ বেছে নিন</legend>
+              <div className="bb-package-grid">
+                {FAMILY_PACKAGES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={familyPreferencesDraft.packageId === item.id}
+                    className={familyPreferencesDraft.packageId === item.id ? "bb-package-option is-selected" : "bb-package-option"}
+                    onClick={() => setFamilyPreferencesDraft((value) => ({ ...value, packageId: item.id }))}
+                  >
+                    <strong>{item.label}</strong>
+                    <small>{item.detail}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <div className="bb-family-editor-footer">
+              <span role="status" aria-live="polite">{familyPreferencesMessage}</span>
+              <div>
+                <button type="button" className="bb-family-cancel" onClick={() => { setFamilyPreferencesDraft(familyPreferences); setFamilyPreferencesMessage(""); setEditingFamilyPreferences(false); }}>বাতিল</button>
+                <button type="button" className="bb-family-save" disabled={savingFamilyPreferences} onClick={saveFamilyPreferences}>
+                  {savingFamilyPreferences ? "সেভ হচ্ছে…" : "পছন্দ সেভ করুন"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-  <div
-    onClick={() => setShowProfile(true)}
-    style={{
-      background: "#e8f5ed",
-      width: 46,
-      height: 46,
-      borderRadius: 14,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: 24,
-      cursor: "pointer",
-      border: "1px solid #cce8d5"
-    }}
-  >
-    👤
-  </div>
-</div>
+        {showFamilyShopping && !editingFamilyPreferences && (
+        <div className="bb-shopping-planner" id="bb-family-shopping">
+          <div className="bb-planner-heading">
+            <div>
+              <h3>আপনার মাসিক বাজারের তালিকা</h3>
+              <p>সহজে পণ্য যোগ বা বাদ দিন, পরিমাণ ঠিক করুন—মোট খরচ নিজে থেকেই হিসাব হবে।</p>
+            </div>
+            <button
+              type="button"
+              className="bb-add-product-toggle"
+              aria-expanded={showProductPicker}
+              onClick={() => { setShowProductPicker((visible) => !visible); setShoppingListMessage(""); }}
+            >
+              <span aria-hidden="true">{showProductPicker ? "−" : "+"}</span>
+              {showProductPicker ? "পণ্য বাছাই বন্ধ" : `পণ্য বাছুন${shoppingList.length ? ` · ${shoppingList.length}টি যোগ` : ""}`}
+            </button>
+          </div>
 
-      <div style={{
-  background: "linear-gradient(135deg, #056b3a 0%, #0b9b58 55%, #36c982 100%)",
-  color: "white",
-  padding: "28px 22px",
-  borderRadius: 22,
-  marginTop: 20,
-  marginBottom: 22,
-  boxShadow: "0 8px 24px rgba(8,127,69,0.20)",
-  position: "relative",
-  overflow: "hidden"
-}}>
-  <div style={{
-    position: "absolute",
-    right: -15,
-    top: -25,
-    fontSize: 110,
-    opacity: 0.13
-  }}>
-    🛒
-  </div>
+          <div className="bb-budget-overview">
+            <div><span>তালিকার মোট</span><strong>৳{shoppingListTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
+            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <div className={shoppingBudgetRemaining < 0 ? "bb-budget-left is-over" : "bb-budget-left"}>
+              <span>{shoppingBudgetRemaining < 0 ? "বাজেটের বেশি" : "বাকি আছে"}</span>
+              <strong>৳{Math.abs(shoppingBudgetRemaining).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
+            </div>
+          </div>
+          <div className="bb-budget-progress" role="progressbar" aria-label="মাসিক বাজেটের ব্যবহার" aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
+            <span className={shoppingBudgetRemaining < 0 ? "is-over" : ""} style={{ width: `${shoppingBudgetProgress}%` }} />
+          </div>
+          <div className="bb-budget-caption">
+            <span>{shoppingBudgetProgress}% বাজেট ব্যবহার</span>
+            <span>সদস্য: {familyPreferences.familyMembers} জন</span>
+          </div>
+          {getFamilyPackageMinimum(familyPreferences.packageId) > 0 && (
+            <p style={{ color: "#52665a", fontSize: 12, margin: "10px 0 0", lineHeight: 1.6 }}>
+              {FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(familyPreferences.packageId).toLocaleString("en-IN")}। ডেলিভারি ও সার্ভিস চার্জ এই হিসাবের বাইরে।
+            </p>
+          )}
 
-  <div style={{
-    fontSize: 13,
-    background: "rgba(255,255,255,0.18)",
-    display: "inline-block",
-    padding: "6px 12px",
-    borderRadius: 20,
-    marginBottom: 13
-  }}>
-    🥬 আপনার বিশ্বস্ত অনলাইন বাজার
-  </div>
+          {selectedShoppingProducts.length > 0 ? (
+            <div className="bb-shopping-items">
+              {selectedShoppingProducts.map(({ product, item }) => (
+                <article className="bb-shopping-item" key={product.id}>
+                  <div className="bb-shopping-item-name">
+                    <strong>{product.name}</strong>
+                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                  </div>
+                  <div className="bb-shopping-quantity" aria-label={`${product.name} এর পরিমাণ`}>
+                    <button type="button" aria-label={`${product.name} এক কমান`} onClick={() => changeShoppingQuantity(product, -1)}>−</button>
+                    <strong><span>{item.quantity}</span><small>{product.unit || "টি"}</small></strong>
+                    <button type="button" aria-label={`${product.name} এক বাড়ান`} disabled={Number(item.quantity) >= Number(product.stock)} onClick={() => changeShoppingQuantity(product, 1)}>+</button>
+                  </div>
+                  <strong className="bb-shopping-subtotal">৳{(Number(product.price || 0) * Number(item.quantity)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
+                  <button type="button" className="bb-remove-shopping-item" aria-label={`${product.name} তালিকা থেকে সরান`} onClick={() => setShoppingList((items) => items.filter((entry) => entry.productId !== product.id))}>×</button>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="bb-shopping-empty">
+              <span aria-hidden="true">🧺</span>
+              <div><strong>আপনার বাজারের তালিকা এখনো খালি</strong><p>পণ্য যোগ করে দাম ও মোট খরচ একসাথে দেখুন।</p></div>
+            </div>
+          )}
 
-  <h2 style={{
-    fontSize: 25,
-    lineHeight: 1.4,
-    margin: "0 0 12px",
-    maxWidth: 280
-  }}>
-    প্রতিদিনের বাজার এখন আপনার হাতেই!
-  </h2>
+          {showProductPicker && (
+            <div className="bb-product-picker">
+              <label className="bb-product-search">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={productSearch}
+                  onChange={(event) => setProductSearch(event.target.value)}
+                  placeholder="পণ্যের নাম লিখে খুঁজুন"
+                  aria-label="পণ্য খুঁজুন"
+                />
+              </label>
+              {productPickerItems.length > 0 ? (
+                <div className="bb-product-picker-grid">
+                  {productPickerItems.map((product) => {
+                    const alreadyAdded = shoppingList.some((item) => item.productId === product.id);
+                    return (
+                      <article className="bb-picker-product" key={product.id}>
+                        <div>
+                          <strong>{product.name}</strong>
+                          <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                        </div>
+                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(product)}>
+                          {alreadyAdded ? "✓ যোগ হয়েছে · বাদ দিন" : "+ তালিকায় যোগ"}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="bb-no-products">মিল থাকা স্টকে পণ্য পাওয়া যায়নি।</p>
+              )}
+            </div>
+          )}
 
-  <p style={{
-    fontSize: 14,
-    lineHeight: 1.8,
-    margin: "0 0 20px",
-    maxWidth: 290,
-    color: "#effff5"
-  }}>
-    টাটকা পণ্য, সাশ্রয়ী দাম এবং সহজ অর্ডার। বাজার করুন ঘরে বসেই।
-  </p>
+          <div className="bb-planner-actions">
+            <button
+              type="button"
+              className="bb-fill-budget-button"
+              disabled={!selectedShoppingProducts.length}
+              onClick={() => autoFillShoppingBudget(selectedShoppingProducts, shoppingListTotal)}
+            >
+              ✨ বাজেট অনুযায়ী পরিমাণ সাজান
+            </button>
+            <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
+              {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
+            </button>
+            <button type="button" className="bb-cart-list-button" disabled={!selectedShoppingProducts.length} onClick={() => addShoppingListToCart(selectedShoppingProducts)}>
+              🛒 কার্টে যোগ করুন
+            </button>
+          </div>
+          <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
+        </div>
+        )}
+      </section>
 
-  <button
-    onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth" })}
-    style={{
-      background: "white",
-      color: "#087f45",
-      padding: "13px 20px",
-      border: "none",
-      borderRadius: 12,
-      fontWeight: "bold",
-      fontSize: 15,
-      cursor: "pointer",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.12)"
-    }}
-  >
-    🛍️ বাজার শুরু করুন →
-  </button>
-</div>
+      <section className="bb-monthly-insight" aria-label="মাসিক বাজারের অগ্রগতি ও রিমাইন্ডার">
+        <div className="bb-monthly-progress-panel">
+          <div
+            className="bb-monthly-progress-ring"
+            role="progressbar"
+            aria-label="মাসিক বাজেট ব্যবহারের অগ্রগতি"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={monthlySpendProgress}
+            style={{ "--bb-monthly-progress": `${monthlySpendProgress}%` }}
+          >
+            <div className="bb-monthly-progress-inner">
+              <span aria-hidden="true">🛒</span>
+              <strong>{monthlySpendProgress}%</strong>
+            </div>
+          </div>
+          <strong className="bb-monthly-progress-label">
+            {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
+          </strong>
+          <span className="bb-monthly-spend-caption">
+            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{Number(familyPreferences.monthlyBudget).toLocaleString("bn-BD")}
+          </span>
+        </div>
 
-<p style={{
-  color: "#555",
-  fontSize: 14,
-  marginTop: 10,
-  marginBottom: 15
-}}>
-  স্বাগতম, {user.user_metadata?.full_name || user.email}
-</p>
+        <div className="bb-monthly-estimate-panel">
+          <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
+          {packageCycleEndDate ? (
+            <>
+              <strong className="bb-monthly-estimate-date">
+                {packageCycleEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
+              </strong>
+              <span className="bb-monthly-estimate-countdown">
+                {daysUntilCycleEnds === 0 ? "প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}
+              </span>
+            </>
+          ) : (
+            <p className="bb-monthly-estimate-empty">অর্ডার কনফার্ম হলে {isWeeklyPackage ? "৭ দিনের" : "এক মাসের"} হিসাব শুরু হবে</p>
+          )}
+        </div>
 
-      <div style={{
-  background: "white",
-  padding: "16px",
-  borderRadius: 16,
-  marginTop: 15,
-  marginBottom: 18,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  flexWrap: "wrap",
-  gap: 12,
-  border: "1px solid #e5eee7",
-  boxShadow: "0 3px 12px rgba(0,0,0,0.04)"
-}}>
-  <div>
-    <div style={{
-      color: "#087f45",
-      fontWeight: "bold",
-      fontSize: 16
-    }}>
-      👋 স্বাগতম!
-    </div>
+        <div className="bb-monthly-reminder-panel">
+          <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
+          <p>
+            {monthlySpendProgress >= 75
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক"} বাজার শেষ পর্যায়ে। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
+          </p>
+          <button type="button" onClick={() => setShowFamilyShopping(true)}>
+            এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
 
-    <div style={{
-      color: "#666",
-      fontSize: 13,
-      marginTop: 5
-    }}>
-      {user.user_metadata?.full_name || user.email}
-    </div>
-  </div>
-
-  <button
-    onClick={handleLogout}
-    style={{
-      background: "#fff0f0",
-      color: "#dc3545",
-      padding: "10px 14px",
-      border: "1px solid #ffd5d5",
-      borderRadius: 10,
-      fontWeight: "bold",
-      cursor: "pointer"
-    }}
-  >
-    লগআউট
-  </button>
-</div>
-
-<button
-  onClick={() => {
-    setShowMyOrders(true);
-    loadMyOrders();
-  }}
-  style={{
-    ...buttonStyle,
-    background: "linear-gradient(135deg, #087f45, #20a464)",
-    borderRadius: 12,
-    boxShadow: "0 4px 12px rgba(8,127,69,0.15)"
-  }}
->
-  📦 আমার অর্ডারসমূহ
-</button>
+      <section className="bb-monthly-report-card" aria-labelledby="bb-monthly-report-title">
+        <div className="bb-monthly-report-heading">
+          <span aria-hidden="true">▮</span>
+          <h2 id="bb-monthly-report-title">এই মাসের বাজারের হিসাব</h2>
+        </div>
+        <div className="bb-monthly-report-grid">
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon" aria-hidden="true">🛒</span>
+            <div><span>মোট খরচ</span><strong>৳ {monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}</strong></div>
+          </div>
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon" aria-hidden="true">📦</span>
+            <div><span>মোট পণ্য</span><strong>{monthlyProductCount.toLocaleString("bn-BD")} টি</strong></div>
+          </div>
+          <div className="bb-monthly-report-stat">
+            <span className="bb-report-icon bb-report-check" aria-hidden="true">✓</span>
+            <div><span>ডেলিভারি সম্পন্ন</span><strong>{deliveredOrdersCount.toLocaleString("bn-BD")} টি অর্ডার</strong></div>
+          </div>
+          <div className={`bb-monthly-report-stat ${monthlySpendComparison !== null && monthlySpendComparison < 0 ? "is-down" : "is-up"}`}>
+            <span className="bb-report-icon" aria-hidden="true">↗</span>
+            <div><span>গত মাসের তুলনায়</span><strong>{monthlySpendComparisonLabel}</strong></div>
+          </div>
+        </div>
+      </section>
 
       <div style={{
   background: "white",
@@ -1961,3 +2528,4 @@ const buttonStyle = {
 };
 
 export default Customer;
+

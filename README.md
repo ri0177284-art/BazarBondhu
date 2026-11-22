@@ -1,16 +1,42 @@
-# React + Vite
+# BazarBondhu
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+BazarBondhu is a Bengali-first online grocery storefront with an admin workspace for managing products, stock, orders, customers, and checkout fees.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Customer registration and sign-in with Supabase Auth
+- Product browsing, category selection, search, stock-aware cart, and checkout
+- Cash on delivery and mobile payment reference collection
+- Customer order history and cancellation flow
+- Admin dashboard with daily totals, a seven-day sales chart, and low-stock cues
+- Product and market-price management, order and payment status updates, customer list, and checkout settings
+- Responsive layouts for desktop and mobile
 
-## React Compiler
+## Requirements
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 20.19+ or 22.12+
+- A Supabase project with the tables, row-level security policies, and RPC functions used by the app
 
-## Expanding the ESLint configuration
+The customer checkout expects `create_order_with_payment_atomic` and `cancel_order_atomic` RPC functions. Their database definitions and the required RLS policies are not included in this repository. Deploy and review those on the server before accepting real orders. The order creation RPC must validate prices, charges, stock, and user ownership on the server; client-side checks are only for user feedback.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Setup
+
+1. Install dependencies with `npm ci`.
+2. Copy `.env.example` to `.env.local` and add your Supabase project URL and **publishable/anon client key**.
+3. Start the local app with `npm run dev`.
+
+```sh
+npm run lint
+npm run build
+npm run preview
+```
+
+Only a Supabase publishable/anon key belongs in the browser. Never put a `service_role` key or other secret in a `VITE_` variable.
+
+## Routes
+
+- `/` — admin sign-in and workspace
+- `/customer` — customer storefront
+
+The admin workspace checks the signed-in user's `profiles.role`. Database policies must enforce the same authorization independently of the UI.
+
