@@ -107,7 +107,7 @@ function App() {
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select("*");
+      .select("id, order_id, product_name, quantity, unit_price, line_total");
     if (itemsError) {
       notify(`অর্ডারের পণ্য লোড করা যায়নি: ${itemsError.message}`, "error");
       return;
@@ -484,9 +484,9 @@ function App() {
           <section className="admin-content"><div className="page-intro"><div><h2>অর্ডার ব্যবস্থাপনা</h2><p>অর্ডার খুঁজুন এবং ডেলিভারির অগ্রগতি আপডেট করুন।</p></div><span className="page-total">{filteredOrders.length}টি অর্ডার</span></div>
             <div className="filter-toolbar"><label className="search-box"><span>⌕</span><input value={orderQuery} onChange={(event) => setOrderQuery(event.target.value)} placeholder="নাম, ফোন বা অর্ডার আইডি" /></label><select aria-label="অর্ডার স্ট্যাটাস ফিল্টার" value={orderStatusFilter} onChange={(event) => setOrderStatusFilter(event.target.value)}><option value="all">সব স্ট্যাটাস</option><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></div>
             {filteredOrders.length === 0 ? <div className="panel empty-state"><span>▤</span><strong>{orderQuery || orderStatusFilter !== "all" ? "কোনো অর্ডার মেলেনি" : "এখনো অর্ডার আসেনি"}</strong><p>ফিল্টার বদলে আবার দেখুন।</p></div> : <div className="orders-list">{filteredOrders.map((order) => {
-              const itemsForOrder = orderItems.filter((item) => (item["orders id"] ?? item.order_id) === order.id);
+              const itemsForOrder = orderItems.filter((item) => item.order_id === order.id);
               return <article className="panel order-card" key={order.id}><div className="order-card-top"><div><span className="order-id">অর্ডার #{String(order.id).slice(-6)}</span><p>{new Date(order.created_at).toLocaleString("bn-BD")}</p></div><strong className="order-total">{money(order.total)}</strong></div><div className="order-customer"><div className="customer-avatar">{(order.customer_name || "?").slice(0, 1)}</div><div><strong>{order.customer_name || "—"}</strong><p>{order.phone || "ফোন দেওয়া হয়নি"}</p><p>{order.delivery_address || "ঠিকানা দেওয়া হয়নি"}</p></div></div>
-                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item["product name"] ?? item.product_name ?? "পণ্য"} × {item.quantity}</span><span>{money(item["line total"] ?? item.line_total ?? Number(item["unit price"] ?? item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
+                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item.product_name || "পণ্য"} × {item.quantity}</span><span>{money(item.line_total ?? Number(item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
                 {order.cancel_reason && <p className="cancel-reason">বাতিলের কারণ: {order.cancel_reason}</p>}
                 <div style={{ marginTop: 14, padding: 14, borderRadius: 12, border: "1px solid #dcebe0", background: "#f7fbf8" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
