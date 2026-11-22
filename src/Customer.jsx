@@ -1339,6 +1339,93 @@ fontWeight: "bold"
           <option value="nagad">Nagad</option>
         </select>
         {(paymentMethod === "bkash" || paymentMethod === "nagad") && (
+          <div style={{
+            marginTop: 15,
+            padding: 16,
+            borderRadius: 14,
+            border: "1px solid #dcebe0",
+            background: "linear-gradient(135deg, #f4faf5, #ffffff)",
+            boxShadow: "0 4px 14px rgba(8,127,69,0.07)"
+          }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginBottom: 10
+            }}>
+              <strong style={{ color: "#176b40", fontSize: 15 }}>
+                {paymentMethod === "bkash" ? "বিকাশ Personal Account" : "নগদ Personal Account"}
+              </strong>
+              <span style={{
+                background: paymentMethod === "bkash" ? "#fce8f1" : "#fff1e5",
+                color: paymentMethod === "bkash" ? "#b3185b" : "#d65b16",
+                borderRadius: 20,
+                padding: "5px 10px",
+                fontSize: 12,
+                fontWeight: "bold",
+                whiteSpace: "nowrap"
+              }}>
+                {paymentMethod === "bkash" ? "বিকাশ" : "নগদ"}
+              </span>
+            </div>
+            <p style={{ color: "#66756b", fontSize: 13, margin: "0 0 8px" }}>
+              এই নম্বরে <strong>Send Money</strong> করুন
+            </p>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              padding: "12px 13px",
+              borderRadius: 10,
+              background: "#ffffff",
+              border: "1px dashed #b8d7c2"
+            }}>
+              <strong style={{
+                color: "#173d29",
+                fontSize: 20,
+                letterSpacing: 1,
+                fontVariantNumeric: "tabular-nums"
+              }}>
+                01772845524
+              </strong>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText("01772845524");
+                    alert("পেমেন্ট নম্বর কপি হয়েছে।");
+                  } catch {
+                    alert("নম্বরটি কপি করা যায়নি। অনুগ্রহ করে হাতে লিখে নিন: 01772845524");
+                  }
+                }}
+                style={{
+                  border: "none",
+                  borderRadius: 8,
+                  padding: "9px 12px",
+                  background: "#e8f5ed",
+                  color: "#087f45",
+                  fontSize: 13,
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                নম্বর কপি
+              </button>
+            </div>
+            <p style={{
+              color: "#53675a",
+              fontSize: 12,
+              lineHeight: 1.6,
+              margin: "10px 0 0"
+            }}>
+              পেমেন্টের পর নিচে Transaction ID (TrxID) লিখুন। অর্ডারের মোট বিল: <strong>৳{cartTotal + serviceCharge + deliveryFee}</strong>।
+            </p>
+          </div>
+        )}
+        {(paymentMethod === "bkash" || paymentMethod === "nagad") && (
           <div style={{ marginTop: 15 }}>
             <label style={{
               display: "block",
