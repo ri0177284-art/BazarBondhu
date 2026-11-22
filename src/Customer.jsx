@@ -230,6 +230,7 @@ const [shoppingList, setShoppingList] = useState([]);
 const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
+const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(false);
 const [shoppingListMessage, setShoppingListMessage] = useState("");
 const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 
@@ -495,6 +496,99 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
       setShoppingListMessage("তালিকা সেভ হয়নি। আবার চেষ্টা করুন।");
     } finally {
       setSavingShoppingList(false);
+    }
+  }
+
+  async function loadPreviousPackageShoppingList() {
+    if (!user || loadingPreviousPackageList) return;
+
+    if (shoppingList.length > 0 && !window.confirm("বর্তমান তালিকাটি আগের প্যাকেজ অর্ডারের তালিকা দিয়ে বদলে যাবে। এগোবেন?")) {
+      return;
+    }
+
+    setLoadingPreviousPackageList(true);
+    setShoppingListMessage("");
+    try {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("id, created_at, confirmed_at, order_status, payment_status, order_items(product_id, quantity)")
+        .eq("user_id", user.id)
+        .eq("package_id", familyPreferences.packageId)
+        .not("confirmed_at", "is", null)
+        .order("confirmed_at", { ascending: false })
+        .limit(30);
+
+      if (error) throw error;
+
+      const previousOrder = (data || []).find((order) => {
+        const orderStatus = String(order.order_status || "").toLowerCase();
+        const paymentStatus = String(order.payment_status || "").toLowerCase();
+        return !["cancelled", "canceled", "বাতিল"].includes(orderStatus)
+          && !["rejected", "refunded"].includes(paymentStatus)
+          && Array.isArray(order.order_items)
+          && order.order_items.length > 0;
+      });
+
+      if (!previousOrder) {
+        setShoppingListMessage("এই প্যাকেজে আগে কোনো কনফার্ম হওয়া অর্ডার পাওয়া যায়নি। প্রথমে বাজারের তালিকা তৈরি করে সেভ করুন।");
+        return;
+      }
+
+      const availableProducts = new Map(
+        products
+          .filter((product) => product.is_active !== false && Number(product.stock) > 0)
+          .map((product) => [String(product.id), product])
+      );
+      const restoredQuantities = new Map();
+      let skippedCount = 0;
+      let adjustedCount = 0;
+
+      previousOrder.order_items.forEach((orderItem) => {
+        const productId = String(orderItem.product_id || "");
+        const product = availableProducts.get(productId);
+        if (!product) {
+          skippedCount += 1;
+          return;
+        }
+
+        const requestedQuantity = Math.max(1, Math.ceil(Number(orderItem.quantity) || 1));
+        const currentQuantity = restoredQuantities.get(productId) || 0;
+        const remainingStock = Math.max(0, Math.floor(Number(product.stock)) - currentQuantity);
+        const quantity = Math.min(requestedQuantity, remainingStock);
+        if (quantity < requestedQuantity) adjustedCount += 1;
+        if (quantity <= 0) {
+          skippedCount += 1;
+          return;
+        }
+        restoredQuantities.set(productId, currentQuantity + quantity);
+      });
+
+      const restoredList = Array.from(restoredQuantities, ([productId, quantity]) => ({
+        productId,
+        quantity,
+      }));
+
+      if (restoredList.length === 0) {
+        setShoppingListMessage("আগের অর্ডারের কোনো পণ্য বর্তমানে সক্রিয় স্টকে পাওয়া যায়নি। নতুন পণ্য বেছে নিন।");
+        return;
+      }
+
+      setShoppingList(restoredList);
+      setShowProductPicker(false);
+      const orderDate = new Date(previousOrder.confirmed_at || previousOrder.created_at)
+        .toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" });
+      const adjustmentNote = [
+        adjustedCount ? `${adjustedCount}টি পণ্যের পরিমাণ বর্তমান স্টক অনুযায়ী কমানো হয়েছে` : "",
+        skippedCount ? `${skippedCount}টি পণ্য স্টক/সক্রিয়তা না থাকায় বাদ গেছে` : "",
+      ].filter(Boolean).join("। ");
+      setShoppingListMessage(
+        `আগের ${FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "প্যাকেজ"} অর্ডার (${orderDate}) থেকে ${restoredList.length} ধরনের পণ্য তালিকায় আনা হয়েছে। ${adjustmentNote ? adjustmentNote + "। " : ""}পরিমাণ যাচাই করে “তালিকা সেভ করুন” চাপুন।`
+      );
+    } catch (error) {
+      console.error("Previous package list could not be loaded:", error);
+      setShoppingListMessage("আগের অর্ডারের তালিকা আনা যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+    } finally {
+      setLoadingPreviousPackageList(false);
     }
   }
 
@@ -2145,6 +2239,15 @@ const productPickerItems = products.filter((product) => {
               {showProductPicker ? "পণ্য বাছাই বন্ধ" : `পণ্য বাছুন${shoppingList.length ? ` · ${shoppingList.length}টি যোগ` : ""}`}
             </button>
           </div>
+
+          <button
+            type="button"
+            className="bb-repeat-list-button"
+            onClick={loadPreviousPackageShoppingList}
+            disabled={loadingPreviousPackageList}
+          >
+            {loadingPreviousPackageList ? "আগের তালিকা আনা হচ্ছে..." : "↻ আগের প্যাকেজ অর্ডারের তালিকা আনুন"}
+          </button>
 
           {familyPreferences.packageId === "budget-smart" && (
             <div style={{ background: "#f0f8f2", border: "1px solid #d7eadb", borderRadius: 14, padding: 14, marginBottom: 16 }}>
