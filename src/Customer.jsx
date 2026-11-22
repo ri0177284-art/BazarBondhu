@@ -697,8 +697,7 @@ if (
     !transactionId.trim()
   ) {
     alert("দয়া করে Transaction ID লিখুন");
-    return;
-  }
+    return;  }
 
   const packageMinimum = getFamilyPackageMinimum(cartPackageId);
   const budgetSmartMinimum = cartPackageId === "budget-smart" ? BUDGET_SMART_MINIMUM : 0;
@@ -1397,8 +1396,7 @@ fontWeight: "bold"
             borderRadius: 18,
             background: "#e8f5ed",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            alignItems: "center",            justifyContent: "center",
             fontSize: 30
           }}>
             🛍️
@@ -2097,8 +2095,7 @@ const productPickerItems = products.filter((product) => {
             </div>
           )}
 
-          {showProductPicker && (
-            <div className="bb-product-picker">
+          {showProductPicker && (            <div className="bb-product-picker">
               <label className="bb-product-search">
                 <span aria-hidden="true">⌕</span>
                 <input
@@ -2763,6 +2760,34 @@ fontWeight: "bold",
     </div>
   )}
 </div>
+
+      <footer className="bb-site-footer" aria-label="BazarBondhu footer">
+        <div className="bb-footer-main">
+          <section className="bb-footer-brand">
+            <a className="bb-footer-logo" href="/" aria-label="BazarBondhu হোম">
+              <span className="bb-footer-logo-icon" aria-hidden="true">🛒</span>
+              <span>Bazar<span>Bondhu</span></span>
+            </a>
+            <p>আপনার পরিবারের প্রতিদিনের বাজার হোক আরও সহজ, সাশ্রয়ী ও নির্ভরযোগ্য। প্রয়োজনীয় বাজার পৌঁছে দিতে BazarBondhu আছে আপনার পাশে।</p>
+            <a className="bb-footer-shop-link" href="#products-section">বাজার শুরু করুন <span aria-hidden="true">→</span></a>
+          </section>
+
+          <section className="bb-footer-contact" aria-labelledby="bb-footer-contact-title">
+            <span className="bb-footer-eyebrow">আমরা আছি আপনার পাশে</span>
+            <h2 id="bb-footer-contact-title">কোনো সাহায্য প্রয়োজন?</h2>
+            <p>অর্ডার বা বাজার সংক্রান্ত যেকোনো প্রয়োজনে আমাদের হেল্পলাইনে যোগাযোগ করুন।</p>
+            <a className="bb-footer-phone" href="tel:01820344437">
+              <span className="bb-footer-phone-icon" aria-hidden="true">☎</span>
+              <span><small>হেল্পলাইন নম্বর</small><strong>01820344437</strong></span>
+              <span className="bb-footer-call-label">কল করুন ↗</span>
+            </a>
+          </section>
+        </div>
+        <div className="bb-footer-bottom">
+          <span>© {new Date().getFullYear()} BazarBondhu. সর্বস্বত্ব সংরক্ষিত।</span>
+          <span className="bb-footer-tagline">আপনার বাজার, আমাদের দায়িত্ব <span aria-hidden="true">♥</span></span>
+        </div>
+      </footer>
     </div>
   );
 }
@@ -2795,4 +2820,3 @@ const buttonStyle = {
 };
 
 export default Customer;
-
