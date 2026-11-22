@@ -240,8 +240,18 @@ function App() {
 
   async function updateOrder(orderId, patch) {
     const currentOrder = orders.find((order) => order.id === orderId);
+    if (!currentOrder) return;
+
+    if (patch.payment_status === "paid" && ["bkash", "nagad"].includes(currentOrder.payment_method) && !currentOrder.transaction_id?.trim()) {
+      notify("Transaction ID না থাকায় পেমেন্ট অনুমোদন করা যাচ্ছে না।", "error");
+      return;
+    }
+
+    if (patch.payment_status === "paid" && !window.confirm("আপনি কি নিশ্চিত যে টাকা আপনার বিকাশ/নগদ অ্যাকাউন্টে এসেছে এবং Transaction ID মিলেছে?")) return;
+    if (patch.payment_status === "rejected" && !window.confirm("এই পেমেন্টটি Reject করতে চান? টাকা না আসা বা Transaction ID না মেলার পরেই Reject করুন।")) return;
+
     const update = { ...patch };
-    if (patch.order_status === "confirmed" && (currentOrder?.order_status !== "confirmed" || !currentOrder?.confirmed_at)) {
+    if (patch.order_status === "confirmed" && (currentOrder.order_status !== "confirmed" || !currentOrder.confirmed_at)) {
       update.confirmed_at = new Date().toISOString();
     }
     const { error } = await supabase.from("orders").update(update).eq("id", orderId);
@@ -249,7 +259,7 @@ function App() {
       notify(`অর্ডার আপডেট হয়নি: ${error.message}`, "error");
       return;
     }
-    notify("অর্ডার আপডেট হয়েছে");
+    notify(patch.payment_status === "paid" ? "পেমেন্ট যাচাই করে অনুমোদন করা হয়েছে" : patch.payment_status === "rejected" ? "পেমেন্ট Reject করা হয়েছে" : "অর্ডার আপডেট হয়েছে");
     await loadOrders();
   }
 
@@ -478,7 +488,35 @@ function App() {
               return <article className="panel order-card" key={order.id}><div className="order-card-top"><div><span className="order-id">অর্ডার #{String(order.id).slice(-6)}</span><p>{new Date(order.created_at).toLocaleString("bn-BD")}</p></div><strong className="order-total">{money(order.total)}</strong></div><div className="order-customer"><div className="customer-avatar">{(order.customer_name || "?").slice(0, 1)}</div><div><strong>{order.customer_name || "—"}</strong><p>{order.phone || "ফোন দেওয়া হয়নি"}</p><p>{order.delivery_address || "ঠিকানা দেওয়া হয়নি"}</p></div></div>
                 <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item["product name"] ?? item.product_name ?? "পণ্য"} × {item.quantity}</span><span>{money(item["line total"] ?? item.line_total ?? Number(item["unit price"] ?? item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
                 {order.cancel_reason && <p className="cancel-reason">বাতিলের কারণ: {order.cancel_reason}</p>}
-                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label><label>পেমেন্ট · {order.payment_method || "—"}<select value={order.payment_status || "pending"} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}><option value="pending">বাকি</option><option value="paid">পরিশোধিত</option><option value="refunded">ফেরত</option></select></label></div></article>;
+                <div style={{ marginTop: 14, padding: 14, borderRadius: 12, border: "1px solid #dcebe0", background: "#f7fbf8" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <strong style={{ color: "#176b40" }}>পেমেন্ট যাচাই</strong>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: order.payment_status === "paid" ? "#087f45" : order.payment_status === "rejected" ? "#c0392b" : "#9a6700" }}>
+                      {order.payment_status === "paid" ? "পরিশোধিত ✓" : order.payment_status === "rejected" ? "Reject করা হয়েছে" : order.payment_status === "refunded" ? "টাকা ফেরত" : "যাচাই অপেক্ষমাণ"}
+                    </span>
+                  </div>
+                  <p style={{ margin: "8px 0 4px", fontSize: 13, color: "#52645a" }}>
+                    মাধ্যম: <strong>{order.payment_method === "bkash" ? "বিকাশ Personal" : order.payment_method === "nagad" ? "নগদ Personal" : "Cash on Delivery"}</strong>
+                  </p>
+                  {["bkash", "nagad"].includes(order.payment_method) && (
+                    <div style={{ marginTop: 8, padding: 10, background: "#fff", border: "1px dashed #bfd8c6", borderRadius: 8 }}>
+                      <span style={{ display: "block", fontSize: 12, color: "#66756b" }}>কাস্টমারের দেওয়া Transaction ID</span>
+                      <strong style={{ display: "block", marginTop: 4, fontSize: 16, color: "#173d29", wordBreak: "break-all" }}>{order.transaction_id || "Transaction ID দেওয়া হয়নি"}</strong>
+                    </div>
+                  )}
+                  <label style={{ display: "block", marginTop: 12, fontSize: 13, fontWeight: 600, color: "#34483a" }}>পেমেন্ট স্ট্যাটাস
+                    <select style={{ display: "block", width: "100%", marginTop: 6, padding: 10, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }} value={order.payment_status || "pending"} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}>
+                      <option value="pending">যাচাই অপেক্ষমাণ</option>
+                      <option value="paid">টাকা পেয়েছি — Approve</option>
+                      <option value="rejected">টাকা পাইনি / TrxID ভুল — Reject</option>
+                      <option value="refunded">টাকা ফেরত</option>
+                    </select>
+                  </label>
+                  {["bkash", "nagad"].includes(order.payment_method) && order.payment_status === "pending" && (
+                    <p style={{ margin: "9px 0 0", fontSize: 12, lineHeight: 1.5, color: "#805b16" }}>ব্যাংক/মোবাইল ফাইন্যান্সিয়াল সার্ভিস অ্যাপে টাকা ও Transaction ID মিলিয়ে তারপর Approve করুন। শুধু TrxID থাকলেই পেমেন্ট নিশ্চিত হয় না।</p>
+                  )}
+                </div>
+                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
             })}</div>}
           </section>
         )}
