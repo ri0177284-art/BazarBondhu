@@ -371,7 +371,7 @@
   height: 46px;
   border: 1px solid rgba(255,255,255,.22);
   border-radius: 15px;
-  background: rgba(255,255,255,.12);
+  background: rgba(255,255,255,.72);
   font-size: 23px;
 }
 .bb-footer-brand > p, .bb-footer-contact > p {
@@ -824,4 +824,147 @@
 .bb-repeat-list-button:disabled {
   opacity: .6;
   cursor: wait;
+}
+
+
+/* Monthly Family Package — primary customer-app feature */
+.bb-campaign-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(210px, .75fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 255px;
+  margin: 0 0 18px;
+  padding: clamp(22px, 4vw, 38px);
+  overflow: hidden;
+  border: 1px solid #cce8d2;
+  border-radius: 24px;
+  background: radial-gradient(circle at 84% 42%, rgba(178, 224, 179, .55), transparent 30%), linear-gradient(120deg, #f0f8ed 0%, #e4f3e5 58%, #d8eedb 100%);
+  box-shadow: 0 13px 32px rgba(12, 93, 49, .10);
+  color: #17472b;
+}
+.bb-campaign-copy { position: relative; z-index: 1; max-width: 680px; }
+.bb-campaign-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 7px 12px;
+  border: 1px solid #c6e4cc;
+  border-radius: 999px;
+  background: rgba(255,255,255,.12);
+  color: #17633a;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .45px;
+}
+.bb-campaign-kicker > span { color: #ffe58a; }
+.bb-campaign-copy h2 {
+  max-width: 630px;
+  margin: 0;
+  color: #123d27;
+  font-size: clamp(27px, 4.2vw, 43px);
+  font-weight: 950;
+  line-height: 1.2;
+  letter-spacing: -.8px;
+}
+.bb-campaign-copy h2 em { color: #087f45; font-style: normal; }
+.bb-campaign-copy > p {
+  max-width: 590px;
+  margin: 13px 0 0;
+  color: #405f4a;
+  font-size: clamp(12px, 1.45vw, 15px);
+  line-height: 1.75;
+}
+.bb-campaign-benefits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 15px;
+  margin-top: 15px;
+}
+.bb-campaign-benefits > span { display: inline-flex; align-items: center; gap: 6px; color: #315a3d; font-size: 11px; font-weight: 700; }
+.bb-campaign-benefits b { display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: #d8f8dc; color: #08733e; font-size: 11px; }
+.bb-campaign-copy > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 47px;
+  margin-top: 21px;
+  padding: 0 21px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #ffe68b, #ffd45b);
+  color: #17472b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0,0,0,.14);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.bb-campaign-copy > button:hover { transform: translateY(-2px); box-shadow: 0 9px 20px rgba(0,0,0,.19); }
+.bb-campaign-copy > button span { font-size: 18px; }
+.bb-campaign-visual { position: relative; display: grid; place-items: center; min-height: 190px; isolation: isolate; }
+.bb-campaign-orbit { position: absolute; border: 1px solid rgba(225,255,230,.25); border-radius: 50%; }
+.bb-campaign-orbit-one { width: 205px; height: 205px; }
+.bb-campaign-orbit-two { width: 155px; height: 155px; border-style: dashed; }
+.bb-campaign-basket {
+  display: grid;
+  place-items: center;
+  width: 130px;
+  height: 130px;
+  border: 1px solid rgba(255,255,255,.48);
+  border-radius: 38px;
+  background: linear-gradient(145deg, rgba(255,255,255,.25), rgba(255,255,255,.09));
+  font-size: 76px;
+  filter: drop-shadow(0 13px 13px rgba(0,0,0,.16));
+  transform: rotate(-5deg);
+}
+.bb-campaign-float { position: absolute; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(255,255,255,.6); border-radius: 15px; background: #fff; font-size: 24px; box-shadow: 0 7px 16px rgba(0,0,0,.12); }
+.bb-campaign-float-one { top: 13px; left: 13%; transform: rotate(-12deg); }
+.bb-campaign-float-two { right: 7%; top: 26px; transform: rotate(11deg); }
+.bb-campaign-float-three { right: 13%; bottom: 14px; transform: rotate(-8deg); }
+.bb-campaign-visual-label { position: absolute; bottom: -1px; padding: 6px 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(255,255,255,.82); color: #315a3d; font-size: 10px; font-weight: 800; }
+.bb-family-card-featured {
+  border: 1px solid #a9d9b6;
+  background: linear-gradient(135deg, #ffffff 0%, #f3fbf4 100%);
+  box-shadow: 0 8px 24px rgba(18, 113, 58, .09);
+}
+.bb-family-card-featured .bb-family-icon { background: linear-gradient(135deg, #087f45, #21a45e); color: #fff; box-shadow: 0 5px 12px rgba(8,127,69,.2); }
+.bb-family-primary-badge {
+  flex: none;
+  padding: 7px 11px;
+  border: 1px solid #c9e7a0;
+  border-radius: 999px;
+  background: #f2f9df;
+  color: #4c741d;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 5px; min-height: 0; margin-bottom: 14px; padding: 20px 17px 14px; border-radius: 19px; }
+  .bb-campaign-kicker { margin-bottom: 10px; padding: 6px 10px; font-size: 9px; }
+  .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(25px, 7.2vw, 34px); line-height: 1.22; }
+  .bb-campaign-copy > p { margin-top: 10px; font-size: 12px; line-height: 1.65; }
+  .bb-campaign-benefits { gap: 7px 11px; margin-top: 12px; }
+  .bb-campaign-benefits > span { font-size: 10px; }
+  .bb-campaign-copy > button { width: 100%; min-height: 45px; margin-top: 16px; }
+  .bb-campaign-visual { min-height: 112px; margin-top: 2px; }
+  .bb-campaign-orbit-one { width: 112px; height: 112px; }
+  .bb-campaign-orbit-two { width: 84px; height: 84px; }
+  .bb-campaign-basket { width: 75px; height: 75px; border-radius: 23px; font-size: 45px; }
+  .bb-campaign-float { width: 32px; height: 32px; border-radius: 11px; font-size: 18px; }
+  .bb-campaign-float-one { top: 5px; left: 23%; }
+  .bb-campaign-float-two { right: 23%; top: 7px; }
+  .bb-campaign-float-three { right: 25%; bottom: 0; }
+  .bb-campaign-visual-label { bottom: -2px; font-size: 9px; }
+  .bb-family-card-featured { padding: 14px 13px; border-radius: 17px; }
+  .bb-family-primary-badge { padding: 6px 8px; font-size: 9px; }
+}
+@media (max-width: 380px) {
+  .bb-family-primary-badge { padding: 5px 7px; font-size: 8px; }
+  .bb-family-heading-copy h2 { font-size: 14px; }
 }
