@@ -1329,7 +1329,7 @@ fontWeight: "bold"
           <section style={{ background: "#fff", border: "1px solid #e2eee5", borderRadius: 18, padding: 18, boxShadow: "0 5px 18px rgba(25,135,84,.07)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
               <div style={{ background: "#f1faf3", padding: 13, borderRadius: 12 }}><small style={{ color: "#66756b" }}>মোট অর্জিত</small><strong style={{ display: "block", color: "#087f45", fontSize: 21 }}>{Number(rewardSummary?.lifetime_earned || 0).toLocaleString("bn-BD")}</strong></div>
-              <div style={{ background: "#fff8e9", padding: 13, borderRadius: 12 }}><small style={{ color: "#80601b" }}>৩০ দিনের মধ্যে মেয়াদ শেষ</small><strong style={{ display: "block", color: "#9a6500", fontSize: 21 }}>{Number(rewardSummary?.expiring_30_days || 0).toLocaleString("bn-BD")}</strong></div>
+              <div style={{ background: "#f1faf3", padding: 13, borderRadius: 12 }}><small style={{ color: "#66756b" }}>পয়েন্টের মেয়াদ</small><strong style={{ display: "block", color: "#087f45", fontSize: 21 }}>১২ মাস</strong></div>
             </div>
             <button type="button" onClick={loadRewards} disabled={loadingRewards} style={{ width: "100%", marginTop: 14, padding: 12, border: "1px solid #cce8d5", borderRadius: 11, background: "#e8f5ed", color: "#087f45", fontWeight: 800, cursor: "pointer" }}>{loadingRewards ? "লোড হচ্ছে…" : "↻ Reward রিফ্রেশ করুন"}</button>
           </section>
