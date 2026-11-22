@@ -756,8 +756,8 @@ if (
 
     if (settingsError) throw settingsError;
 
-    const serviceCharge = Number(settings.service_charge || 0);
-    const deliveryFee = Number(settings.delivery_fee || 0);
+    const baseServiceCharge = Number(settings.service_charge || 0);
+    const baseDeliveryFee = Number(settings.delivery_fee || 0);
     // Check latest product stock before placing order
     for (const item of cart) {
       const { data: latestProduct, error: stockError } = await supabase
@@ -787,8 +787,8 @@ if (
     p_phone: customerPhone.trim(),
     p_delivery_address: deliveryAddress.trim(),
     p_payment_method: paymentMethod,
-    p_service_charge: serviceCharge,
-    p_delivery_fee: deliveryFee,
+    p_service_charge: monthlySpecialCharges || weeklySpecialCharges ? checkoutServiceCharge : baseServiceCharge,
+    p_delivery_fee: monthlySpecialCharges || weeklySpecialCharges ? checkoutDeliveryFee : baseDeliveryFee,
     p_items: cart.map(item => ({
       product_id: item.id,
       product_name: item.name,
@@ -1398,6 +1398,10 @@ fontWeight: "bold"
     total + Number(item.price || 0) * (item.quantity || 1),
   0
 );
+  const monthlySpecialCharges = cartPackageId === "family-monthly" && cartTotal >= 5000;
+  const weeklySpecialCharges = cartPackageId === "weekly-family" && cartTotal >= 2000;
+  const checkoutServiceCharge = monthlySpecialCharges ? 11 : weeklySpecialCharges ? 20 : serviceCharge;
+  const checkoutDeliveryFee = monthlySpecialCharges ? 11 : weeklySpecialCharges ? 40 : deliveryFee;
   if (showCheckout) {
   return withSidebar(
     <div style={{
@@ -1578,7 +1582,7 @@ fontWeight: "bold"
               lineHeight: 1.6,
               margin: "10px 0 0"
             }}>
-              পেমেন্টের পর নিচে Transaction ID (TrxID) লিখুন। অর্ডারের মোট বিল: <strong>৳{cartTotal + serviceCharge + deliveryFee}</strong>।
+              পেমেন্টের পর নিচে Transaction ID (TrxID) লিখুন। অর্ডারের মোট বিল: <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee}</strong>।
             </p>
           </div>
         )}
@@ -1652,7 +1656,7 @@ fontWeight: "bold"
   color: "#555"
 }}>
   <span>সার্ভিস চার্জ</span>
-  <strong>৳{serviceCharge}</strong>
+  <strong>৳{checkoutServiceCharge}</strong>
 </div>
 
 <div style={{
@@ -1662,7 +1666,7 @@ fontWeight: "bold"
   color: "#555"
 }}>
   <span>ডেলিভারি চার্জ</span>
-  <strong>৳{deliveryFee}</strong>
+  <strong>৳{checkoutDeliveryFee}</strong>
 </div>
 <div style={{
   display: "flex",
@@ -1674,7 +1678,7 @@ fontWeight: "bold"
   fontSize: 17
 }}>
   <strong>সর্বমোট বিল</strong>
-  <strong>৳{cartTotal + serviceCharge + deliveryFee}</strong>
+  <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee}</strong>
 </div>
 
 <p style={{
