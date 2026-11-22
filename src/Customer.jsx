@@ -2252,20 +2252,22 @@ const productPickerItems = products.filter((product) => {
             <div><span>{packagePeriodLabel} বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
             <p>আপনার {packagePeriodLabel} বাজারের পরিকল্পনা এখানে রাখুন।</p>
           </div>
-          <div className="bb-family-actions">
-            <button
-              type="button"
-              className="bb-family-edit-button"
-              onClick={() => {
-                setFamilyPreferencesDraft(familyPreferences);
-                setFamilyPreferencesMessage("");
-                setEditingFamilyPreferences(true);
-              }}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z" /></svg>
-              প্যাকেজ ও বাজেট পরিবর্তন
-            </button>
-          </div>
+          {showFamilyShopping && (
+            <div className="bb-family-actions">
+              <button
+                type="button"
+                className="bb-family-edit-button"
+                onClick={() => {
+                  setFamilyPreferencesDraft(familyPreferences);
+                  setFamilyPreferencesMessage("");
+                  setEditingFamilyPreferences(true);
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4.5-1 10.8-10.8a2.1 2.1 0 0 0-3-3L5.5 16 4 20Z" /></svg>
+                প্যাকেজ ও বাজেট পরিবর্তন
+              </button>
+            </div>
+          )}
           </>
         ) : (
           <div className="bb-family-editor">
