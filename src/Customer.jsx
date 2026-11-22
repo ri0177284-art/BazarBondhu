@@ -15,6 +15,29 @@ const FAMILY_PACKAGE_MINIMUMS = {
 };
 const BUDGET_SMART_MINIMUM = 500;
 
+const CATEGORY_GROUPS = [
+  { id: "grains", name: "চাল, ডাল ও আটা", match: /চাল|ডাল|আটা|ময়দা|ময়দা|বেসন|সুজি|চিঁড়া|চিড়া/ },
+  { id: "oils", name: "তেল ও ঘি", match: /তেল|ঘি/ },
+  { id: "vegetables", name: "শাকসবজি", match: /আলু|পেঁয়াজ|পেঁয়াজ|আদা|রসুন|কাঁচামরিচ|টমেটো|ধনেপাতা|সবজি|শাক/ },
+  { id: "fruits", name: "ফলমূল", match: /ফল|লেবু|আম|কলা|আপেল/ },
+  { id: "protein", name: "মাছ, মাংস ও মুরগি", match: /মাছ|মাংস|মুরগি|গরু|খাসি/ },
+  { id: "dairy", name: "দুধ, ডিম ও দুগ্ধজাত", match: /দুধ|ডিম|দই|পনির|মাখন/ },
+  { id: "spices", name: "মসলা, লবণ ও চিনি", match: /মসলা|মরিচ গুঁড়া|হলুদ|জিরা|ধনে গুঁড়া|লবণ|চিনি|সোডা|ভিনেগার/ },
+  { id: "snacks", name: "বিস্কুট ও স্ন্যাকস", match: /বিস্কুট|নুডলস|মুড়ি|মুড়ি|বাদাম|চিঁড়া|চিড়া/ },
+  { id: "bakery", name: "নাশতা ও বেকারি", match: /পাউরুটি|সেমাই|মধু/ },
+  { id: "personal-care", name: "পার্সোনাল কেয়ার", match: /সাবান|শ্যাম্পু|টুথপেস্ট|টুথব্রাশ|ফেসওয়াশ|ফেসওয়াশ|ময়েশ্চারাইজার|ময়েশ্চারাইজার|চিরুনি|রেজর|ন্যাপকিন|হ্যান্ডওয়াশ|হ্যান্ডওয়াশ/ },
+  { id: "cleaning", name: "ঘর পরিষ্কার ও ডিটারজেন্ট", match: /ডিটারজেন্ট|ডিশওয়াশ|ডিশওয়াশ|ক্লিনার|ঝাড়ু|ঝাড়ু|স্ক্রাবার|মেঝে মোছার|মশার কয়েল|মশার কয়েল/ },
+  { id: "household", name: "টিস্যু ও গৃহস্থালি", match: /টিস্যু|ময়লার ব্যাগ|ব্যাটারি|দিয়াশলাই|মোমবাতি/ },
+  { id: "beverages", name: "চা, কফি ও পানীয়", match: /চা পাতা|কফি|পানীয়|পানীয়|জুস/ },
+  { id: "baby-care", name: "বেবি কেয়ার", match: /বেবি|ডায়াপার|ডায়াপার/ },
+  { id: "other", name: "অন্যান্য পণ্য", match: /.*/ },
+];
+
+function getProductCategory(productName = "") {
+  const name = String(productName).trim().toLowerCase();
+  return CATEGORY_GROUPS.find((category) => category.id !== "other" && category.match.test(name))?.id || "other";
+}
+
 function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
@@ -161,7 +184,6 @@ function getCategoryVisual(categoryName = "") {
 
 function Customer() {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
@@ -232,23 +254,6 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     loadProducts();
   }, []);
 
-  // Load categories
-  useEffect(() => {
-    async function loadCategories() {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*");
-
-      if (error) {
-        console.log("Category loading error:", error.message);
-        return;
-      }
-
-      setCategories(data || []);
-    }
-
-    loadCategories();
-  }, []);
   // Load Service Charge and Delivery Fee
   useEffect(() => {
     async function loadAppSettings() {
@@ -1830,8 +1835,7 @@ if (showProfile) {
 
   const matchCategory =
     selectedCategory === "সব" ||
-    product.category_id === selectedCategory ||
-    product.category === selectedCategory;
+    getProductCategory(product.name) === selectedCategory;
 
   return matchSearch && matchCategory;
 });
@@ -2309,32 +2313,33 @@ const productPickerItems = products.filter((product) => {
             <span className="bb-category-arrow" aria-hidden="true">↗</span>
           </button>
 
-          {categories.map((category) => {
-            const categoryName = String(category.name || "");
-            const categoryVisual = getCategoryVisual(categoryName);
-            const productCount = products.filter((product) =>
-              String(product.category_id) === String(category.id) ||
-              product.category === category.name
-            ).length;
-            const isSelected = String(selectedCategory) === String(category.id);
+          {CATEGORY_GROUPS
+            .map((category) => ({
+              ...category,
+              productCount: products.filter((product) => getProductCategory(product.name) === category.id).length,
+            }))
+            .filter((category) => category.productCount > 0)
+            .map((category) => {
+              const categoryVisual = getCategoryVisual(category.name);
+              const isSelected = selectedCategory === category.id;
 
-            return (
-              <button
-                type="button"
-                key={category.id}
-                className={`bb-category-card ${categoryVisual.tone} ${isSelected ? "is-active" : ""}`}
-                onClick={() => setSelectedCategory(category.id)}
-                aria-pressed={isSelected}
-              >
-                <span className="bb-category-icon" aria-hidden="true">{categoryVisual.icon}</span>
-                <span className="bb-category-card-copy">
-                  <strong>{category.name}</strong>
-                  <small>{productCount.toLocaleString("bn-BD")} টি পণ্য</small>
-                </span>
-                <span className="bb-category-arrow" aria-hidden="true">↗</span>
-              </button>
-            );
-          })}
+              return (
+                <button
+                  type="button"
+                  key={category.id}
+                  className={`bb-category-card ${categoryVisual.tone} ${isSelected ? "is-active" : ""}`}
+                  onClick={() => setSelectedCategory(category.id)}
+                  aria-pressed={isSelected}
+                >
+                  <span className="bb-category-icon" aria-hidden="true">{categoryVisual.icon}</span>
+                  <span className="bb-category-card-copy">
+                    <strong>{category.name}</strong>
+                    <small>{category.productCount.toLocaleString("bn-BD")} টি পণ্য</small>
+                  </span>
+                  <span className="bb-category-arrow" aria-hidden="true">↗</span>
+                </button>
+              );
+            })}
         </div>
       </section>
      <h2 id="products-section" style={{
