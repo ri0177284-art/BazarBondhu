@@ -186,6 +186,8 @@ function Customer() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PRODUCTS_PER_PAGE = 20;
   const [cart, setCart] = useState([]);
   const [cartPackageId, setCartPackageId] = useState(null);
   const [serviceCharge, setServiceCharge] = useState(0);
@@ -234,6 +236,10 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
   }, [cart.length]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, search]);
 
   // Load products
   useEffect(() => {
@@ -1839,6 +1845,15 @@ if (showProfile) {
 
   return matchSearch && matchCategory;
 });
+const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+const paginatedProducts = filteredProducts.slice(
+  (currentPage - 1) * PRODUCTS_PER_PAGE,
+  currentPage * PRODUCTS_PER_PAGE
+);
+const pageNumbers = Array.from(
+  { length: Math.min(5, totalProductPages) },
+  (_, index) => Math.max(1, Math.min(totalProductPages - 4, currentPage - 2)) + index
+);
 function updateQuantity(productId, change) {
   setCart(prevCart =>
     prevCart
@@ -2577,7 +2592,7 @@ const productPickerItems = products.filter((product) => {
 gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
 gap: 12
     }}>
-      {filteredProducts.map(product => (
+      {paginatedProducts.map(product => (
         <div
           key={product.id}
           style={{
@@ -2722,6 +2737,43 @@ fontWeight: "bold",
         </div>
       ))}
     </div>
+      {totalProductPages > 1 && (
+        <nav className="bb-product-pagination" aria-label="পণ্যের পৃষ্ঠা নির্বাচন">
+          <button
+            type="button"
+            className="bb-pagination-arrow"
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+          >
+            ← আগের
+          </button>
+          <div className="bb-pagination-pages">
+            {pageNumbers.map((page) => (
+              <button
+                type="button"
+                key={page}
+                className={`bb-pagination-page ${currentPage === page ? "is-active" : ""}`}
+                onClick={() => setCurrentPage(page)}
+                aria-current={currentPage === page ? "page" : undefined}
+                aria-label={`পৃষ্ঠা ${page}`}
+              >
+                {page.toLocaleString("bn-BD")}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="bb-pagination-arrow"
+            onClick={() => setCurrentPage((page) => Math.min(totalProductPages, page + 1))}
+            disabled={currentPage === totalProductPages}
+          >
+            পরের →
+          </button>
+          <span className="bb-pagination-summary">
+            পৃষ্ঠা {currentPage.toLocaleString("bn-BD")} / {totalProductPages.toLocaleString("bn-BD")}
+          </span>
+        </nav>
+      )}
   )}
 </div>
 
