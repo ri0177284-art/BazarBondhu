@@ -486,43 +486,60 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     ];
 
     const existing = new Map(shoppingList.map((item) => [item.productId, Math.max(0, Number(item.quantity) || 0)]));
-    let total = shoppingList.reduce((sum, item) => {
+    let existingTotal = shoppingList.reduce((sum, item) => {
       const product = products.find((entry) => entry.id === item.productId);
       return sum + (product ? Number(product.price || 0) * Number(item.quantity || 0) : 0);
     }, 0);
-    if (total > budget) {
+    if (existingTotal > budget) {
       setShoppingListMessage("আপনার বর্তমান তালিকার খরচ বাজেট ছাড়িয়েছে। আগে কিছু পণ্যের পরিমাণ কমিয়ে নিন।");
       return;
     }
 
-    let addedCount = 0;
-    essentials.forEach(({ pattern, weeklyPerPerson }) => {
+    const candidates = essentials.map(({ pattern, weeklyPerPerson }) => {
       const product = products.find((entry) =>
         entry.is_active !== false &&
         Number(entry.stock) > 0 &&
         pattern.test(String(entry.name || "").trim())
       );
-      if (!product || existing.has(product.id)) return;
-
+      if (!product || existing.has(product.id)) return null;
       const unitPrice = Number(product.price) || 0;
-      const stock = Math.floor(Number(product.stock) || 0);
-      if (unitPrice <= 0 || stock < 1) return;
+      if (unitPrice <= 0) return null;
+      const suggested = Math.min(
+        Math.floor(Number(product.stock) || 0),
+        Math.max(1, Math.ceil(weeklyPerPerson * members * days / 7))
+      );
+      return suggested > 0 ? { product, suggested, unitPrice } : null;
+    }).filter(Boolean);
 
-      const suggested = Math.max(1, Math.ceil(weeklyPerPerson * members * days / 7));
-      const affordable = Math.floor((budget - total) / unitPrice);
-      const quantity = Math.min(suggested, stock, affordable);
-      if (quantity < 1) return;
+    const availableBudget = Math.max(0, budget - existingTotal);
+    const plannedTotal = candidates.reduce((sum, item) => sum + item.suggested * item.unitPrice, 0);
+    const scale = plannedTotal > availableBudget && plannedTotal > 0
+      ? availableBudget / plannedTotal
+      : 1;
+    const additions = candidates.map((item) => ({
+      ...item,
+      quantity: Math.min(item.suggested, Math.floor(item.suggested * scale)),
+    })).filter((item) => item.quantity > 0);
 
+    let addedTotal = additions.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    // Keep the recommendation within budget even after rounding quantities.
+    for (let index = additions.length - 1; addedTotal > availableBudget && index >= 0; index -= 1) {
+      const item = additions[index];
+      while (item.quantity > 0 && addedTotal > availableBudget) {
+        item.quantity -= 1;
+        addedTotal -= item.unitPrice;
+      }
+    }
+
+    additions.filter((item) => item.quantity > 0).forEach(({ product, quantity }) => {
       existing.set(product.id, quantity);
-      total += quantity * unitPrice;
-      addedCount += 1;
     });
-
     const nextList = Array.from(existing, ([productId, quantity]) => ({ productId, quantity }));
     setShoppingList(nextList);
+    const addedCount = additions.filter((item) => item.quantity > 0).length;
     setShoppingListMessage(addedCount
-      ? `আপনার ${members} জনের ${days} দিনের জন্য স্টক ও বর্তমান দাম অনুযায়ী ${addedCount} ধরনের প্রয়োজনীয় পণ্য সাজানো হয়েছে। চাইলে তালিকা পরিবর্তন করুন।`
-      : "আপনার বর্তমান তালিকা বজায় রাখা হয়েছে। বাজেটের মধ্যে নতুন পণ্য যোগ করার মতো পর্যাপ্ত টাকা বা স্টক পাওয়া যায়নি।");
+      ? `আপনার ${members} জনের ${days} দিনের জন্য বর্তমান দাম, স্টক ও বাজেট অনুযায়ী ${addedCount} ধরনের প্রয়োজনীয় পণ্য সাজানো হয়েছে। এটি প্রস্তাবিত তালিকা—নিজের প্রয়োজনমতো পণ্য ও পরিমাণ বদলে নিন।`
+      : "আপনার বর্তমান তালিকা বজায় রাখা হয়েছে। অবশিষ্ট বাজেটে নতুন পণ্য যোগ করার মতো পর্যাপ্ত টাকা বা স্টক পাওয়া যায়নি।");
   }
 
   function addShoppingListToCart(selectedProducts) {
