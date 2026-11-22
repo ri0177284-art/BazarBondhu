@@ -35,21 +35,27 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 38px;
+  gap: 10px;
+  min-height: 50px;
   flex: none;
-  padding: 0 14px;
-  border: 1px solid #cfe8d5;
+  padding: 0 22px;
+  border: 2px solid #a9d9b6;
   border-radius: 999px;
-  background: linear-gradient(135deg, #edf8ef, #e1f3e5);
-  color: #087f45;
+  background: linear-gradient(135deg, #e5f7e9, #ccefd5);
+  color: #076b39;
   font: inherit;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow: 0 4px 13px rgba(8, 127, 69, .13);
   cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
 }
-.bb-my-market-button:hover { background: #d9efde; }
-.bb-my-market-button > span { font-size: 15px; }
+.bb-my-market-button:hover {
+  background: linear-gradient(135deg, #d8f2df, #bce8c8);
+  box-shadow: 0 6px 16px rgba(8, 127, 69, .18);
+  transform: translateY(-1px);
+}
+.bb-my-market-button > span { font-size: 20px; }
 
 .bb-family-edit-button {
   display: inline-flex;
