@@ -18,6 +18,10 @@ function Customer() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
   const [selectedPackageId, setSelectedPackageId] = useState(null);
+
+  useEffect(() => {
+    if (cart.length === 0) setSelectedPackageId(null);
+  }, [cart.length]);
   const [serviceCharge, setServiceCharge] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
@@ -312,7 +316,7 @@ if (
       unit_price: Number(item.price)
     })),
     p_transaction_id: transactionId.trim() || null,
-    p_package_id: selectedPackageId
+    ...(selectedPackageId ? { p_package_id: selectedPackageId } : {})
   }
 );
 
