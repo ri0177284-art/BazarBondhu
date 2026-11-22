@@ -13,6 +13,7 @@ const FAMILY_PACKAGE_MINIMUMS = {
   "weekly-family": 1000,
   "family-monthly": 2000,
 };
+const BUDGET_SMART_MINIMUM = 500;
 
 function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
@@ -564,6 +565,42 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     handleMenuClick("cart");
   }
 
+  function checkoutSmartBudgetList(selectedProducts, subtotal) {
+    if (!selectedProducts.length) {
+      setShoppingListMessage("Checkout করতে আগে বাজারের তালিকায় পণ্য যোগ করুন।");
+      return;
+    }
+    if (subtotal < BUDGET_SMART_MINIMUM) {
+      setShoppingListMessage(`Budget Smart থেকে Checkout করতে পণ্যের মোট মূল্য কমপক্ষে ৳${BUDGET_SMART_MINIMUM.toLocaleString("en-IN")} হতে হবে। আরও ৳${(BUDGET_SMART_MINIMUM - subtotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`);
+      return;
+    }
+    const unavailable = selectedProducts.find(({ product, item }) =>
+      Number(product.stock) < Number(item.quantity) || Number(product.stock) <= 0
+    );
+    if (unavailable) {
+      setShoppingListMessage(`${unavailable.product.name} পণ্যের পর্যাপ্ত স্টক নেই। পরিমাণ কমিয়ে আবার চেষ্টা করুন।`);
+      return;
+    }
+    setCart((current) => {
+      const next = [...current];
+      selectedProducts.forEach(({ product, item }) => {
+        const index = next.findIndex((cartItem) => cartItem.id === product.id);
+        if (index >= 0) {
+          next[index] = {
+            ...next[index],
+            quantity: Math.min(Number(product.stock), Number(next[index].quantity || 0) + Number(item.quantity)),
+          };
+        } else {
+          next.push({ ...product, quantity: Number(item.quantity) });
+        }
+      });
+      return next;
+    });
+    setCartPackageId("budget-smart");
+    setShoppingListMessage("");
+    setShowCheckout(true);
+  }
+
   // Login and Registration
   async function handleAuth(e) {
     e.preventDefault();
@@ -660,6 +697,12 @@ if (
   }
 
   const packageMinimum = getFamilyPackageMinimum(cartPackageId);
+  const budgetSmartMinimum = cartPackageId === "budget-smart" ? BUDGET_SMART_MINIMUM : 0;
+  if (budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
+    const remaining = budgetSmartMinimum - cartTotal;
+    alert(`Budget Smart থেকে অর্ডার করতে পণ্যের মূল্য কমপক্ষে ৳${budgetSmartMinimum.toLocaleString("en-IN")} হতে হবে। ডেলিভারি ও সার্ভিস চার্জ বাদে আরও ৳${remaining.toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`);
+    return;
+  }
   if (packageMinimum > 0 && cartTotal < packageMinimum) {
     const remaining = packageMinimum - cartTotal;
     const packageLabel = FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label || "প্যাকেজ";
@@ -2100,7 +2143,25 @@ const productPickerItems = products.filter((product) => {
             <button type="button" className="bb-cart-list-button" disabled={!selectedShoppingProducts.length} onClick={() => addShoppingListToCart(selectedShoppingProducts)}>
               🛒 কার্টে যোগ করুন
             </button>
+            {familyPreferences.packageId === "budget-smart" && (
+              <button
+                type="button"
+                className="bb-cart-list-button"
+                disabled={!selectedShoppingProducts.length || shoppingListTotal < BUDGET_SMART_MINIMUM}
+                onClick={() => checkoutSmartBudgetList(selectedShoppingProducts, shoppingListTotal)}
+                style={{ background: "#176b40", color: "#fff", borderColor: "#176b40" }}
+              >
+                ✓ সকল পণ্য নিয়ে Checkout করুন
+              </button>
+            )}
           </div>
+          {familyPreferences.packageId === "budget-smart" && (
+            <p style={{ color: shoppingListTotal >= BUDGET_SMART_MINIMUM ? "#287a45" : "#8a5a12", fontSize: 12, margin: "8px 0 0", lineHeight: 1.6 }}>
+              {shoppingListTotal >= BUDGET_SMART_MINIMUM
+                ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
+                : `Budget Smart Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳${BUDGET_SMART_MINIMUM.toLocaleString("en-IN")} হতে হবে। আরও ৳${(BUDGET_SMART_MINIMUM - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`}
+            </p>
+          }
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
         )}
