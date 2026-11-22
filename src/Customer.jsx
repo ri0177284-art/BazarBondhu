@@ -2781,6 +2781,17 @@ fontWeight: "bold",
               <span><small>হেল্পলাইন নম্বর</small><strong>01820344437</strong></span>
               <span className="bb-footer-call-label">কল করুন ↗</span>
             </a>
+            <a
+              className="bb-footer-whatsapp"
+              href="https://wa.me/8801820344437"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp-এ BazarBondhu-কে মেসেজ করুন"
+            >
+              <span className="bb-footer-whatsapp-icon" aria-hidden="true">◉</span>
+              <span><small>WhatsApp-এ যোগাযোগ</small><strong>WhatsApp-এ মেসেজ করুন</strong></span>
+              <span className="bb-footer-whatsapp-label">চ্যাট করুন ↗</span>
+            </a>
           </section>
         </div>
         <div className="bb-footer-bottom">
