@@ -9,6 +9,15 @@ const FAMILY_PACKAGES = [
   { id: "budget-smart", label: "বাজেট স্মার্ট", detail: "খরচে থাকুন নিয়ন্ত্রণে" },
 ];
 
+const FAMILY_PACKAGE_MINIMUMS = {
+  "weekly-family": 1000,
+  "family-monthly": 2000,
+};
+
+function getFamilyPackageMinimum(packageId) {
+  return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
+}
+
 const DEFAULT_FAMILY_PREFERENCES = {
   familyMembers: 4,
   monthlyBudget: 5000,
@@ -136,6 +145,7 @@ function Customer() {
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
+  const [cartPackageId, setCartPackageId] = useState(null);
   const [serviceCharge, setServiceCharge] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
@@ -177,6 +187,10 @@ const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [shoppingListMessage, setShoppingListMessage] = useState("");
+
+  useEffect(() => {
+    if (cart.length === 0) setCartPackageId(null);
+  }, [cart.length]);
 
   // Load products
   useEffect(() => {
@@ -467,6 +481,7 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
       });
       return next;
     });
+    setCartPackageId(familyPreferences.packageId);
     setShoppingListMessage("নির্বাচিত পণ্যগুলো কার্টে যোগ হয়েছে।");
     handleMenuClick("cart");
   }
@@ -565,6 +580,17 @@ if (
     alert("দয়া করে Transaction ID লিখুন");
     return;
   }
+
+  const packageMinimum = getFamilyPackageMinimum(cartPackageId);
+  if (packageMinimum > 0 && cartTotal < packageMinimum) {
+    const remaining = packageMinimum - cartTotal;
+    const packageLabel = FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label || "প্যাকেজ";
+    alert(
+      `${packageLabel} অর্ডার করতে পণ্যের মূল্য কমপক্ষে ৳${packageMinimum.toLocaleString("en-IN")} হতে হবে। ডেলিভারি ও সার্ভিস চার্জ বাদে আরও ৳${remaining.toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`
+    );
+    return;
+  }
+
   setPlacingOrder(true);
 
   try {
@@ -615,7 +641,8 @@ if (
       quantity: Number(item.quantity) || 1,
       unit_price: Number(item.price)
     })),
-    p_transaction_id: transactionId.trim() || null
+    p_transaction_id: transactionId.trim() || null,
+     p_package_id: cartPackageId
   }
 );
 
@@ -626,6 +653,7 @@ if (orderError) throw orderError;
     alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
+    setCartPackageId(null);
     setShowCheckout(false);
     setCustomerName("");
     setCustomerPhone("");
@@ -1345,6 +1373,23 @@ fontWeight: "bold"
           }}>
             🧾 অর্ডারের হিসাব
           </h3>
+          {getFamilyPackageMinimum(cartPackageId) > 0 && (
+            <p role="status" style={{
+              color: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#087f45" : "#9a5b00",
+              background: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#e8f5ed" : "#fff6e5",
+              borderRadius: 10,
+              padding: 11,
+              fontSize: 13,
+              lineHeight: 1.6,
+              margin: "0 0 14px"
+            }}>
+              {FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(cartPackageId).toLocaleString("en-IN")}।
+              {cartTotal >= getFamilyPackageMinimum(cartPackageId)
+                ? " আপনার পণ্যমূল্য ন্যূনতম সীমা পূরণ করেছে।"
+                : ` আরও ৳${(getFamilyPackageMinimum(cartPackageId) - cartTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`}
+              {" "}ডেলিভারি ও সার্ভিস চার্জ এই হিসাবের বাইরে।
+            </p>
+          )}
 
           <div style={{
             display: "flex",
@@ -1775,6 +1820,11 @@ const productPickerItems = products.filter((product) => {
             <span>{shoppingBudgetProgress}% বাজেট ব্যবহার</span>
             <span>সদস্য: {familyPreferences.familyMembers} জন</span>
           </div>
+          {getFamilyPackageMinimum(familyPreferences.packageId) > 0 && (
+            <p style={{ color: "#52665a", fontSize: 12, margin: "10px 0 0", lineHeight: 1.6 }}>
+              {FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(familyPreferences.packageId).toLocaleString("en-IN")}। ডেলিভারি ও সার্ভিস চার্জ এই হিসাবের বাইরে।
+            </p>
+          )}
 
           {selectedShoppingProducts.length > 0 ? (
             <div className="bb-shopping-items">
