@@ -332,52 +332,93 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     const preferences = normalizeFamilyPreferences(user.user_metadata?.family_preferences);
     setFamilyPreferences(preferences);
     setFamilyPreferencesDraft(preferences);
+    const savedSmartDays = Number(user.user_metadata?.family_preferences?.smartBudgetDays);
+    setSmartBudgetDays([7, 15, 30].includes(savedSmartDays) ? savedSmartDays : 7);
     setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
   }, [user?.id, user?.user_metadata?.family_preferences]);
 
   useEffect(() => {
     if (!user) {
       setMonthlySpend(0);
+      setMonthlyProductCount(0);
+      setDeliveredOrdersCount(0);
+      setPreviousMonthSpend(0);
+      setLatestConfirmedAt(null);
       return;
     }
     loadMonthlySpend();
-  }, [user?.id]);
+  }, [user?.id, familyPreferences.packageId, smartBudgetDays]);
 
   async function loadMonthlySpend() {
     if (!user) return;
 
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    let currentPeriodStart;
+    let currentPeriodEnd;
+    let previousPeriodStart;
+    let previousPeriodEnd;
+
+    if (familyPreferences.packageId === "weekly-family") {
+      currentPeriodStart = new Date(now);
+      currentPeriodStart.setHours(0, 0, 0, 0);
+      currentPeriodStart.setDate(currentPeriodStart.getDate() - ((currentPeriodStart.getDay() + 6) % 7));
+      currentPeriodEnd = new Date(currentPeriodStart);
+      currentPeriodEnd.setDate(currentPeriodEnd.getDate() + 7);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodStart = new Date(previousPeriodEnd);
+      previousPeriodStart.setDate(previousPeriodStart.getDate() - 7);
+    } else if (familyPreferences.packageId === "budget-smart") {
+      const periodDays = [7, 15, 30].includes(Number(smartBudgetDays)) ? Number(smartBudgetDays) : 7;
+      currentPeriodEnd = new Date(now);
+      currentPeriodStart = new Date(currentPeriodEnd.getTime() - periodDays * 86400000);
+      previousPeriodEnd = new Date(currentPeriodStart);
+      previousPeriodStart = new Date(previousPeriodEnd.getTime() - periodDays * 86400000);
+    } else {
+      currentPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      currentPeriodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      previousPeriodStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      previousPeriodEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
     const { data, error } = await supabase
       .from("orders")
-      .select("total, order_status, created_at, order_items(quantity)")
+      .select("subtotal, order_status, payment_status, created_at, order_items(quantity)")
       .eq("user_id", user.id)
-      .gte("created_at", previousMonthStart.toISOString())
-      .lt("created_at", nextMonthStart.toISOString());
+      .eq("package_id", familyPreferences.packageId)
+      .gte("created_at", previousPeriodStart.toISOString())
+      .lt("created_at", currentPeriodEnd.toISOString());
 
     if (error) {
-      console.warn("Monthly spend could not be loaded:", error.message);
+      console.warn("Package spend could not be loaded:", error.message);
       return;
     }
 
-    const isNotCancelled = (order) => {
+    const isCountableOrder = (order) => {
       const status = String(order.order_status || "").toLowerCase();
-      return !["cancelled", "canceled", "বাতিল"].includes(status);
+      const paymentStatus = String(order.payment_status || "").toLowerCase();
+      return !["cancelled", "canceled", "বাতিল"].includes(status)
+        && !["rejected", "refunded"].includes(paymentStatus);
     };
-    const currentOrders = (data || []).filter((order) => new Date(order.created_at) >= monthStart && isNotCancelled(order));
-    const previousOrders = (data || []).filter((order) => new Date(order.created_at) >= previousMonthStart && new Date(order.created_at) < monthStart && isNotCancelled(order));
-    const sumOrderTotals = (orders) => orders.reduce((sum, order) => sum + Math.max(0, Number(order.total) || 0), 0);
-    setMonthlySpend(sumOrderTotals(currentOrders));
+    const currentOrders = (data || []).filter((order) => {
+      const createdAt = new Date(order.created_at);
+      return createdAt >= currentPeriodStart && createdAt < currentPeriodEnd && isCountableOrder(order);
+    });
+    const previousOrders = (data || []).filter((order) => {
+      const createdAt = new Date(order.created_at);
+      return createdAt >= previousPeriodStart && createdAt < previousPeriodEnd && isCountableOrder(order);
+    });
+    const sumProductSubtotals = (orders) => orders.reduce((sum, order) => sum + Math.max(0, Number(order.subtotal) || 0), 0);
+
+    setMonthlySpend(sumProductSubtotals(currentOrders));
     setMonthlyProductCount(currentOrders.reduce((sum, order) => sum + (order.order_items || []).reduce((quantity, item) => quantity + Math.max(0, Number(item.quantity) || 0), 0), 0));
     setDeliveredOrdersCount(currentOrders.filter((order) => order.order_status === "delivered").length);
-    setPreviousMonthSpend(sumOrderTotals(previousOrders));
+    setPreviousMonthSpend(sumProductSubtotals(previousOrders));
 
-    const { data: latestConfirmedOrder, error: confirmationError } = await supabase
+    const { data: latestPackageOrder, error: confirmationError } = await supabase
       .from("orders")
       .select("confirmed_at")
       .eq("user_id", user.id)
+      .eq("package_id", familyPreferences.packageId)
       .not("confirmed_at", "is", null)
       .neq("order_status", "cancelled")
       .order("confirmed_at", { ascending: false })
@@ -387,7 +428,7 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
       console.warn("Latest package confirmation could not be loaded:", confirmationError.message);
       return;
     }
-    setLatestConfirmedAt(latestConfirmedOrder?.confirmed_at || null);
+    setLatestConfirmedAt(latestPackageOrder?.confirmed_at || null);
   }
 
   async function saveFamilyPreferences() {
@@ -413,6 +454,7 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
             ...user.user_metadata?.family_preferences,
             ...preferences,
             shoppingList,
+            smartBudgetDays,
           },
         },
       });
@@ -442,6 +484,7 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
             ...user.user_metadata?.family_preferences,
             ...familyPreferences,
             shoppingList,
+            smartBudgetDays,
           },
         },
       });
@@ -453,6 +496,28 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     } finally {
       setSavingShoppingList(false);
     }
+  }
+
+  async function changeSmartBudgetDays(days) {
+    if (![7, 15, 30].includes(Number(days))) return;
+    setSmartBudgetDays(Number(days));
+    setShoppingListMessage("");
+    if (!user) return;
+
+    const { data, error } = await supabase.auth.updateUser({
+      data: {
+        ...user.user_metadata,
+        family_preferences: {
+          ...user.user_metadata?.family_preferences,
+          smartBudgetDays: Number(days),
+        },
+      },
+    });
+    if (error) {
+      setShoppingListMessage("সময়কাল সেভ হয়নি। আবার চেষ্টা করুন।");
+      return;
+    }
+    if (data.user) setUser(data.user);
   }
 
   function changeShoppingQuantity(product, change) {
@@ -480,7 +545,10 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
       setShoppingListMessage("বাজেট সাজাতে আগে তালিকায় কিছু পণ্য যোগ করুন।");
       return;
     }
-    const result = suggestBudgetFill(selectedProducts, familyPreferences.monthlyBudget, currentTotal);
+    const budgetLimit = familyPreferences.packageId === "budget-smart"
+      ? Number(familyPreferences.monthlyBudget) * smartBudgetDays / 30
+      : Number(familyPreferences.monthlyBudget);
+    const result = suggestBudgetFill(selectedProducts, budgetLimit, currentTotal);
     if (result.error) {
       setShoppingListMessage(result.error);
       return;
@@ -497,7 +565,10 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
   }
 
   function generateSmartBudgetSuggestion() {
-    const budget = Number(familyPreferences.monthlyBudget) || 0;
+    const monthlyBudget = Number(familyPreferences.monthlyBudget) || 0;
+    const budget = familyPreferences.packageId === "budget-smart"
+      ? monthlyBudget * smartBudgetDays / 30
+      : monthlyBudget;
     const members = Math.max(1, Number(familyPreferences.familyMembers) || 1);
     const days = Math.max(7, Number(smartBudgetDays) || 7);
     if (budget <= 0) {
@@ -1889,9 +1960,12 @@ const shoppingListTotal = selectedShoppingProducts.reduce(
   (sum, { product, item }) => sum + Number(product.price || 0) * Number(item.quantity || 0),
   0,
 );
-const shoppingBudgetRemaining = Number(familyPreferences.monthlyBudget) - shoppingListTotal;
-const shoppingBudgetProgress = familyPreferences.monthlyBudget > 0
-  ? Math.min(100, Math.round((shoppingListTotal / familyPreferences.monthlyBudget) * 100))
+const shoppingBudgetLimit = familyPreferences.packageId === "budget-smart"
+  ? Number(familyPreferences.monthlyBudget) * smartBudgetDays / 30
+  : Number(familyPreferences.monthlyBudget);
+const shoppingBudgetRemaining = shoppingBudgetLimit - shoppingListTotal;
+const shoppingBudgetProgress = shoppingBudgetLimit > 0
+  ? Math.min(100, Math.round((shoppingListTotal / shoppingBudgetLimit) * 100))
   : 0;
 const monthlySpendComparison = previousMonthSpend > 0
   ? Math.round(((monthlySpend - previousMonthSpend) / previousMonthSpend) * 100)
@@ -1899,18 +1973,28 @@ const monthlySpendComparison = previousMonthSpend > 0
 const monthlySpendComparisonLabel = monthlySpendComparison === null
   ? monthlySpend > 0 ? "নতুন" : "তথ্য নেই"
   : `${monthlySpendComparison > 0 ? "+" : ""}${monthlySpendComparison.toLocaleString("bn-BD")}%`;
-const monthlySpendProgress = familyPreferences.monthlyBudget > 0
-  ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
-  : monthlySpend > 0 ? 100 : 0;
 const isWeeklyPackage = familyPreferences.packageId === "weekly-family";
+const isBudgetSmartPackage = familyPreferences.packageId === "budget-smart";
 const packagePeriodLabel = isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক";
-const packageCycleEndDate = getPackageCycleEnd(latestConfirmedAt, familyPreferences.packageId);
+const packageBudgetLimit = isBudgetSmartPackage
+  ? Number(familyPreferences.monthlyBudget) * smartBudgetDays / 30
+  : Number(familyPreferences.monthlyBudget);
+const monthlySpendProgress = packageBudgetLimit > 0
+  ? Math.min(100, Math.round((monthlySpend / packageBudgetLimit) * 100))
+  : monthlySpend > 0 ? 100 : 0;
+const packageCycleEndDate = isBudgetSmartPackage ? null : getPackageCycleEnd(latestConfirmedAt, familyPreferences.packageId);
 const daysUntilCycleEnds = packageCycleEndDate
   ? Math.max(0, Math.ceil((new Date(packageCycleEndDate.getFullYear(), packageCycleEndDate.getMonth(), packageCycleEndDate.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 86400000))
   : null;
 const nextMonthName = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1)
   .toLocaleDateString("bn-BD", { month: "long" });
-const nextPackagePeriodName = isWeeklyPackage ? "পরের সপ্তাহের" : `${nextMonthName} মাসের`;
+const nextPackagePeriodName = isWeeklyPackage ? "পরের সপ্তাহের" : isBudgetSmartPackage ? "পরবর্তী বাজেট পরিকল্পনার" : `${nextMonthName} মাসের`;
+const packageReportPeriodLabel = isWeeklyPackage
+  ? "এই সপ্তাহের"
+  : isBudgetSmartPackage
+    ? `গত ${smartBudgetDays.toLocaleString("bn-BD")} দিনের`
+    : "এই মাসের";
+const previousPeriodLabel = isWeeklyPackage ? "আগের সপ্তাহের তুলনায়" : isBudgetSmartPackage ? "আগের একই সময়ের তুলনায়" : "গত মাসের তুলনায়";
 const productPickerItems = products.filter((product) => {
   const matchesSearch = !productSearch.trim() || String(product.name || "")
     .toLocaleLowerCase()
@@ -2000,7 +2084,7 @@ const productPickerItems = products.filter((product) => {
                 </span>
               </label>
               <label className="bb-family-field">
-                <span>{packagePeriodLabel} বাজেট</span>
+                <span>{familyPreferencesDraft.packageId === "weekly-family" ? "সাপ্তাহিক" : "মাসিক"} বাজেট</span>
                 <span className="bb-budget-input">
                   <b>৳</b>
                   <input
@@ -2066,14 +2150,14 @@ const productPickerItems = products.filter((product) => {
             <div style={{ background: "#f0f8f2", border: "1px solid #d7eadb", borderRadius: 14, padding: 14, marginBottom: 16 }}>
               <strong style={{ display: "block", color: "#245b37", marginBottom: 6 }}>✨ আপনার বাজেটে স্মার্ট বাজার সাজান</strong>
               <p style={{ color: "#52665a", fontSize: 13, lineHeight: 1.6, margin: "0 0 12px" }}>
-                পরিবারের সদস্য, সময়, পণ্যের বর্তমান দাম ও স্টক বিবেচনা করে প্রয়োজনীয় পণ্যের একটি প্রাথমিক তালিকা তৈরি হবে। আপনি পরে সব পণ্য ও পরিমাণ বদলাতে পারবেন।
+                পরিবারের সদস্য, সময়, পণ্যের বর্তমান দাম ও স্টক বিবেচনা করে প্রয়োজনীয় পণ্যের একটি প্রাথমিক তালিকা তৈরি হবে। আপনার সেট করা মাসিক বাজেটকে ৩০ দিনের ভিত্তিতে নির্বাচিত সময় অনুযায়ী হিসাব করা হবে। আপনি পরে সব পণ্য ও পরিমাণ বদলাতে পারবেন।
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
                 {[7, 15, 30].map((days) => (
                   <button
                     key={days}
                     type="button"
-                    onClick={() => setSmartBudgetDays(days)}
+                    onClick={() => changeSmartBudgetDays(days)}
                     aria-pressed={smartBudgetDays === days}
                     style={{ border: smartBudgetDays === days ? "1px solid #287a45" : "1px solid #d5ded7", borderRadius: 20, padding: "7px 12px", background: smartBudgetDays === days ? "#287a45" : "#fff", color: smartBudgetDays === days ? "#fff" : "#365342", fontWeight: 600 }}
                   >
@@ -2093,13 +2177,13 @@ const productPickerItems = products.filter((product) => {
 
           <div className="bb-budget-overview">
             <div><span>তালিকার মোট</span><strong>৳{shoppingListTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
-            <div><span>{packagePeriodLabel} বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <div><span>{isBudgetSmartPackage ? `${smartBudgetDays} দিনের বাজেট` : `${packagePeriodLabel} বাজেট`}</span><strong>৳{shoppingBudgetLimit.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
             <div className={shoppingBudgetRemaining < 0 ? "bb-budget-left is-over" : "bb-budget-left"}>
               <span>{shoppingBudgetRemaining < 0 ? "বাজেটের বেশি" : "বাকি আছে"}</span>
               <strong>৳{Math.abs(shoppingBudgetRemaining).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
             </div>
           </div>
-          <div className="bb-budget-progress" role="progressbar" aria-label={`${packagePeriodLabel} বাজেটের ব্যবহার`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
+          <div className="bb-budget-progress" role="progressbar" aria-label={`${isBudgetSmartPackage ? `${smartBudgetDays} দিনের` : packagePeriodLabel} বাজেটের ব্যবহার`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
             <span className={shoppingBudgetRemaining < 0 ? "is-over" : ""} style={{ width: `${shoppingBudgetProgress}%` }} />
           </div>
           <div className="bb-budget-caption">
@@ -2213,12 +2297,12 @@ const productPickerItems = products.filter((product) => {
         )}
       </section>
 
-      <section className="bb-monthly-insight" aria-label="মাসিক বাজারের অগ্রগতি ও রিমাইন্ডার">
+      <section className="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
         <div className="bb-monthly-progress-panel">
           <div
             className="bb-monthly-progress-ring"
             role="progressbar"
-            aria-label="মাসিক বাজেট ব্যবহারের অগ্রগতি"
+            aria-label="নির্বাচিত প্যাকেজ বাজেট ব্যবহারের অগ্রগতি"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow={monthlySpendProgress}
@@ -2233,7 +2317,7 @@ const productPickerItems = products.filter((product) => {
             {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
           </strong>
           <span className="bb-monthly-spend-caption">
-            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{Number(familyPreferences.monthlyBudget).toLocaleString("bn-BD")}
+            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{packageBudgetLimit.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}
           </span>
         </div>
 
@@ -2249,7 +2333,11 @@ const productPickerItems = products.filter((product) => {
               </span>
             </>
           ) : (
-            <p className="bb-monthly-estimate-empty">অর্ডার কনফার্ম হলে {isWeeklyPackage ? "৭ দিনের" : "এক মাসের"} হিসাব শুরু হবে</p>
+            <p className="bb-monthly-estimate-empty">
+              {isBudgetSmartPackage
+                ? "এটি নির্দিষ্ট মেয়াদের সাবস্ক্রিপশন নয়; নির্বাচিত দিনের জন্য বাজার পরিকল্পনা।"
+                : "আপনার এই প্যাকেজের অর্ডার কনফার্ম হলে মেয়াদের হিসাব শুরু হবে।"}
+            </p>
           )}
         </div>
 
@@ -2257,7 +2345,7 @@ const productPickerItems = products.filter((product) => {
           <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
           <p>
             {monthlySpendProgress >= 75
-              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক"} বাজার শেষ পর্যায়ে। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : isBudgetSmartPackage ? "বাজেট স্মার্ট" : "মাসিক"} বাজারের বাজেট প্রায় শেষ। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
               : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
           </p>
           <button type="button" onClick={() => setShowFamilyShopping(true)}>
@@ -2269,12 +2357,12 @@ const productPickerItems = products.filter((product) => {
       <section className="bb-monthly-report-card" aria-labelledby="bb-monthly-report-title">
         <div className="bb-monthly-report-heading">
           <span aria-hidden="true">▮</span>
-          <h2 id="bb-monthly-report-title">এই মাসের বাজারের হিসাব</h2>
+          <h2 id="bb-monthly-report-title">{packageReportPeriodLabel} বাজারের হিসাব</h2>
         </div>
         <div className="bb-monthly-report-grid">
           <div className="bb-monthly-report-stat">
             <span className="bb-report-icon" aria-hidden="true">🛒</span>
-            <div><span>মোট খরচ</span><strong>৳ {monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}</strong></div>
+            <div><span>পণ্যের খরচ</span><strong>৳ {monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}</strong></div>
           </div>
           <div className="bb-monthly-report-stat">
             <span className="bb-report-icon" aria-hidden="true">📦</span>
@@ -2286,7 +2374,7 @@ const productPickerItems = products.filter((product) => {
           </div>
           <div className={`bb-monthly-report-stat ${monthlySpendComparison !== null && monthlySpendComparison < 0 ? "is-down" : "is-up"}`}>
             <span className="bb-report-icon" aria-hidden="true">↗</span>
-            <div><span>গত মাসের তুলনায়</span><strong>{monthlySpendComparisonLabel}</strong></div>
+            <div><span>{previousPeriodLabel}</span><strong>{monthlySpendComparisonLabel}</strong></div>
           </div>
         </div>
       </section>
