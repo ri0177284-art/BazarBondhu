@@ -794,3 +794,34 @@
   .bb-pagination-page, .bb-pagination-arrow { min-width: 32px; height: 35px; padding: 0 7px; border-radius: 9px; font-size: 11px; }
   .bb-pagination-arrow { font-size: 10px; }
 }
+
+
+/* Repeat a previous package order in the shopping planner */
+.bb-repeat-list-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 44px;
+  margin: 12px 0 16px;
+  padding: 10px 14px;
+  border: 1px solid #b9ddc4;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f0faf2, #ffffff);
+  color: #176b40;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.bb-repeat-list-button:hover:not(:disabled) {
+  border-color: #83c497;
+  background: #e8f5ed;
+  transform: translateY(-1px);
+}
+.bb-repeat-list-button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
