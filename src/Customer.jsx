@@ -565,20 +565,24 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
     handleMenuClick("cart");
   }
 
-  function checkoutSmartBudgetList(selectedProducts, subtotal) {
+  function checkoutFamilyShoppingList(selectedProducts, subtotal) {
+    const packageId = familyPreferences.packageId;
+    const minimum = packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(packageId);
+    const packageLabel = FAMILY_PACKAGES.find((item) => item.id === packageId)?.label || "এই প্যাকেজ";
+
     if (!selectedProducts.length) {
       setShoppingListMessage("Checkout করতে আগে বাজারের তালিকায় পণ্য যোগ করুন।");
       return;
     }
-    if (subtotal < BUDGET_SMART_MINIMUM) {
-      setShoppingListMessage(`Budget Smart থেকে Checkout করতে পণ্যের মোট মূল্য কমপক্ষে ৳${BUDGET_SMART_MINIMUM.toLocaleString("en-IN")} হতে হবে। আরও ৳${(BUDGET_SMART_MINIMUM - subtotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`);
+    if (subtotal < minimum) {
+      setShoppingListMessage(packageLabel + " থেকে Checkout করতে পণ্যের মোট মূল্য কমপক্ষে ৳" + minimum.toLocaleString("en-IN") + " হতে হবে। আরও ৳" + (minimum - subtotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।");
       return;
     }
     const unavailable = selectedProducts.find(({ product, item }) =>
       Number(product.stock) < Number(item.quantity) || Number(product.stock) <= 0
     );
     if (unavailable) {
-      setShoppingListMessage(`${unavailable.product.name} পণ্যের পর্যাপ্ত স্টক নেই। পরিমাণ কমিয়ে আবার চেষ্টা করুন।`);
+      setShoppingListMessage(unavailable.product.name + " পণ্যের পর্যাপ্ত স্টক নেই। পরিমাণ কমিয়ে আবার চেষ্টা করুন।");
       return;
     }
     setCart((current) => {
@@ -596,7 +600,7 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
       });
       return next;
     });
-    setCartPackageId("budget-smart");
+    setCartPackageId(packageId);
     setShoppingListMessage("");
     setShowCheckout(true);
   }
@@ -2140,28 +2144,31 @@ const productPickerItems = products.filter((product) => {
             <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
               {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
             </button>
-            <button type="button" className="bb-cart-list-button" disabled={!selectedShoppingProducts.length} onClick={() => addShoppingListToCart(selectedShoppingProducts)}>
-              🛒 কার্টে যোগ করুন
-            </button>
             {familyPreferences.packageId === "budget-smart" && (
-              <button
-                type="button"
-                className="bb-cart-list-button"
-                disabled={!selectedShoppingProducts.length || shoppingListTotal < BUDGET_SMART_MINIMUM}
-                onClick={() => checkoutSmartBudgetList(selectedShoppingProducts, shoppingListTotal)}
-                style={{ background: "#176b40", color: "#fff", borderColor: "#176b40" }}
-              >
-                ✓ সকল পণ্য নিয়ে Checkout করুন
+              <button type="button" className="bb-cart-list-button" disabled={!selectedShoppingProducts.length} onClick={() => addShoppingListToCart(selectedShoppingProducts)}>
+                🛒 কার্টে যোগ করুন
               </button>
             )}
+            <button
+              type="button"
+              className="bb-cart-list-button"
+              disabled={!selectedShoppingProducts.length || shoppingListTotal < (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))}
+              onClick={() => checkoutFamilyShoppingList(selectedShoppingProducts, shoppingListTotal)}
+              style={{ background: "#176b40", color: "#fff", borderColor: "#176b40" }}
+            >
+              ✓ সকল পণ্য নিয়ে Checkout করুন
+            </button>
           </div>
-          {familyPreferences.packageId === "budget-smart" && (
-            <p style={{ color: shoppingListTotal >= BUDGET_SMART_MINIMUM ? "#287a45" : "#8a5a12", fontSize: 12, margin: "8px 0 0", lineHeight: 1.6 }}>
-              {shoppingListTotal >= BUDGET_SMART_MINIMUM
-                ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
-                : `Budget Smart Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳${BUDGET_SMART_MINIMUM.toLocaleString("en-IN")} হতে হবে। আরও ৳${(BUDGET_SMART_MINIMUM - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`}
-            </p>
-          )}
+          <p style={{
+            color: shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) ? "#287a45" : "#8a5a12",
+            fontSize: 12,
+            margin: "8px 0 0",
+            lineHeight: 1.6
+          }}>
+            {shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))
+              ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
+              : (FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "এই প্যাকেজ") + " Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳" + (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)).toLocaleString("en-IN") + " হতে হবে। আরও ৳" + ((familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।"}
+          </p>
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
         )}
