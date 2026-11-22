@@ -2949,16 +2949,48 @@ boxSizing: "border-box"
             flexDirection: "column",
             flex: 1
           }}>
-            <h3 style={{
-              color: "#263d30",
-              fontSize: 15,
-              fontWeight: "bold",
-              margin: "0 0 8px",
-              lineHeight: 1.5,
-              minHeight: 42
-            }}>
-              {product.name}
-            </h3>
+            <div className="bb-product-name-row">
+              <h3 className="bb-product-name">{product.name}</h3>
+              <button
+                type="button"
+                className="bb-product-cart-icon"
+                disabled={!(Number(product.stock) > 0)}
+                aria-label={`কার্টে যোগ করুন: ${product.name}`}
+                title="কার্টে যোগ করুন"
+                onClick={() => {
+                  const currentStock = Number(product.stock) || 0;
+                  const existing = cart.find(item => item.id === product.id);
+                  const currentQuantity = existing?.quantity || 0;
+
+                  if (currentQuantity >= currentStock) {
+                    alert("দুঃখিত! এই পণ্যের পর্যাপ্ত স্টক নেই।");
+                    return;
+                  }
+
+                  setCart(prevCart => {
+                    const existingItem = prevCart.find(item => item.id === product.id);
+
+                    if (existingItem) {
+                      return prevCart.map(item =>
+                        item.id === product.id
+                          ? { ...item, quantity: (item.quantity || 1) + 1 }
+                          : item
+                      );
+                    }
+
+                    return [...prevCart, { ...product, quantity: 1 }];
+                  });
+
+                  alert(product.name + " কার্টে যোগ হয়েছে!");
+                }}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 3h2l2.2 11.1a2 2 0 0 0 2 1.6h8.9a2 2 0 0 0 1.9-1.4L22 8H6" />
+                  <circle cx="10" cy="20" r="1.5" />
+                  <circle cx="18" cy="20" r="1.5" />
+                </svg>
+              </button>
+            </div>
 
             <p style={{
               color: "#999",
@@ -2993,52 +3025,7 @@ boxSizing: "border-box"
                 : "স্টক শেষ"}
             </div>
 
-            <button
-              disabled={!(Number(product.stock) > 0)}
-              onClick={() => {
-  const currentStock = Number(product.stock) || 0;
-  const existing = cart.find(item => item.id === product.id);
-  const currentQuantity = existing?.quantity || 0;
 
-  if (currentQuantity >= currentStock) {
-    alert("দুঃখিত! এই পণ্যের পর্যাপ্ত স্টক নেই।");
-    return;
-  }
-
-  setCart(prevCart => {
-    const existingItem = prevCart.find(item => item.id === product.id);
-
-    if (existingItem) {
-      return prevCart.map(item =>
-        item.id === product.id
-          ? { ...item, quantity: (item.quantity || 1) + 1 }
-          : item
-      );
-    }
-
-    return [...prevCart, { ...product, quantity: 1 }];
-  });
-
-  alert(product.name + " কার্টে যোগ হয়েছে!");
-}}
-              style={{
-                width: "100%",
-                background: Number(product.stock) > 0
-                  ? "linear-gradient(135deg, #087f45, #20a464)"
-                  : "#aaa",
-                color: "white",
-                padding: "12px 5px",
-minHeight: 44,
-border: "none",
-borderRadius: 10,
-fontSize: 14,
-fontWeight: "bold",
-                cursor: Number(product.stock) > 0 ? "pointer" : "not-allowed",
-                marginTop: "auto"
-              }}
-            >
-              🛒 কার্টে যোগ করুন
-            </button>
           </div>
         </div>
       ))}
