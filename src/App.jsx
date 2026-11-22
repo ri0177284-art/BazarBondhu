@@ -18,7 +18,9 @@ const money = (amount) =>
   `৳${new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 0 }).format(Number(amount) || 0)}`;
 
 function App() {
-  const isCustomerRoute = window.location.pathname.toLowerCase().includes("customer");
+  const currentPath = window.location.pathname.replace(/\/+$/, "").toLowerCase();
+  const isAdminRoute = currentPath === "/admin" || currentPath.startsWith("/admin/");
+  const isCustomerRoute = !isAdminRoute;
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
