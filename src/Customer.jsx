@@ -903,6 +903,20 @@ if (
     alert("দয়া করে Transaction ID লিখুন");
     return;  }
 
+  const pointsToRedeem = Number(rewardPointsToUse) || 0;
+  if (pointsToRedeem > 0 && (pointsToRedeem < 100 || pointsToRedeem % 10 !== 0)) {
+    alert("কমপক্ষে ১০০ পয়েন্ট এবং ১০-এর গুণিতক ব্যবহার করতে হবে।");
+    return;
+  }
+  if (pointsToRedeem > Number(rewardSummary?.balance || 0)) {
+    alert("আপনার Reward পয়েন্ট ব্যালেন্সের চেয়ে বেশি ব্যবহার করা যাবে না।");
+    return;
+  }
+  if (pointsToRedeem > Math.floor(cartTotal * 0.1) * 10) {
+    alert("একটি অর্ডারে পণ্যমূল্যের সর্বোচ্চ ১০% পর্যন্ত Reward ব্যবহার করা যাবে।");
+    return;
+  }
+
   const packageMinimum = getFamilyPackageMinimum(cartPackageId);
   const budgetSmartMinimum = cartPackageId === "budget-smart" ? BUDGET_SMART_MINIMUM : 0;
   if (budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
@@ -1917,7 +1931,7 @@ fontWeight: "bold"
   fontSize: 17
 }}>
   <strong>সর্বমোট বিল</strong>
-  <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee}</strong>
+  <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee - (Number(rewardPointsToUse) / 10)}</strong>
 </div>
 
 <p style={{
