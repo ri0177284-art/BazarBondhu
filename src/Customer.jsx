@@ -2587,6 +2587,7 @@ const productPickerItems = products.filter((product) => {
       কোনো পণ্য পাওয়া যায়নি।
     </p>
   ) : (
+    <>
     <div style={{
       display: "grid",
 gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
@@ -2774,6 +2775,7 @@ fontWeight: "bold",
           </span>
         </nav>
       )}
+    </>
   )}
 </div>
 
