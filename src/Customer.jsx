@@ -153,6 +153,9 @@ const [transactionId, setTransactionId] = useState("");
 const [placingOrder, setPlacingOrder] = useState(false);
 const [myOrders, setMyOrders] = useState([]);
 const [showMyOrders, setShowMyOrders] = useState(false);
+const [cancelOrderId, setCancelOrderId] = useState(null);
+const [cancelReason, setCancelReason] = useState("");
+const [cancellingOrder, setCancellingOrder] = useState(false);
 const [showProfile, setShowProfile] = useState(false);
 const [activeMenu, setActiveMenu] = useState("home");
 const [customerName, setCustomerName] = useState("");
@@ -650,35 +653,43 @@ async function loadMyOrders() {
 
   setMyOrders(data || []);
 }
-// Cancel Order
-async function cancelOrder(orderId) {
-  const reason = window.prompt("অর্ডার বাতিল করার কারণ লিখুন:");
+// Open the in-app order cancellation dialog
+function cancelOrder(orderId) {
+  setCancelOrderId(orderId);
+  setCancelReason("");
+}
 
-  if (reason === null) return;
+// Confirm order cancellation
+async function confirmOrderCancellation() {
+  if (!cancelOrderId || cancellingOrder) return;
 
-  if (!reason.trim()) {
+  if (!cancelReason.trim()) {
     alert("দয়া করে বাতিলের কারণ লিখুন।");
     return;
   }
 
-  const { error } = await supabase.rpc(
-    "cancel_order_atomic",
-    {
-      p_order_id: orderId,
-      p_cancel_reason: reason.trim()
-    }
-  );
+  setCancellingOrder(true);
+  try {
+    const { error } = await supabase.rpc(
+      "cancel_order_atomic",
+      {
+        p_order_id: cancelOrderId,
+        p_cancel_reason: cancelReason.trim()
+      }
+    );
 
-  if (error) {
-    alert("অর্ডার বাতিল করা যায়নি: " + error.message);
-    return;
+    if (error) throw error;
+
+    await loadMonthlySpend();
+    await loadMyOrders();
+    setCancelOrderId(null);
+    setCancelReason("");
+    alert("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত এসেছে!");
+  } catch (error) {
+    alert("অর্ডার বাতিল করা যায়নি: " + (error?.message || "আবার চেষ্টা করুন।"));
+  } finally {
+    setCancellingOrder(false);
   }
-
-  await loadMonthlySpend();
-
-  alert("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত এসেছে!");
-
-  loadMyOrders();
 }
 // Bottom Navigation Menu
 const menuItems = [
@@ -1081,6 +1092,99 @@ fontWeight: "bold"
 </h3>
             </div>
           ))
+        )}
+
+        {cancelOrderId && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-order-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 10000,
+              background: "rgba(0,0,0,0.55)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 16,
+              boxSizing: "border-box"
+            }}
+          >
+            <div style={{
+              width: "100%",
+              maxWidth: 420,
+              background: "white",
+              borderRadius: 18,
+              padding: 20,
+              boxSizing: "border-box",
+              boxShadow: "0 12px 36px rgba(0,0,0,0.22)"
+            }}>
+              <h3 id="cancel-order-title" style={{ color: "#dc3545", margin: "0 0 10px", fontSize: 20 }}>
+                অর্ডার বাতিল করবেন?
+              </h3>
+              <p style={{ color: "#666", fontSize: 14, lineHeight: 1.6, margin: "0 0 12px" }}>
+                অর্ডার বাতিলের কারণ লিখুন। নিশ্চিত করলে অর্ডার বাতিলের অনুরোধ পাঠানো হবে।
+              </p>
+              <textarea
+                value={cancelReason}
+                onChange={(event) => setCancelReason(event.target.value)}
+                placeholder="বাতিলের কারণ লিখুন..."
+                rows={4}
+                disabled={cancellingOrder}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  resize: "vertical",
+                  border: "1px solid #d8e2da",
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 15,
+                  fontFamily: "inherit",
+                  outlineColor: "#198754"
+                }}
+              />
+              <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+                <button
+                  type="button"
+                  disabled={cancellingOrder}
+                  onClick={() => {
+                    setCancelOrderId(null);
+                    setCancelReason("");
+                  }}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    border: "1px solid #dce5df",
+                    borderRadius: 10,
+                    background: "#f3f5f4",
+                    color: "#555",
+                    fontWeight: "bold",
+                    cursor: cancellingOrder ? "not-allowed" : "pointer"
+                  }}
+                >
+                  ফিরে যান
+                </button>
+                <button
+                  type="button"
+                  disabled={cancellingOrder}
+                  onClick={confirmOrderCancellation}
+                  style={{
+                    flex: 1,
+                    minHeight: 44,
+                    border: "none",
+                    borderRadius: 10,
+                    background: cancellingOrder ? "#999" : "#dc3545",
+                    color: "white",
+                    fontWeight: "bold",
+                    cursor: cancellingOrder ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {cancellingOrder ? "অপেক্ষা করুন..." : "হ্যাঁ, বাতিল করুন"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         <button
