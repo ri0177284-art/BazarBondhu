@@ -211,6 +211,10 @@ const [cancelOrderId, setCancelOrderId] = useState(null);
 const [cancelReason, setCancelReason] = useState("");
 const [cancellingOrder, setCancellingOrder] = useState(false);
 const [showProfile, setShowProfile] = useState(false);
+const [showRewards, setShowRewards] = useState(false);
+const [rewardSummary, setRewardSummary] = useState(null);
+const [loadingRewards, setLoadingRewards] = useState(false);
+const [rewardPointsToUse, setRewardPointsToUse] = useState(0);
 const [activeMenu, setActiveMenu] = useState("home");
 const [customerName, setCustomerName] = useState("");
 const [customerPhone, setCustomerPhone] = useState("");
@@ -327,6 +331,11 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 
   loadProfile();
 }, [user]);
+
+  useEffect(() => {
+    if (!user) { setRewardSummary(null); return; }
+    void loadRewards();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -961,7 +970,8 @@ if (
       unit_price: Number(item.price)
     })),
     p_transaction_id: transactionId.trim() || null,
-     p_package_id: cartPackageId
+     p_package_id: cartPackageId,
+     p_reward_points: Number(rewardPointsToUse) || 0
   }
 );
 
@@ -978,6 +988,8 @@ if (orderError) throw orderError;
     setCustomerPhone("");
     setDeliveryAddress("");
     setTransactionId("");
+    setRewardPointsToUse(0);
+    await loadRewards();
   } catch (error) {
     console.error("Order error:", error);
     alert("অর্ডার করা যায়নি: " + error.message);
@@ -999,6 +1011,18 @@ async function loadMyOrders() {
   }
 
   setMyOrders(data || []);
+}
+async function loadRewards() {
+  if (!user) return;
+  setLoadingRewards(true);
+  const { data, error } = await supabase.rpc("rewards_get_my_summary");
+  setLoadingRewards(false);
+  if (error) {
+    console.error("Rewards loading error:", error.message);
+    alert("Rewards তথ্য লোড করা যায়নি: " + error.message);
+    return;
+  }
+  setRewardSummary(data || null);
 }
 // Open the in-app order cancellation dialog
 function cancelOrder(orderId) {
@@ -1044,11 +1068,14 @@ const menuItems = [
   { id: "categories", label: "Categories", icon: "📦" },
   { id: "cart", label: "Cart", icon: "🛒" },
   { id: "orders", label: "My Orders", icon: "📋" },
+  { id: "rewards", label: "Rewards", icon: "🎁" },
   { id: "profile", label: "Profile", icon: "👤" }
 ];
 // Bottom Navigation Actions
 function handleMenuClick(menuId) {
   setActiveMenu(menuId);
+  setShowRewards(menuId === "rewards");
+  if (menuId === "rewards") loadRewards();
 
   if (menuId === "home") {
     setShowMyOrders(false);
@@ -1104,7 +1131,9 @@ function handleMenuClick(menuId) {
 
 // Sidebar layout wrapper for every logged-in screen
 const cartCount = cart.reduce((n, item) => n + (item.quantity || 1), 0);
-const activeNow = showProfile
+const activeNow = showRewards
+  ? "rewards"
+  : showProfile
   ? "profile"
   : showMyOrders
   ? "orders"
@@ -1262,6 +1291,44 @@ fontWeight: "bold"
             ? "আগে অ্যাকাউন্ট আছে? লগইন করুন"
             : "নতুন অ্যাকাউন্ট খুলুন"}
         </button>
+      </div>
+    );
+  }
+
+  // Customer Rewards Page
+  if (showRewards) {
+    const rewardBalance = Number(rewardSummary?.balance || 0);
+    const rewardHistory = Array.isArray(rewardSummary?.history) ? rewardSummary.history : [];
+    return withSidebar(
+      <div style={{ minHeight: "100vh", background: "#f4f8f4", padding: "20px 12px", boxSizing: "border-box", fontFamily: "Arial" }}>
+        <div style={{ maxWidth: 680, margin: "12px auto", display: "grid", gap: 16 }}>
+          <section style={{ padding: 22, borderRadius: 20, color: "#fff", background: "linear-gradient(135deg,#087f45,#20a464)", boxShadow: "0 10px 26px rgba(8,127,69,.18)" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, opacity: .9 }}>🎁 BazarBondhu Rewards</div>
+            <h2 style={{ margin: "12px 0 4px", fontSize: 30 }}>আপনার Reward পয়েন্ট</h2>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+              <strong style={{ fontSize: 42 }}>{rewardBalance.toLocaleString("bn-BD")}</strong>
+              <span style={{ fontSize: 14 }}>পয়েন্ট</span>
+            </div>
+            <p style={{ margin: "5px 0 0", opacity: .92 }}>সমমূল্য ৳{Math.floor(rewardBalance / 10).toLocaleString("bn-BD")} · ১০ পয়েন্ট = ৳১</p>
+            <p style={{ margin: "12px 0 0", fontSize: 12, opacity: .88 }}>প্রথম সফল অর্ডারে একবার ৫০ বোনাস পয়েন্ট। প্রতিটি পয়েন্ট ১২ মাস মেয়াদি।</p>
+          </section>
+          <section style={{ background: "#fff", border: "1px solid #e2eee5", borderRadius: 18, padding: 18, boxShadow: "0 5px 18px rgba(25,135,84,.07)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+              <div style={{ background: "#f1faf3", padding: 13, borderRadius: 12 }}><small style={{ color: "#66756b" }}>মোট অর্জিত</small><strong style={{ display: "block", color: "#087f45", fontSize: 21 }}>{Number(rewardSummary?.lifetime_earned || 0).toLocaleString("bn-BD")}</strong></div>
+              <div style={{ background: "#fff8e9", padding: 13, borderRadius: 12 }}><small style={{ color: "#80601b" }}>৩০ দিনের মধ্যে মেয়াদ শেষ</small><strong style={{ display: "block", color: "#9a6500", fontSize: 21 }}>{Number(rewardSummary?.expiring_30_days || 0).toLocaleString("bn-BD")}</strong></div>
+            </div>
+            <button type="button" onClick={loadRewards} disabled={loadingRewards} style={{ width: "100%", marginTop: 14, padding: 12, border: "1px solid #cce8d5", borderRadius: 11, background: "#e8f5ed", color: "#087f45", fontWeight: 800, cursor: "pointer" }}>{loadingRewards ? "লোড হচ্ছে…" : "↻ Reward রিফ্রেশ করুন"}</button>
+          </section>
+          <section style={{ background: "#fff", border: "1px solid #e2eee5", borderRadius: 18, padding: 18 }}>
+            <h3 style={{ margin: "0 0 12px", color: "#176b40" }}>পয়েন্টের ইতিহাস</h3>
+            {rewardHistory.length === 0 ? <p style={{ color: "#718076", margin: 0 }}>এখনো কোনো Reward পয়েন্ট অর্জিত হয়নি। অর্ডার Delivered হলে পয়েন্ট যোগ হবে।</p> : rewardHistory.map((item) => (
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #edf2ee" }}>
+                <div style={{ minWidth: 0 }}><strong style={{ display: "block", color: "#263d30", fontSize: 13 }}>{item.note || "Reward লেনদেন"}</strong><small style={{ color: "#829087" }}>{new Date(item.created_at).toLocaleDateString("bn-BD")}{item.expires_at ? " · মেয়াদ " + new Date(item.expires_at).toLocaleDateString("bn-BD") : ""}</small></div>
+                <strong style={{ color: Number(item.points) > 0 ? "#087f45" : "#b42318", whiteSpace: "nowrap" }}>{Number(item.points) > 0 ? "+" : ""}{Number(item.points).toLocaleString("bn-BD")} পয়েন্ট</strong>
+              </div>
+            ))}
+          </section>
+        </div>
       </div>
     );
   }
@@ -1772,6 +1839,13 @@ fontWeight: "bold"
           </div>
         )}
 
+        <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
+          <strong style={{ display: "block", color: "#176b40", marginBottom: 8 }}>🎁 Reward পয়েন্ট ব্যবহার</strong>
+          <p style={{ color: "#68786d", fontSize: 12, margin: "0 0 9px" }}>আপনার ব্যালেন্স: {Number(rewardSummary?.balance || 0).toLocaleString("bn-BD")} পয়েন্ট · সর্বোচ্চ ছাড় ৳{Math.floor(cartTotal * 0.1).toLocaleString("bn-BD")}</p>
+          <input type="number" min="0" step="10" max={Number(rewardSummary?.balance || 0)} value={rewardPointsToUse || ""} onChange={(event) => setRewardPointsToUse(Math.max(0, Number(event.target.value) || 0))} placeholder="ব্যবহার করতে পয়েন্ট লিখুন (সর্বনিম্ন ১০০)" style={inputStyle} />
+          <small style={{ display: "block", marginTop: 7, color: "#68786d" }}>১০ পয়েন্ট = ৳১ · Delivery ও Service Fee-তে পয়েন্ট ব্যবহার করা যাবে না।</small>
+          {Number(rewardPointsToUse) > 0 && <strong style={{ display: "block", marginTop: 8, color: "#087f45" }}>সম্ভাব্য ছাড়: ৳{Math.min(Number(rewardPointsToUse) / 10, Math.floor(cartTotal * 0.1)).toLocaleString("bn-BD")}</strong>}
+        </div>
         <div style={{
           background: "#f4faf5",
           padding: 16,
