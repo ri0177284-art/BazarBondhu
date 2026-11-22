@@ -140,6 +140,25 @@ function suggestBudgetFill(selectedProducts, budget, currentTotal) {
   return { additions, total };
 }
 
+function getCategoryVisual(categoryName = "") {
+  const name = String(categoryName).toLowerCase();
+  if (/চাল|rice|ডাল|lentil|আটা|flour/.test(name)) return { icon: "🌾", tone: "bb-category-grain" };
+  if (/তেল|oil|ঘি|ghee/.test(name)) return { icon: "🫒", tone: "bb-category-oil" };
+  if (/সবজি|vegetable|শাক|আলু|পেঁয়াজ/.test(name)) return { icon: "🥬", tone: "bb-category-vegetable" };
+  if (/ফল|fruit|আম|কলা|আপেল/.test(name)) return { icon: "🍎", tone: "bb-category-fruit" };
+  if (/মাছ|মাংস|মুরগি|fish|meat|chicken/.test(name)) return { icon: "🐟", tone: "bb-category-protein" };
+  if (/দুধ|ডিম|দুগ্ধ|milk|egg|dairy/.test(name)) return { icon: "🥚", tone: "bb-category-dairy" };
+  if (/মসলা|লবণ|চিনি|spice|salt|sugar/.test(name)) return { icon: "🧂", tone: "bb-category-spice" };
+  if (/বিস্কুট|স্ন্যাক|snack|chips|noodle/.test(name)) return { icon: "🍪", tone: "bb-category-snack" };
+  if (/নাশতা|বেকারি|bread|bakery|breakfast/.test(name)) return { icon: "🥐", tone: "bb-category-bakery" };
+  if (/পার্সোনাল|কেয়ার|soap|shampoo|personal/.test(name)) return { icon: "🧴", tone: "bb-category-care" };
+  if (/পরিষ্কার|ডিটারজেন্ট|clean|detergent/.test(name)) return { icon: "🧼", tone: "bb-category-clean" };
+  if (/টিস্যু|গৃহস্থালি|tissue|household/.test(name)) return { icon: "🧻", tone: "bb-category-home" };
+  if (/চা|কফি|পানীয়|tea|coffee|drink|beverage/.test(name)) return { icon: "☕", tone: "bb-category-drink" };
+  if (/বেবি|baby|diaper/.test(name)) return { icon: "🍼", tone: "bb-category-baby" };
+  return { icon: "🧺", tone: "bb-category-default" };
+}
+
 function Customer() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -2249,135 +2268,75 @@ const productPickerItems = products.filter((product) => {
         </div>
       </section>
 
-      <div style={{
-  background: "white",
-  border: "1px solid #dcebe0",
-  borderRadius: 16,
-  padding: "5px 14px",
-  marginTop: 22,
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-  boxShadow: "0 5px 16px rgba(0,0,0,0.05)"
-}}>
-  <div style={{
-    background: "#e8f5ed",
-    width: 40,
-    height: 40,
-    minWidth: 40,
-    borderRadius: 12,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 20
-  }}>
-    🔍
-  </div>
+      <div className="bb-store-search">
+        <span className="bb-store-search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          placeholder="আপনার প্রয়োজনীয় পণ্য খুঁজুন..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          aria-label="পণ্য খুঁজুন"
+        />
+        {search && (
+          <button type="button" className="bb-store-search-clear" onClick={() => setSearch("")} aria-label="সার্চ মুছুন">
+            ×
+          </button>
+        )}
+      </div>
 
-  <input
-    type="text"
-    placeholder="আপনার প্রয়োজনীয় পণ্য খুঁজুন..."
-    value={search}
-    onChange={e => setSearch(e.target.value)}
-    style={{
-      width: "100%",
-      padding: "14px 0",
-      border: "none",
-      outline: "none",
-      background: "transparent",
-      color: "#222",
-      fontSize: 15
-    }}
-  />
+      <section className="bb-category-section" aria-labelledby="bb-category-title">
+        <div className="bb-category-heading">
+          <div>
+            <span className="bb-category-eyebrow">SHOP BY CATEGORY</span>
+            <h2 id="bb-category-title">ক্যাটাগরি অনুযায়ী বাজার করুন</h2>
+            <p>আপনার প্রয়োজনীয় পণ্যটি সহজেই খুঁজে নিন</p>
+          </div>
+          <span className="bb-category-heading-icon" aria-hidden="true">🧺</span>
+        </div>
 
-  {search && (
-    <span
-      onClick={() => setSearch("")}
-      style={{
-        fontSize: 20,
-        color: "#888",
-        cursor: "pointer",
-        padding: 5
-      }}
-    >
-      ✕
-    </span>
-  )}
-</div>
-      
-<h2 style={{
-  color: "#176b40",
-  fontSize: 20,
-  marginTop: 25,
-  marginBottom: 8,
-  fontWeight: "bold"
-}}>
-  🛍️ পণ্যের ক্যাটাগরি
-</h2>
+        <div className="bb-category-grid">
+          <button
+            type="button"
+            className={`bb-category-card bb-category-all ${selectedCategory === "সব" ? "is-active" : ""}`}
+            onClick={() => setSelectedCategory("সব")}
+            aria-pressed={selectedCategory === "সব"}
+          >
+            <span className="bb-category-icon" aria-hidden="true">🛍️</span>
+            <span className="bb-category-card-copy">
+              <strong>সব পণ্য</strong>
+              <small>{products.length.toLocaleString("bn-BD")} টি পণ্য</small>
+            </span>
+            <span className="bb-category-arrow" aria-hidden="true">↗</span>
+          </button>
 
-<p style={{
-  color: "#888",
-  fontSize: 13,
-  marginTop: 0,
-  marginBottom: 10
-}}>
-  আপনার পছন্দের ক্যাটাগরি বেছে নিন
-</p>
+          {categories.map((category) => {
+            const categoryName = String(category.name || "");
+            const categoryVisual = getCategoryVisual(categoryName);
+            const productCount = products.filter((product) =>
+              String(product.category_id) === String(category.id) ||
+              product.category === category.name
+            ).length;
+            const isSelected = String(selectedCategory) === String(category.id);
 
-<div style={{
-  display: "flex",
-  gap: 10,
-  overflowX: "auto",
-  padding: "10px 2px 14px",
-  scrollbarWidth: "thin"
-}}>
-  <button
-    onClick={() => setSelectedCategory("সব")}
-    style={{
-      border: selectedCategory === "সব" ? "none" : "1px solid #dcebe0",
-      background: selectedCategory === "সব"
-        ? "linear-gradient(135deg, #087f45, #20a464)"
-        : "white",
-      color: selectedCategory === "সব" ? "white" : "#087f45",
-      padding: "12px 20px",
-      borderRadius: 25,
-      fontSize: 14,
-      fontWeight: "bold",
-      whiteSpace: "nowrap",
-      cursor: "pointer",
-      boxShadow: selectedCategory === "সব"
-        ? "0 4px 12px rgba(8,127,69,0.20)"
-        : "0 2px 7px rgba(0,0,0,0.04)"
-    }}
-  >
-    🛒 সব পণ্য
-  </button>
-
-  {categories.map(category => (
-    <button
-      key={category.id}
-      onClick={() => setSelectedCategory(category.id)}
-      style={{
-        border: selectedCategory === category.id ? "none" : "1px solid #dcebe0",
-        background: selectedCategory === category.id
-          ? "linear-gradient(135deg, #087f45, #20a464)"
-          : "white",
-        color: selectedCategory === category.id ? "white" : "#087f45",
-        padding: "12px 20px",
-        borderRadius: 25,
-        fontSize: 14,
-        fontWeight: "bold",
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        boxShadow: selectedCategory === category.id
-          ? "0 4px 12px rgba(8,127,69,0.20)"
-          : "0 2px 7px rgba(0,0,0,0.04)"
-      }}
-    >
-      {category.name}
-    </button>
-  ))}
-</div>
+            return (
+              <button
+                type="button"
+                key={category.id}
+                className={`bb-category-card ${categoryVisual.tone} ${isSelected ? "is-active" : ""}`}
+                onClick={() => setSelectedCategory(category.id)}
+                aria-pressed={isSelected}
+              >
+                <span className="bb-category-icon" aria-hidden="true">{categoryVisual.icon}</span>
+                <span className="bb-category-card-copy">
+                  <strong>{category.name}</strong>
+                  <small>{productCount.toLocaleString("bn-BD")} টি পণ্য</small>
+                </span>
+                <span className="bb-category-arrow" aria-hidden="true">↗</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
      <h2 id="products-section" style={{
   color: "#198754",
   fontSize: 22,
