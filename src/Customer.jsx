@@ -382,7 +382,7 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 
     const { data, error } = await supabase
       .from("orders")
-      .select("subtotal, order_status, created_at, order_items(quantity)")
+      .select("subtotal, order_status, payment_status, created_at, order_items(quantity)")
       .eq("user_id", user.id)
       .eq("package_id", familyPreferences.packageId)
       .gte("created_at", previousPeriodStart.toISOString())
@@ -393,17 +393,19 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
       return;
     }
 
-    const isNotCancelled = (order) => {
+    const isCountableOrder = (order) => {
       const status = String(order.order_status || "").toLowerCase();
-      return !["cancelled", "canceled", "বাতিল"].includes(status);
+      const paymentStatus = String(order.payment_status || "").toLowerCase();
+      return !["cancelled", "canceled", "বাতিল"].includes(status)
+        && !["rejected", "refunded"].includes(paymentStatus);
     };
     const currentOrders = (data || []).filter((order) => {
       const createdAt = new Date(order.created_at);
-      return createdAt >= currentPeriodStart && createdAt < currentPeriodEnd && isNotCancelled(order);
+      return createdAt >= currentPeriodStart && createdAt < currentPeriodEnd && isCountableOrder(order);
     });
     const previousOrders = (data || []).filter((order) => {
       const createdAt = new Date(order.created_at);
-      return createdAt >= previousPeriodStart && createdAt < previousPeriodEnd && isNotCancelled(order);
+      return createdAt >= previousPeriodStart && createdAt < previousPeriodEnd && isCountableOrder(order);
     });
     const sumProductSubtotals = (orders) => orders.reduce((sum, order) => sum + Math.max(0, Number(order.subtotal) || 0), 0);
 
@@ -2082,7 +2084,7 @@ const productPickerItems = products.filter((product) => {
                 </span>
               </label>
               <label className="bb-family-field">
-                <span>{packagePeriodLabel} বাজেট</span>
+                <span>{familyPreferencesDraft.packageId === "weekly-family" ? "সাপ্তাহিক" : "মাসিক"} বাজেট</span>
                 <span className="bb-budget-input">
                   <b>৳</b>
                   <input
@@ -2181,7 +2183,7 @@ const productPickerItems = products.filter((product) => {
               <strong>৳{Math.abs(shoppingBudgetRemaining).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
             </div>
           </div>
-          <div className="bb-budget-progress" role="progressbar" aria-label={`${packagePeriodLabel} বাজেটের ব্যবহার`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
+          <div className="bb-budget-progress" role="progressbar" aria-label={`${isBudgetSmartPackage ? `${smartBudgetDays} দিনের` : packagePeriodLabel} বাজেটের ব্যবহার`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
             <span className={shoppingBudgetRemaining < 0 ? "is-over" : ""} style={{ width: `${shoppingBudgetProgress}%` }} />
           </div>
           <div className="bb-budget-caption">
@@ -2295,12 +2297,12 @@ const productPickerItems = products.filter((product) => {
         )}
       </section>
 
-      <section className="bb-monthly-insight" aria-label="মাসিক বাজারের অগ্রগতি ও রিমাইন্ডার">
+      <section className="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
         <div className="bb-monthly-progress-panel">
           <div
             className="bb-monthly-progress-ring"
             role="progressbar"
-            aria-label="মাসিক বাজেট ব্যবহারের অগ্রগতি"
+            aria-label="নির্বাচিত প্যাকেজ বাজেট ব্যবহারের অগ্রগতি"
             aria-valuemin="0"
             aria-valuemax="100"
             aria-valuenow={monthlySpendProgress}
@@ -2343,7 +2345,7 @@ const productPickerItems = products.filter((product) => {
           <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
           <p>
             {monthlySpendProgress >= 75
-              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক"} বাজার শেষ পর্যায়ে। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : isBudgetSmartPackage ? "বাজেট স্মার্ট" : "মাসিক"} বাজারের বাজেট প্রায় শেষ। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
               : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
           </p>
           <button type="button" onClick={() => setShowFamilyShopping(true)}>
