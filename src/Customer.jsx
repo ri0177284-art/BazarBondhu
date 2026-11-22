@@ -618,6 +618,8 @@ if (
 
 if (orderError) throw orderError;
 
+    await loadMonthlySpend();
+
     alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
@@ -671,6 +673,8 @@ async function cancelOrder(orderId) {
     alert("অর্ডার বাতিল করা যায়নি: " + error.message);
     return;
   }
+
+  await loadMonthlySpend();
 
   alert("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত এসেছে!");
 
