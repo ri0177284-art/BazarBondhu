@@ -28,7 +28,7 @@
 }
 
 .bb-family-heading-copy { min-width: 0; flex: 1; }
-.bb-family-heading-copy h2 { margin: 0 0 3px; color: #283b2f; font-size: 16px; font-weight: 800; }
+.bb-family-heading-copy h2 { margin: 0 0 3px; color: #283b2f; font-size: 16px; font-weight: 800; white-space: nowrap; }
 .bb-family-heading-copy > span { color: #718076; font-size: 12px; }
 
 .bb-my-market-button {
@@ -202,7 +202,7 @@
   .bb-family-card { padding: 13px; }
   .bb-family-card-heading { gap: 9px; }
   .bb-family-icon { width: 40px; height: 40px; border-radius: 12px; font-size: 26px; }
-  .bb-family-heading-copy h2 { font-size: 14px; }
+  .bb-family-heading-copy h2 { font-size: clamp(11px, 3.7vw, 14px); }
   .bb-family-heading-copy > span { font-size: 11px; }
   .bb-family-edit-button { min-height: 35px; gap: 5px; padding: 0 9px; font-size: 11px; }
   .bb-my-market-button { min-height: 35px; gap: 5px; padding: 0 10px; font-size: 11px; }
