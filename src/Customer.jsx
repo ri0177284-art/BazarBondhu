@@ -187,6 +187,7 @@ const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [shoppingListMessage, setShoppingListMessage] = useState("");
+const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
@@ -462,6 +463,66 @@ const [shoppingListMessage, setShoppingListMessage] = useState("");
     setShoppingListMessage(filled > currentTotal
       ? `বাজেট অনুযায়ী পরিমাণ সাজানো হয়েছে — ${filled.toLocaleString("en-IN")} টাকার বাজার।`
       : "নির্বাচিত পণ্যের স্টক অনুযায়ী তালিকাটি বাজেটের সবচেয়ে কাছাকাছি আছে।");
+  }
+
+  function generateSmartBudgetSuggestion() {
+    const budget = Number(familyPreferences.monthlyBudget) || 0;
+    const members = Math.max(1, Number(familyPreferences.familyMembers) || 1);
+    const days = Math.max(7, Number(smartBudgetDays) || 7);
+    if (budget <= 0) {
+      setShoppingListMessage("আগে আপনার বাজারের বাজেট নির্ধারণ করে পছন্দ সেভ করুন।");
+      return;
+    }
+
+    const essentials = [
+      { pattern: /^(মিনিকেট চাল|নাজিরশাইল চাল|আতপ চাল|চাল)$/i, weeklyPerPerson: 1.2 },
+      { pattern: /^মসুর ডাল$/i, weeklyPerPerson: 0.16 },
+      { pattern: /^সয়াবিন তেল$/i, weeklyPerPerson: 0.18 },
+      { pattern: /^আলু$/i, weeklyPerPerson: 0.35 },
+      { pattern: /^পেঁয়াজ$/i, weeklyPerPerson: 0.2 },
+      { pattern: /^লবণ$/i, weeklyPerPerson: 0.04 },
+      { pattern: /^ডিম$/i, weeklyPerPerson: 2 },
+      { pattern: /^মৌসুমি সবজি$/i, weeklyPerPerson: 0.35 },
+    ];
+
+    const existing = new Map(shoppingList.map((item) => [item.productId, Math.max(0, Number(item.quantity) || 0)]));
+    let total = shoppingList.reduce((sum, item) => {
+      const product = products.find((entry) => entry.id === item.productId);
+      return sum + (product ? Number(product.price || 0) * Number(item.quantity || 0) : 0);
+    }, 0);
+    if (total > budget) {
+      setShoppingListMessage("আপনার বর্তমান তালিকার খরচ বাজেট ছাড়িয়েছে। আগে কিছু পণ্যের পরিমাণ কমিয়ে নিন।");
+      return;
+    }
+
+    let addedCount = 0;
+    essentials.forEach(({ pattern, weeklyPerPerson }) => {
+      const product = products.find((entry) =>
+        entry.is_active !== false &&
+        Number(entry.stock) > 0 &&
+        pattern.test(String(entry.name || "").trim())
+      );
+      if (!product || existing.has(product.id)) return;
+
+      const unitPrice = Number(product.price) || 0;
+      const stock = Math.floor(Number(product.stock) || 0);
+      if (unitPrice <= 0 || stock < 1) return;
+
+      const suggested = Math.max(1, Math.ceil(weeklyPerPerson * members * days / 7));
+      const affordable = Math.floor((budget - total) / unitPrice);
+      const quantity = Math.min(suggested, stock, affordable);
+      if (quantity < 1) return;
+
+      existing.set(product.id, quantity);
+      total += quantity * unitPrice;
+      addedCount += 1;
+    });
+
+    const nextList = Array.from(existing, ([productId, quantity]) => ({ productId, quantity }));
+    setShoppingList(nextList);
+    setShoppingListMessage(addedCount
+      ? `আপনার ${members} জনের ${days} দিনের জন্য স্টক ও বর্তমান দাম অনুযায়ী ${addedCount} ধরনের প্রয়োজনীয় পণ্য সাজানো হয়েছে। চাইলে তালিকা পরিবর্তন করুন।`
+      : "আপনার বর্তমান তালিকা বজায় রাখা হয়েছে। বাজেটের মধ্যে নতুন পণ্য যোগ করার মতো পর্যাপ্ত টাকা বা স্টক পাওয়া যায়নি।");
   }
 
   function addShoppingListToCart(selectedProducts) {
@@ -1896,6 +1957,35 @@ const productPickerItems = products.filter((product) => {
               {showProductPicker ? "পণ্য বাছাই বন্ধ" : `পণ্য বাছুন${shoppingList.length ? ` · ${shoppingList.length}টি যোগ` : ""}`}
             </button>
           </div>
+
+          {familyPreferences.packageId === "budget-smart" && (
+            <div style={{ background: "#f0f8f2", border: "1px solid #d7eadb", borderRadius: 14, padding: 14, marginBottom: 16 }}>
+              <strong style={{ display: "block", color: "#245b37", marginBottom: 6 }}>✨ আপনার বাজেটে স্মার্ট বাজার সাজান</strong>
+              <p style={{ color: "#52665a", fontSize: 13, lineHeight: 1.6, margin: "0 0 12px" }}>
+                পরিবারের সদস্য, সময়, পণ্যের বর্তমান দাম ও স্টক বিবেচনা করে প্রয়োজনীয় পণ্যের একটি প্রাথমিক তালিকা তৈরি হবে। আপনি পরে সব পণ্য ও পরিমাণ বদলাতে পারবেন।
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
+                {[7, 15, 30].map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => setSmartBudgetDays(days)}
+                    aria-pressed={smartBudgetDays === days}
+                    style={{ border: smartBudgetDays === days ? "1px solid #287a45" : "1px solid #d5ded7", borderRadius: 20, padding: "7px 12px", background: smartBudgetDays === days ? "#287a45" : "#fff", color: smartBudgetDays === days ? "#fff" : "#365342", fontWeight: 600 }}
+                  >
+                    {days === 7 ? "৭ দিন" : days === 15 ? "১৫ দিন" : "৩০ দিন"}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={generateSmartBudgetSuggestion}
+                style={{ width: "100%", border: 0, borderRadius: 10, padding: "11px 14px", background: "#287a45", color: "#fff", fontWeight: 700, cursor: "pointer" }}
+              >
+                ✨ আমার বাজেটে বাজার সাজিয়ে দিন
+              </button>
+            </div>
+          )}
 
           <div className="bb-budget-overview">
             <div><span>তালিকার মোট</span><strong>৳{shoppingListTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
