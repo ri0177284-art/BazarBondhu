@@ -1067,16 +1067,20 @@ fontWeight: "bold"
   ✕ অর্ডার বাতিল করুন
 </button>
               )}
-              <p style={{
-  background: "#f4f8f4",
-  color: "#555",
-  padding: "10px 12px",
-  borderRadius: 9,
+              <div style={{
+  background: order.payment_status === "paid" ? "#e8f5ed" : order.payment_status === "rejected" ? "#fff1f1" : "#fff8e8",
+  color: order.payment_status === "paid" ? "#087f45" : order.payment_status === "rejected" ? "#b42318" : "#805b16",
+  padding: "12px 13px",
+  borderRadius: 10,
   fontSize: 14,
-  marginTop: 12
+  marginTop: 12,
+  border: `1px solid ${order.payment_status === "paid" ? "#cce8d5" : order.payment_status === "rejected" ? "#f2cccc" : "#f0dfb7"}`
 }}>
-  💳 পেমেন্ট স্ট্যাটাস: <strong>{order.payment_status}</strong>
-</p>
+  💳 পেমেন্ট স্ট্যাটাস: <strong>{order.payment_status === "paid" ? "পরিশোধিত ✓" : order.payment_status === "rejected" ? "পেমেন্ট গ্রহণ করা হয়নি" : order.payment_status === "refunded" ? "টাকা ফেরত দেওয়া হয়েছে" : "যাচাই অপেক্ষমাণ"}</strong>
+  {order.payment_method === "cod" && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পণ্য হাতে পেয়ে ডেলিভারির সময় নগদ টাকা দিন।</p>}
+  {["bkash", "nagad"].includes(order.payment_method) && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>আপনার পেমেন্টের তথ্য Admin যাচাই করছেন। যাচাই শেষ হলে এখানে আপডেট দেখবেন।</p>}
+  {order.payment_status === "rejected" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পেমেন্ট বা Transaction ID মেলেনি। অনুগ্রহ করে BazarBondhu কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।</p>}
+</div>
 
               <h4 style={{
   color: "#198754",
