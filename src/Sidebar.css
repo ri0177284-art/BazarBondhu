@@ -514,3 +514,18 @@
   .bb-campaign-copy p { font-size: 11px; }
 }
 
+
+
+/* Rewards shortcut beside the notification bell */
+.bb-rewards-btn {
+  background: #e8f5ed;
+  color: #087f45;
+}
+.bb-rewards-btn:hover {
+  background: #d8efdf;
+  color: #056b3a;
+}
+.bb-rewards-btn:focus-visible {
+  outline: 2px solid #087f45;
+  outline-offset: 2px;
+}
