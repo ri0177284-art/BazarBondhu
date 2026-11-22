@@ -11,6 +11,7 @@ const navigation = [
   { id: "Market Prices", label: "বাজারদর", icon: "৳" },
   { id: "Orders", label: "অর্ডার", icon: "▤" },
   { id: "Customers", label: "গ্রাহক", icon: "♙" },
+  { id: "Rewards", label: "Rewards", icon: "🎁" },
   { id: "Settings", label: "সেটিংস", icon: "⚙" },
 ];
 
@@ -32,6 +33,7 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
   const [customers, setCustomers] = useState([]);
+  const [rewardCustomers, setRewardCustomers] = useState([]);
   const [salesChartData, setSalesChartData] = useState([]);
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [serviceCharge, setServiceCharge] = useState(0);
@@ -77,6 +79,15 @@ function App() {
       return;
     }
     setCustomers((data || []).filter((customer) => customer.role !== "admin"));
+  }, [notify]);
+
+  const loadRewardCustomers = useCallback(async () => {
+    const { data, error } = await supabase.rpc("rewards_admin_overview");
+    if (error) {
+      notify(`Rewards তথ্য লোড করা যায়নি: ${error.message}`, "error");
+      return;
+    }
+    setRewardCustomers(data || []);
   }, [notify]);
 
   const loadSettings = useCallback(async () => {
@@ -132,8 +143,8 @@ function App() {
   }, [notify]);
 
   const refreshAdminData = useCallback(async () => {
-    await Promise.all([loadProducts(), loadOrders(), loadCustomers(), loadSettings()]);
-  }, [loadCustomers, loadOrders, loadProducts, loadSettings]);
+    await Promise.all([loadProducts(), loadOrders(), loadCustomers(), loadSettings(), loadRewardCustomers()]);
+  }, [loadCustomers, loadOrders, loadProducts, loadSettings, loadRewardCustomers]);
 
   const checkAdmin = useCallback(
     async (currentSession) => {
@@ -404,7 +415,7 @@ function App() {
             <button
               className={`admin-nav-item${active === item.id ? " is-active" : ""}`}
               key={item.id}
-              onClick={() => { setActive(item.id); if (item.id === "Orders") setNewOrderCount(0); }}
+              onClick={() => { setActive(item.id); if (item.id === "Orders") setNewOrderCount(0); if (item.id === "Rewards") void loadRewardCustomers(); }}
               aria-current={active === item.id ? "page" : undefined}
             >
               <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>
@@ -524,6 +535,19 @@ function App() {
         {active === "Customers" && (
           <section className="admin-content"><div className="page-intro"><div><h2>গ্রাহক তালিকা</h2><p>নিবন্ধিত গ্রাহকের যোগাযোগের তথ্য দেখুন।</p></div><span className="page-total">{filteredCustomers.length} জন</span></div><label className="search-box search-box-wide"><span>⌕</span><input value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} placeholder="নাম, ফোন বা ইমেইল দিয়ে খুঁজুন" /></label>
             {filteredCustomers.length === 0 ? <div className="panel empty-state"><span>♙</span><strong>{customerQuery ? "গ্রাহক মেলেনি" : "এখনো কোনো গ্রাহক নেই"}</strong><p>নতুন গ্রাহক নিবন্ধন করলে এখানে দেখা যাবে।</p></div> : <div className="panel customer-table-panel"><div className="table-scroll"><table className="admin-table"><thead><tr><th>গ্রাহক</th><th>ফোন</th><th>ইমেইল</th><th>ঠিকানা</th></tr></thead><tbody>{filteredCustomers.map((customer) => <tr key={customer.id}><td><div className="customer-cell"><span className="customer-avatar">{(customer.full_name || "?").slice(0, 1)}</span><strong>{customer.full_name || "নাম নেই"}</strong></div></td><td>{customer.phone || "—"}</td><td>{customer.email || "—"}</td><td>{customer.address || "—"}</td></tr>)}</tbody></table></div></div>}
+          </section>
+        )}
+
+        {active === "Rewards" && (
+          <section className="admin-content">
+            <div className="page-intro"><div><h2>BazarBondhu Rewards</h2><p>গ্রাহকের পয়েন্ট ব্যালেন্স, অর্জন ও প্রথম অর্ডারের বোনাস দেখুন।</p></div><span className="page-total">{rewardCustomers.length} জন</span></div>
+            <div className="stats-grid">
+              <article className="stat-card"><span className="stat-icon stat-green">🎁</span><div><small>মোট অবশিষ্ট পয়েন্ট</small><strong>{rewardCustomers.reduce((sum, customer) => sum + Number(customer.points_balance || 0), 0).toLocaleString("bn-BD")}</strong></div></article>
+              <article className="stat-card"><span className="stat-icon stat-blue">♙</span><div><small>Reward ব্যালেন্স আছে</small><strong>{rewardCustomers.filter((customer) => Number(customer.points_balance || 0) > 0).length.toLocaleString("bn-BD")} জন</strong></div></article>
+            </div>
+            <div className="panel customer-table-panel"><div className="panel-heading"><div><h2>গ্রাহকদের Reward হিসাব</h2><p>১০ পয়েন্ট = ৳১ · প্রথম সফল অর্ডারে একবার ৫০ বোনাস</p></div><button className="bb-button bb-button-secondary" onClick={() => void loadRewardCustomers()}>↻ রিফ্রেশ</button></div>
+              {rewardCustomers.length === 0 ? <div className="empty-state"><span>🎁</span><strong>এখনো Reward হিসাব নেই</strong><p>গ্রাহকের অর্ডার Delivered হলে Reward এখানে দেখা যাবে।</p></div> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>গ্রাহক</th><th>ফোন</th><th>বর্তমান পয়েন্ট</th><th>মোট অর্জিত</th><th>ব্যবহৃত</th><th>প্রথম বোনাস</th></tr></thead><tbody>{rewardCustomers.map((customer) => <tr key={customer.user_id}><td><strong>{customer.full_name || "নাম নেই"}</strong></td><td>{customer.phone || "—"}</td><td><strong>{Number(customer.points_balance || 0).toLocaleString("bn-BD")}</strong></td><td>{Number(customer.lifetime_earned || 0).toLocaleString("bn-BD")}</td><td>{Number(customer.lifetime_redeemed || 0).toLocaleString("bn-BD")}</td><td>{customer.first_order_bonus_awarded ? "দেওয়া হয়েছে" : "এখনো নয়"}</td></tr>)}</tbody></table></div>}
+            </div>
           </section>
         )}
 
