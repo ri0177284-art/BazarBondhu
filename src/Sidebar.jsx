@@ -154,6 +154,15 @@ export default function Sidebar({
           <div className="bb-topbar-actions">
             <button
               type="button"
+              className="bb-action-btn bb-rewards-btn"
+              onClick={() => select("rewards")}
+              aria-label="Rewards পয়েন্ট দেখুন"
+              title="Rewards"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5a2.5 2.5 0 1 1 2.5-2.5C10 6 12 7 12 7ZM12 7h4.5A2.5 2.5 0 1 0 14 4.5C14 6 12 7 12 7Z" /></svg>
+            </button>
+            <button
+              type="button"
               className="bb-action-btn bb-notification-btn"
               onClick={() => select("orders")}
               aria-label={notificationCount > 0 ? `অর্ডার নোটিফিকেশন, ${notificationCount}টি অপেক্ষমাণ অর্ডার` : "অর্ডার নোটিফিকেশন"}
