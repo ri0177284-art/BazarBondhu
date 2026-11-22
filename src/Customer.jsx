@@ -2101,27 +2101,47 @@ const productPickerItems = products.filter((product) => {
 
       <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
         <div className="bb-campaign-copy">
-          <span className="bb-campaign-kicker">🏠 Family Monthly Package</span>
+          <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU-এর বিশেষ সুবিধা</span>
           <h2 id="bb-campaign-title">
-            আপনার পরিবারের মাসিক বাজার এখন <em>আরও সহজ!</em>
+            পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em>
           </h2>
-          <p>একবার লিস্ট দিন, প্রতি মাসে বাজার পৌঁছে যাবে আপনার পরিবারের দরজায়।</p>
+          <p>পরিবারের সদস্য ও বাজেট অনুযায়ী মাসের বাজারের তালিকা তৈরি করুন, পছন্দমতো পণ্য বেছে নিন এবং সহজেই অর্ডার করুন।</p>
+          <div className="bb-campaign-benefits" aria-label="মাসিক প্যাকেজের সুবিধা">
+            <span><b aria-hidden="true">✓</b> নিজের বাজারের তালিকা</span>
+            <span><b aria-hidden="true">✓</b> বাজেট অনুযায়ী পরিকল্পনা</span>
+            <span><b aria-hidden="true">✓</b> একসঙ্গে মাসের বাজার</span>
+          </div>
           <button
             type="button"
-            onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth" })}
+            onClick={() => {
+              setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
+              setFamilyPreferencesMessage("");
+              setEditingFamilyPreferences(true);
+              document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            }}
           >
-            🛍️ বাজার শুরু করুন <span aria-hidden="true">→</span>
+            মাসিক প্যাকেজ বেছে নিন <span aria-hidden="true">→</span>
           </button>
+        </div>
+        <div className="bb-campaign-visual" aria-hidden="true">
+          <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+          <div className="bb-campaign-orbit bb-campaign-orbit-two" />
+          <div className="bb-campaign-basket">🧺</div>
+          <span className="bb-campaign-float bb-campaign-float-one">🥬</span>
+          <span className="bb-campaign-float bb-campaign-float-two">🍅</span>
+          <span className="bb-campaign-float bb-campaign-float-three">🥚</span>
+          <span className="bb-campaign-visual-label">পরিবারের মাসিক বাজার</span>
         </div>
       </section>
 
-      <section className="bb-family-card" aria-labelledby="bb-family-title">
+      <section className="bb-family-card bb-family-card-featured" id="bb-family-package" aria-labelledby="bb-family-title">
         <div className="bb-family-card-heading">
           <span className="bb-family-icon" aria-hidden="true">⌂</span>
           <div className="bb-family-heading-copy">
-            <h2 id="bb-family-title">আমাদের পরিবার প্যাকেজ</h2>
-            <span>{FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label}</span>
+            <h2 id="bb-family-title">মাসিক ফ্যামিলি প্যাকেজ</h2>
+            <span>পরিবারের পুরো মাসের বাজার পরিকল্পনা</span>
           </div>
+          <span className="bb-family-primary-badge">★ মূল ফিচার</span>
           {!editingFamilyPreferences && (
             <button
               type="button"
