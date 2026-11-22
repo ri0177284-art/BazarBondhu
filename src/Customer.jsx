@@ -2,12 +2,22 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
 
+const FAMILY_PACKAGE_MINIMUMS = {
+  "weekly-family": 1000,
+  "family-monthly": 2000,
+};
+
+function getFamilyPackageMinimum(packageId) {
+  return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
+}
+
 function Customer() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
+  const [selectedPackageId, setSelectedPackageId] = useState(null);
   const [serviceCharge, setServiceCharge] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
 
@@ -245,6 +255,14 @@ if (
   0
 );
 
+    const packageMinimum = getFamilyPackageMinimum(selectedPackageId);
+    if (packageMinimum > 0 && subtotal < packageMinimum) {
+      alert(
+        `এই প্যাকেজে পণ্যের ন্যূনতম মূল্য ৳${packageMinimum.toLocaleString("bn-BD")}। আরও ৳${(packageMinimum - subtotal).toLocaleString("bn-BD")} টাকার পণ্য যোগ করুন। ডেলিভারি ও সার্ভিস চার্জ এই হিসাবে ধরা হবে না।`
+      );
+      return;
+    }
+
     const { data: settings, error: settingsError } = await supabase
       .from("app_settings")
       .select("*")
@@ -293,7 +311,8 @@ if (
       quantity: Number(item.quantity) || 1,
       unit_price: Number(item.price)
     })),
-    p_transaction_id: transactionId.trim() || null
+    p_transaction_id: transactionId.trim() || null,
+    p_package_id: selectedPackageId
   }
 );
 
@@ -302,6 +321,7 @@ if (orderError) throw orderError;
     alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
+    setSelectedPackageId(null);
     setShowCheckout(false);
     setCustomerName("");
     setCustomerPhone("");
@@ -837,6 +857,26 @@ fontWeight: "bold"
         </div>
 
         <h3 style={{ color: "#176b40", fontSize: 16 }}>
+          📦 অর্ডারের ধরন
+        </h3>
+
+        <select
+          value={selectedPackageId || ""}
+          onChange={e => setSelectedPackageId(e.target.value || null)}
+          style={inputStyle}
+        >
+          <option value="">সাধারণ অর্ডার</option>
+          <option value="weekly-family">সাপ্তাহিক পরিবার প্যাকেজ — ন্যূনতম ৳১,০০০</option>
+          <option value="family-monthly">মাসিক পরিবার প্যাকেজ — ন্যূনতম ৳২,০০০</option>
+          <option value="budget-smart">বাজেট স্মার্ট প্যাকেজ — নির্দিষ্ট ন্যূনতম নেই</option>
+        </select>
+        {getFamilyPackageMinimum(selectedPackageId) > 0 && (
+          <p style={{ color: "#777", fontSize: 12, marginTop: 8 }}>
+            ন্যূনতম হিসাব শুধু পণ্যের মূল্যের ওপর হবে; ডেলিভারি ও সার্ভিস চার্জ এতে যোগ হবে না।
+          </p>
+        )}
+
+        <h3 style={{ color: "#176b40", fontSize: 16, marginTop: 22 }}>
           👤 কাস্টমারের তথ্য
         </h3>
 
@@ -927,6 +967,12 @@ fontWeight: "bold"
             <span>পণ্যের মূল্য</span>
             <strong>৳{cartTotal}</strong>
           </div>
+          {getFamilyPackageMinimum(selectedPackageId) > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, color: cartTotal >= getFamilyPackageMinimum(selectedPackageId) ? "#087f45" : "#b45309" }}>
+              <span>প্যাকেজের ন্যূনতম মূল্য</span>
+              <strong>৳{getFamilyPackageMinimum(selectedPackageId)}</strong>
+            </div>
+          )}
 
           <div style={{
   display: "flex",
