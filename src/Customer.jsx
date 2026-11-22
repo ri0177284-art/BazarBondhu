@@ -2161,7 +2161,7 @@ const productPickerItems = products.filter((product) => {
                 ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
                 : `Budget Smart Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳${BUDGET_SMART_MINIMUM.toLocaleString("en-IN")} হতে হবে। আরও ৳${(BUDGET_SMART_MINIMUM - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`}
             </p>
-          }
+          )}
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
         )}
