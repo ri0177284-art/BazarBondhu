@@ -1738,6 +1738,7 @@ const monthlySpendProgress = familyPreferences.monthlyBudget > 0
   ? Math.min(100, Math.round((monthlySpend / familyPreferences.monthlyBudget) * 100))
   : monthlySpend > 0 ? 100 : 0;
 const isWeeklyPackage = familyPreferences.packageId === "weekly-family";
+const packagePeriodLabel = isWeeklyPackage ? "সাপ্তাহিক" : "মাসিক";
 const packageCycleEndDate = getPackageCycleEnd(latestConfirmedAt, familyPreferences.packageId);
 const daysUntilCycleEnds = packageCycleEndDate
   ? Math.max(0, Math.ceil((new Date(packageCycleEndDate.getFullYear(), packageCycleEndDate.getMonth(), packageCycleEndDate.getDate()) - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate())) / 86400000))
@@ -1797,8 +1798,8 @@ const productPickerItems = products.filter((product) => {
           <div className="bb-family-summary">
             <div><span>পরিবারের সদস্য</span><strong>{familyPreferences.familyMembers} জন</strong></div>
             <i aria-hidden="true" />
-            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
-            <p>আপনার মাসিক বাজারের পরিকল্পনা এখানে রাখুন।</p>
+            <div><span>{packagePeriodLabel} বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <p>আপনার {packagePeriodLabel} বাজারের পরিকল্পনা এখানে রাখুন।</p>
           </div>
           <div className="bb-family-actions">
             <button
@@ -1834,7 +1835,7 @@ const productPickerItems = products.filter((product) => {
                 </span>
               </label>
               <label className="bb-family-field">
-                <span>মাসিক বাজেট</span>
+                <span>{packagePeriodLabel} বাজেট</span>
                 <span className="bb-budget-input">
                   <b>৳</b>
                   <input
@@ -1882,7 +1883,7 @@ const productPickerItems = products.filter((product) => {
         <div className="bb-shopping-planner" id="bb-family-shopping">
           <div className="bb-planner-heading">
             <div>
-              <h3>আপনার মাসিক বাজারের তালিকা</h3>
+              <h3>আপনার {packagePeriodLabel} বাজারের তালিকা</h3>
               <p>সহজে পণ্য যোগ বা বাদ দিন, পরিমাণ ঠিক করুন—মোট খরচ নিজে থেকেই হিসাব হবে।</p>
             </div>
             <button
@@ -1898,13 +1899,13 @@ const productPickerItems = products.filter((product) => {
 
           <div className="bb-budget-overview">
             <div><span>তালিকার মোট</span><strong>৳{shoppingListTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong></div>
-            <div><span>মাসিক বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
+            <div><span>{packagePeriodLabel} বাজেট</span><strong>৳{familyPreferences.monthlyBudget.toLocaleString("en-IN")}</strong></div>
             <div className={shoppingBudgetRemaining < 0 ? "bb-budget-left is-over" : "bb-budget-left"}>
               <span>{shoppingBudgetRemaining < 0 ? "বাজেটের বেশি" : "বাকি আছে"}</span>
               <strong>৳{Math.abs(shoppingBudgetRemaining).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
             </div>
           </div>
-          <div className="bb-budget-progress" role="progressbar" aria-label="মাসিক বাজেটের ব্যবহার" aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
+          <div className="bb-budget-progress" role="progressbar" aria-label={`${packagePeriodLabel} বাজেটের ব্যবহার`} aria-valuemin="0" aria-valuemax="100" aria-valuenow={shoppingBudgetProgress}>
             <span className={shoppingBudgetRemaining < 0 ? "is-over" : ""} style={{ width: `${shoppingBudgetProgress}%` }} />
           </div>
           <div className="bb-budget-caption">
