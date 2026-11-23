@@ -834,6 +834,35 @@
 
 
 /* Monthly Family Package — primary customer-app feature */
+
+.bb-campaign-progress-toggle {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #b9ddc2;
+  border-radius: 999px;
+  background: rgba(255,255,255,.88);
+  color: #087f45;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 9px rgba(20, 94, 48, .09);
+  transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.bb-campaign-progress-toggle:hover { background: #fff; transform: translateY(-1px); box-shadow: 0 5px 12px rgba(20, 94, 48, .13); }
+.bb-campaign-progress-toggle:focus-visible { outline: 3px solid rgba(8, 127, 69, .22); outline-offset: 3px; }
+.bb-campaign-progress-toggle > span:first-child { font-size: 13px; }
+.bb-campaign-progress-toggle strong { font-size: 12px; font-variant-numeric: tabular-nums; }
+.bb-campaign-progress-toggle-label { color: #52725b; font-size: 10px; }
+.bb-campaign-progress-toggle-chevron { margin-left: 1px; font-size: 14px; line-height: 1; }
+
 .bb-campaign-banner {
   position: relative;
   display: grid;
@@ -951,6 +980,11 @@
   white-space: nowrap;
 }
 @media (max-width: 640px) {
+  .bb-campaign-progress-toggle { top: 7px; right: 8px; min-height: 27px; gap: 4px; padding: 0 8px; font-size: 10px; }
+  .bb-campaign-progress-toggle > span:first-child { font-size: 11px; }
+  .bb-campaign-progress-toggle strong { font-size: 11px; }
+  .bb-campaign-progress-toggle-label { font-size: 9px; }
+  .bb-campaign-copy { padding-top: 25px; }
   .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 0; min-height: 0; margin-bottom: 9px; padding: 10px 12px; border-radius: 14px; }
   .bb-campaign-kicker,
   .bb-campaign-copy > p,
