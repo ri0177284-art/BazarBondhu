@@ -1005,7 +1005,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
 
   // Login and Registration
   function normalizeBangladeshPhone(value) {
-    const digits = String(value || "").replace(/\\D/g, "");
+    const digits = String(value || "").replace(/\D/g, "");
     if (digits.length === 11 && digits.startsWith("01")) return `+88${digits}`;
     if (digits.length === 13 && digits.startsWith("8801")) return `+${digits}`;
     if (digits.length === 10 && digits.startsWith("1")) return `+880${digits}`;
@@ -1045,7 +1045,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
 
     if (showRegister) {
       const normalizedPhone = normalizeBangladeshPhone(phone);
-      if (!fullName.trim() || !normalizedPhone || !/^\\+8801[3-9]\\d{8}$/.test(normalizedPhone)) {
+      if (!fullName.trim() || !normalizedPhone || !/^\+8801[3-9]\d{8}$/.test(normalizedPhone)) {
         alert("আপনার নাম ও সঠিক বাংলাদেশি মোবাইল নম্বর দিন (01XXXXXXXXX)");
         return;
       }
@@ -1085,7 +1085,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     setAuthLoading(true);
     const isPhoneLogin = !identifier.includes("@");
     const normalizedPhone = isPhoneLogin ? normalizeBangladeshPhone(identifier) : "";
-    if (isPhoneLogin && (!normalizedPhone || !/^\\+8801[3-9]\\d{8}$/.test(normalizedPhone))) {
+    if (isPhoneLogin && (!normalizedPhone || !/^\+8801[3-9]\d{8}$/.test(normalizedPhone))) {
       setAuthLoading(false);
       alert("সঠিক ইমেইল অথবা বাংলাদেশি মোবাইল নম্বর দিন");
       return;
@@ -1109,7 +1109,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
 
   async function handleVerifyPhoneOtp(e) {
     e.preventDefault();
-    if (!/^\\d{6}$/.test(otpCode.trim())) {
+    if (!/^\d{6}$/.test(otpCode.trim())) {
       alert("৬ সংখ্যার OTP সঠিকভাবে লিখুন");
       return;
     }
@@ -1565,7 +1565,7 @@ fontWeight: "bold"
               maxLength={6}
               placeholder="৬ সংখ্যার OTP লিখুন"
               value={otpCode}
-              onChange={e => setOtpCode(e.target.value.replace(/\\D/g, "").slice(0, 6))}
+              onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               required
               style={{ ...inputStyle, textAlign: "center", letterSpacing: 8, fontSize: 20 }}
             />
