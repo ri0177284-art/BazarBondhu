@@ -544,10 +544,11 @@
 .bb-store-search {
   display: flex;
   align-items: center;
-  gap: 11px;
-  min-height: 58px;
-  margin: 0 0 18px;
-  padding: 7px 14px;
+  gap: 8px;
+  width: min(100%, 280px);
+  min-height: 46px;
+  margin: 0 auto 18px;
+  padding: 5px 10px;
   border: 1px solid #e1ece3;
   border-radius: 17px;
   background: #fff;
@@ -556,10 +557,10 @@
 .bb-store-search-icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   flex: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #edf8ef;
   font-size: 19px;
 }
@@ -718,8 +719,8 @@
   .bb-category-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 }
 @media (max-width: 620px) {
-  .bb-store-search { min-height: 53px; margin: 0 0 14px; padding: 6px 10px; border-radius: 14px; }
-  .bb-store-search-icon { width: 36px; height: 36px; }
+  .bb-store-search { width: min(100%, 250px); min-height: 42px; margin: 0 auto 14px; padding: 4px 8px; border-radius: 13px; }
+  .bb-store-search-icon { width: 29px; height: 29px; }
   .bb-store-search input { font-size: 12px; }
   .bb-category-section { margin: 20px 0; padding: 13px; border-radius: 17px; }
   .bb-category-heading { margin-bottom: 12px; }
