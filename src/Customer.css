@@ -1448,14 +1448,14 @@
 .bb-campaign-carousel { width: 100%; overflow: hidden; touch-action: pan-y; }
 .bb-campaign-track {
   display: flex;
-  width: 400%;
+  width: 500%;
   transition: transform .62s cubic-bezier(.22,.75,.25,1);
   will-change: transform;
 }
 .bb-campaign-slide {
   position: relative;
   display: grid;
-  flex: 0 0 25%;
+  flex: 0 0 20%;
   grid-template-columns: minmax(0, 1.45fr) minmax(190px, .75fr);
   align-items: center;
   gap: 18px;
@@ -1543,4 +1543,57 @@
 @media (prefers-reduced-motion: reduce) {
   .bb-campaign-track { transition: none; }
   .bb-campaign-dots button { transition: none; }
+}
+
+
+/* Fifth campaign slide: highlight only the delivery message, without a text panel */
+.bb-campaign-slide.is-delivery {
+  grid-template-columns: minmax(0, 1fr);
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,244,204,.7), transparent 38%),
+    linear-gradient(120deg, #f0f8ed 0%, #e8f5ed 58%, #fff4cc 100%);
+}
+.bb-campaign-delivery-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: none !important;
+  padding: 0 !important;
+  gap: 8px;
+}
+.bb-campaign-delivery-copy .bb-campaign-kicker {
+  margin: 0;
+  color: #14532d;
+  font-size: clamp(14px, 1.8vw, 19px);
+  font-weight: 900;
+}
+.bb-campaign-delivery-copy h2 {
+  max-width: none !important;
+  margin: 0;
+  font-size: clamp(30px, 4.4vw, 48px);
+  line-height: 1.16;
+}
+.bb-campaign-delivery-copy h2 em {
+  color: #087f45;
+  font-style: normal;
+  font-weight: 950;
+  text-shadow: 0 2px 0 rgba(8,127,69,.08);
+}
+.bb-campaign-wow {
+  display: block;
+  font-size: clamp(48px, 6.5vw, 72px);
+  line-height: 1;
+}
+@media (max-width: 640px) {
+  .bb-campaign-slide.is-delivery {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 148px;
+  }
+  .bb-campaign-delivery-copy { padding-top: 0 !important; gap: 6px; }
+  .bb-campaign-delivery-copy .bb-campaign-kicker { font-size: 12px; }
+  .bb-campaign-delivery-copy h2 { font-size: clamp(23px, 6.3vw, 30px); }
+  .bb-campaign-wow { font-size: 43px; }
 }
