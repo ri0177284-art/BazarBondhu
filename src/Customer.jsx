@@ -517,6 +517,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
             ...user.user_metadata?.family_preferences,
             ...familyPreferences,
             shoppingList,
+            customShoppingItems,
             smartBudgetDays,
           },
         },
@@ -838,16 +839,16 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     handleMenuClick("cart");
   }
 
-  function checkoutFamilyShoppingList(selectedProducts, subtotal) {
+  function checkoutFamilyShoppingList(selectedProducts, subtotal, customItems = customShoppingItems) {
     const packageId = familyPreferences.packageId;
     const minimum = packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(packageId);
     const packageLabel = FAMILY_PACKAGES.find((item) => item.id === packageId)?.label || "এই প্যাকেজ";
 
-    if (!selectedProducts.length) {
+    if (!selectedProducts.length && !customItems.length) {
       setShoppingListMessage("Checkout করতে আগে বাজারের তালিকায় পণ্য যোগ করুন।");
       return;
     }
-    if (subtotal < minimum) {
+    if (!customItems.length && subtotal < minimum) {
       setShoppingListMessage(packageLabel + " থেকে Checkout করতে পণ্যের মোট মূল্য কমপক্ষে ৳" + minimum.toLocaleString("en-IN") + " হতে হবে। আরও ৳" + (minimum - subtotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।");
       return;
     }
@@ -874,6 +875,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       return next;
     });
     setCartPackageId(packageId);
+    setPendingCustomItems(normalizeCustomShoppingItems(customItems));
     setShoppingListMessage("");
     setShowCheckout(true);
   }
@@ -961,18 +963,19 @@ async function placeOrder() {
     return;
   }
 
-  if (cart.length === 0) {
-    alert("আপনার কার্ট খালি!");
+  if (cart.length === 0 && pendingCustomItems.length === 0) {
+    alert("আপনার কার্ট বা নিজের পণ্যের তালিকা খালি!");
     return;
   }
 if (
+    pendingCustomItems.length === 0 &&
     (paymentMethod === "bkash" || paymentMethod === "nagad") &&
     !transactionId.trim()
   ) {
     alert("দয়া করে Transaction ID লিখুন");
     return;  }
 
-  const pointsToRedeem = Number(rewardPointsToUse) || 0;
+  const pointsToRedeem = pendingCustomItems.length ? 0 : (Number(rewardPointsToUse) || 0);
   if (pointsToRedeem > 0 && (pointsToRedeem < 100 || pointsToRedeem % 10 !== 0)) {
     alert("কমপক্ষে ১০০ পয়েন্ট এবং ১০-এর গুণিতক ব্যবহার করতে হবে।");
     return;
@@ -988,12 +991,12 @@ if (
 
   const packageMinimum = getFamilyPackageMinimum(cartPackageId);
   const budgetSmartMinimum = cartPackageId === "budget-smart" ? BUDGET_SMART_MINIMUM : 0;
-  if (budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
+  if (pendingCustomItems.length === 0 && budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
     const remaining = budgetSmartMinimum - cartTotal;
     alert(`Budget Smart থেকে অর্ডার করতে পণ্যের মূল্য কমপক্ষে ৳${budgetSmartMinimum.toLocaleString("en-IN")} হতে হবে। ডেলিভারি ও সার্ভিস চার্জ বাদে আরও ৳${remaining.toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`);
     return;
   }
-  if (packageMinimum > 0 && cartTotal < packageMinimum) {
+  if (pendingCustomItems.length === 0 && packageMinimum > 0 && cartTotal < packageMinimum) {
     const remaining = packageMinimum - cartTotal;
     const packageLabel = FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label || "প্যাকেজ";
     alert(
@@ -1037,9 +1040,15 @@ if (
       }
     }
 
-    const { error: orderError } = await supabase.rpc(
-  "create_order_with_payment_atomic",
-  {
+    const orderRpcName = pendingCustomItems.length ? "create_custom_package_order" : "create_order_with_payment_atomic";
+    const orderRpcArgs = pendingCustomItems.length ? {
+      p_customer_name: customerName.trim(),
+      p_phone: customerPhone.trim(),
+      p_delivery_address: deliveryAddress.trim(),
+      p_package_id: cartPackageId,
+      p_catalog_items: cart.map(item => ({ product_id: item.id, quantity: Number(item.quantity) || 1 })),
+      p_custom_items: pendingCustomItems.map(item => ({ product_name: item.name, quantity: item.quantity })),
+    } : {
     p_customer_name: customerName.trim(),
     p_phone: customerPhone.trim(),
     p_delivery_address: deliveryAddress.trim(),
@@ -1055,8 +1064,8 @@ if (
     p_transaction_id: transactionId.trim() || null,
      p_package_id: cartPackageId,
      p_reward_points: Number(rewardPointsToUse) || 0
-  }
-);
+    };
+    const { error: orderError } = await supabase.rpc(orderRpcName, orderRpcArgs);
 
 if (orderError) throw orderError;
 
@@ -1072,6 +1081,14 @@ if (orderError) throw orderError;
     setDeliveryAddress("");
     setTransactionId("");
     setRewardPointsToUse(0);
+    setPendingCustomItems([]);
+    if (pendingCustomItems.length) {
+      setCustomShoppingItems([]);
+      const { data: refreshedUser } = await supabase.auth.updateUser({
+        data: { ...user.user_metadata, family_preferences: { ...user.user_metadata?.family_preferences, customShoppingItems: [] } }
+      });
+      if (refreshedUser?.user) setUser(refreshedUser.user);
+    }
     await loadRewards();
   } catch (error) {
     console.error("Order error:", error);
