@@ -2609,15 +2609,25 @@ const productPickerItems = products.filter((product) => {
             </div>
           )}
 
+          <div className="bb-custom-product-box" style={{ margin: "16px 0", padding: 14, border: "1px solid #cce8d5", borderRadius: 12, background: "#f7fcf8" }}>
+            <strong style={{ display: "block", color: "#14532D", marginBottom: 8 }}>＋ নিজের পছন্দের পণ্য লিখুন</strong>
+            <p style={{ margin: "0 0 10px", color: "#52665a", fontSize: 12, lineHeight: 1.6 }}>ক্যাটালগে না থাকা পণ্যের নাম ও পরিমাণ লিখুন। Admin দাম ও প্রাপ্যতা নিশ্চিত করে আপনাকে চূড়ান্ত মূল্য পাঠাবেন।</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input value={customProductName} onChange={(event) => setCustomProductName(event.target.value)} maxLength={100} placeholder="পণ্যের নাম লিখুন" aria-label="নিজের পণ্যের নাম" style={{ flex: "1 1 170px", minWidth: 0, padding: "10px 12px", border: "1px solid #cbd8cf", borderRadius: 9, fontSize: 14 }} />
+              <input type="number" min="1" max="1000" step="1" value={customProductQuantity} onChange={(event) => setCustomProductQuantity(event.target.value)} aria-label="পণ্যের পরিমাণ" style={{ width: 78, padding: "10px 8px", border: "1px solid #cbd8cf", borderRadius: 9, fontSize: 14 }} />
+              <button type="button" onClick={addCustomShoppingItem} style={{ border: 0, borderRadius: 9, padding: "10px 14px", background: "#087F45", color: "#fff", fontWeight: 700 }}>তালিকায় যোগ</button>
+            </div>
+            {customShoppingItems.length > 0 && <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {customShoppingItems.map((item) => <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 10px", background: "#fff", border: "1px solid #e0ece3", borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}><strong style={{ color: "#234b33" }}>{item.name}</strong><small style={{ display: "block", color: "#758278" }}>দাম Admin নিশ্চিত করবেন</small></div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <button type="button" onClick={() => changeCustomShoppingQuantity(item.id, -1)} aria-label="পরিমাণ কমান">−</button><strong>{item.quantity}</strong><button type="button" onClick={() => changeCustomShoppingQuantity(item.id, 1)} aria-label="পরিমাণ বাড়ান">+</button>
+                  <button type="button" onClick={() => setCustomShoppingItems((items) => items.filter((entry) => entry.id !== item.id))} aria-label="পণ্য সরান" style={{ color: "#b42318" }}>×</button>
+                </div>
+              </div>)}
+            </div>}
+          </div>
           <div className="bb-planner-actions">
-            <button
-              type="button"
-              className="bb-fill-budget-button"
-              disabled={!selectedShoppingProducts.length}
-              onClick={() => autoFillShoppingBudget(selectedShoppingProducts, shoppingListTotal)}
-            >
-              ✨ বাজেট অনুযায়ী পরিমাণ সাজান
-            </button>
             <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
               {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
             </button>
@@ -2629,8 +2639,8 @@ const productPickerItems = products.filter((product) => {
             <button
               type="button"
               className="bb-cart-list-button"
-              disabled={!selectedShoppingProducts.length || shoppingListTotal < (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))}
-              onClick={() => checkoutFamilyShoppingList(selectedShoppingProducts, shoppingListTotal)}
+              disabled={!selectedShoppingProducts.length && !customShoppingItems.length}
+              onClick={() => checkoutFamilyShoppingList(selectedShoppingProducts, shoppingListTotal, customShoppingItems)}
               style={{ background: "#176b40", color: "#fff", borderColor: "#176b40" }}
             >
               ✓ সকল পণ্য নিয়ে Checkout করুন
@@ -2642,9 +2652,11 @@ const productPickerItems = products.filter((product) => {
             margin: "8px 0 0",
             lineHeight: 1.6
           }}>
-            {shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))
-              ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
-              : (FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "এই প্যাকেজ") + " Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳" + (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)).toLocaleString("en-IN") + " হতে হবে। আরও ৳" + ((familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।"}
+            {customShoppingItems.length
+              ? "নিজের লেখা পণ্যের দাম Admin নিশ্চিত করবেন। চূড়ান্ত মূল্য দেখে সম্মতি দেওয়ার পর অর্ডার কনফার্ম হবে।"
+              : shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))
+                ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
+                : (FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "এই প্যাকেজ") + " Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳" + (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)).toLocaleString("en-IN") + " হতে হবে। আরও ৳" + ((familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।"}
           </p>
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>
