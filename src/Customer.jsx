@@ -237,6 +237,7 @@ const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(false);
 const [shoppingListMessage, setShoppingListMessage] = useState("");
 const [smartBudgetDays, setSmartBudgetDays] = useState(7);
+const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
 
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
@@ -2188,6 +2189,19 @@ const productPickerItems = products.filter((product) => {
     <div className="bb-storefront-content">
 
       <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
+        <button
+          type="button"
+          className="bb-campaign-progress-toggle"
+          onClick={() => setShowMonthlyInsight((current) => !current)}
+          aria-expanded={showMonthlyInsight}
+          aria-controls="bb-monthly-insight"
+          aria-label={showMonthlyInsight ? "বাজারের অগ্রগতি বন্ধ করুন" : "বাজারের অগ্রগতি দেখুন"}
+        >
+          <span aria-hidden="true">🛒</span>
+          <strong>{monthlySpendProgress.toLocaleString("bn-BD")}%</strong>
+          <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
+          <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
+        </button>
         <div className="bb-campaign-copy">
           <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU-এর বিশেষ সুবিধা</span>
           <h2 id="bb-campaign-title">
@@ -2510,7 +2524,8 @@ const productPickerItems = products.filter((product) => {
         )}
       </section>
 
-      <section className="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
+      {showMonthlyInsight && (
+      <section className="bb-monthly-insight" id="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
         <div className="bb-monthly-progress-panel">
           <div
             className="bb-monthly-progress-ring"
@@ -2566,6 +2581,7 @@ const productPickerItems = products.filter((product) => {
           </button>
         </div>
       </section>
+      )}
 
       <section className="bb-monthly-report-card" aria-labelledby="bb-monthly-report-title">
         <div className="bb-monthly-report-heading">
