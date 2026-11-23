@@ -1081,6 +1081,7 @@ if (profileError) {
 }
     setUser(result.data.user);
     if (showRegister) {
+      setShowRegister(false);
       setRoseNeedsEmailVerification(false);
       setRosePetalCount(0);
       setShowRoseWelcome(true);
