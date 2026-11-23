@@ -1,17 +1,19 @@
-/* Keep the existing search-bar width; reduce only its height. */
+/* Full-width search bar with a compact height. */
 .bb-store-search {
+  width: 100%;
   min-height: 30px;
   gap: 6px;
-  padding: 1px 6px;
+  margin: 0 0 14px;
+  padding: 1px 7px;
   border-radius: 10px;
   box-sizing: border-box;
 }
 
 .bb-store-search-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 7px;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .bb-store-search input {
@@ -26,17 +28,30 @@
   font-size: 16px;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 800px) {
+  /* Extend through the storefront's side padding to the screen edges. */
   .bb-store-search {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+    min-height: 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bb-store-search {
+    width: calc(100% + 20px);
+    margin-left: -10px;
+    margin-right: -10px;
     min-height: 28px;
     gap: 5px;
-    padding: 1px 5px;
+    padding: 1px 6px;
   }
 
   .bb-store-search-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 15px;
+    width: 19px;
+    height: 19px;
+    font-size: 14px;
   }
 
   .bb-store-search input {
