@@ -2505,6 +2505,32 @@ const productPickerItems = products.filter((product) => {
         )}
 
         {showFamilyShopping && !editingFamilyPreferences && (
+          <div className="bb-grocery-showcase" aria-label="পরিবারের বাজারের পণ্যের ছবি">
+            <div className="bb-grocery-showcase-heading">
+              <span aria-hidden="true">🧺</span>
+              <strong>এক ঝুড়িতেই পরিবারের বাজার</strong>
+            </div>
+            <div className="bb-grocery-showcase-viewport">
+              <div className="bb-grocery-showcase-track">
+                {[0, 1].map((copy) => (
+                  <div className="bb-grocery-showcase-group" key={copy} aria-hidden={copy === 1}>
+                    {products
+                      .filter((product) => product.is_active !== false && product.image_url)
+                      .slice(0, 10)
+                      .map((product) => (
+                        <div className="bb-grocery-showcase-item" key={`${copy}-${product.id}`}>
+                          <img src={product.image_url} alt={copy === 0 ? product.name : ""} loading="lazy" />
+                          <span>{product.name}</span>
+                        </div>
+                      ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showFamilyShopping && !editingFamilyPreferences && (
         <div className="bb-shopping-planner" id="bb-family-shopping">
           <div className="bb-planner-heading">
             <div>
