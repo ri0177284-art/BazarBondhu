@@ -38,24 +38,6 @@ function getProductCategory(productName = "") {
   return CATEGORY_GROUPS.find((category) => category.id !== "other" && category.match.test(name))?.id || "other";
 }
 
-function getProductAlternativeGroup(productName = "") {
-  const name = String(productName).trim().toLowerCase();
-  const groups = [
-    ["rice", /চাল|rice/],
-    ["lentils", /ডাল|lentil/],
-    ["oil", /তেল|oil/],
-    ["potato", /আলু|potato/],
-    ["onion", /পেঁয়াজ|পেঁয়াজ|onion/],
-    ["egg", /ডিম|egg/],
-    ["milk", /দুধ|milk/],
-    ["soap", /সাবান|soap/],
-    ["detergent", /ডিটারজেন্ট|detergent/],
-    ["toothpaste", /টুথপেস্ট|toothpaste/],
-    ["tissue", /টিস্যু|tissue/],
-  ];
-  return groups.find(([, pattern]) => pattern.test(name))?.[0] || null;
-}
-
 function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
@@ -259,9 +241,6 @@ const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(fal
 const [shoppingListMessage, setShoppingListMessage] = useState("");
 const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
-const [householdPredictions, setHouseholdPredictions] = useState([]);
-const [loadingHouseholdPredictions, setLoadingHouseholdPredictions] = useState(false);
-const [householdPredictionMessage, setHouseholdPredictionMessage] = useState("");
 
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
@@ -384,12 +363,6 @@ const [householdPredictionMessage, setHouseholdPredictionMessage] = useState("")
     loadMonthlySpend();
   }, [user?.id, familyPreferences.packageId, smartBudgetDays]);
 
-  useEffect(() => {
-    if (showMonthlyInsight && user && products.length > 0) {
-      void loadHouseholdPredictions();
-    }
-  }, [showMonthlyInsight, user?.id, products.length]);
-
   async function loadMonthlySpend() {
     if (!user) return;
 
@@ -470,94 +443,6 @@ const [householdPredictionMessage, setHouseholdPredictionMessage] = useState("")
       return;
     }
     setLatestConfirmedAt(latestPackageOrder?.confirmed_at || null);
-  }
-
-  async function loadHouseholdPredictions() {
-    if (!user || loadingHouseholdPredictions) return;
-
-    setLoadingHouseholdPredictions(true);
-    setHouseholdPredictionMessage("");
-    try {
-      const historyStart = new Date();
-      historyStart.setDate(historyStart.getDate() - 365);
-      const { data, error } = await supabase
-        .from("orders")
-        .select("created_at, confirmed_at, order_status, payment_status, order_items(product_id, quantity)")
-        .eq("user_id", user.id)
-        .not("confirmed_at", "is", null)
-        .gte("confirmed_at", historyStart.toISOString())
-        .order("confirmed_at", { ascending: true })
-        .limit(150);
-
-      if (error) throw error;
-
-      const historyByProduct = new Map();
-      (data || []).forEach((order) => {
-        const orderStatus = String(order.order_status || "").toLowerCase();
-        const paymentStatus = String(order.payment_status || "").toLowerCase();
-        if (["cancelled", "canceled", "বাতিল"].includes(orderStatus)
-          || ["rejected", "refunded"].includes(paymentStatus)) return;
-
-        const purchaseDate = new Date(order.confirmed_at || order.created_at);
-        if (Number.isNaN(purchaseDate.getTime())) return;
-        const quantitiesInOrder = new Map();
-        (order.order_items || []).forEach((item) => {
-          const productId = String(item.product_id || "");
-          const quantity = Math.max(0, Number(item.quantity) || 0);
-          if (!productId || quantity <= 0) return;
-          quantitiesInOrder.set(productId, (quantitiesInOrder.get(productId) || 0) + quantity);
-        });
-
-        quantitiesInOrder.forEach((quantity, productId) => {
-          if (!historyByProduct.has(productId)) historyByProduct.set(productId, []);
-          historyByProduct.get(productId).push({ date: purchaseDate, quantity });
-        });
-      });
-
-      const today = new Date();
-      const forecasts = [];
-      historyByProduct.forEach((purchases, productId) => {
-        const product = products.find((item) => String(item.id) === productId);
-        if (!product || product.is_active === false || Number(product.stock) <= 0) return;
-        purchases.sort((a, b) => a.date - b.date);
-        if (purchases.length < 2) return;
-
-        const intervals = [];
-        for (let index = 1; index < purchases.length; index += 1) {
-          const days = Math.round((purchases[index].date - purchases[index - 1].date) / 86400000);
-          if (days >= 2 && days <= 180) intervals.push(days);
-        }
-        if (!intervals.length) return;
-        intervals.sort((a, b) => a - b);
-        const middle = Math.floor(intervals.length / 2);
-        const typicalInterval = intervals.length % 2
-          ? intervals[middle]
-          : Math.round((intervals[middle - 1] + intervals[middle]) / 2);
-        const latestPurchase = purchases[purchases.length - 1];
-        const expectedDate = new Date(latestPurchase.date);
-        expectedDate.setDate(expectedDate.getDate() + typicalInterval);
-        const daysUntil = Math.ceil((expectedDate.setHours(0, 0, 0, 0) - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86400000);
-        forecasts.push({
-          product,
-          expectedDate: new Date(latestPurchase.date.getTime() + typicalInterval * 86400000),
-          daysUntil,
-          suggestedQuantity: Math.max(1, Math.min(Math.floor(Number(product.stock)), Math.ceil(latestPurchase.quantity))),
-          purchaseCount: purchases.length,
-          typicalInterval,
-        });
-      });
-
-      forecasts.sort((a, b) => a.daysUntil - b.daysUntil);
-      setHouseholdPredictions(forecasts.slice(0, 8));
-      setHouseholdPredictionMessage(forecasts.length
-        ? ""
-        : "এখনো পর্যাপ্ত কেনাকাটার ইতিহাস নেই। একই পণ্য অন্তত দুইবার কনফার্ম অর্ডারে কিনলে তার সম্ভাব্য কেনার সময় দেখানো যাবে।");
-    } catch (error) {
-      console.error("Household purchase prediction could not be loaded:", error);
-      setHouseholdPredictionMessage("কেনাকাটার ইতিহাস আনা যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।");
-    } finally {
-      setLoadingHouseholdPredictions(false);
-    }
   }
 
   async function saveFamilyPreferences() {
@@ -749,41 +634,6 @@ const [householdPredictionMessage, setHouseholdPredictionMessage] = useState("")
         : { ...item, quantity: Math.min(Number(product.stock), Math.max(0, Number(item.quantity) + change)) })
       .filter((item) => item.quantity > 0));
     setShoppingListMessage("");
-  }
-
-  function addPredictedProductToShoppingList(prediction) {
-    setShoppingList((current) => {
-      const existing = current.find((item) => item.productId === prediction.product.id);
-      const nextQuantity = Math.min(
-        Math.floor(Number(prediction.product.stock)),
-        (existing?.quantity || 0) + prediction.suggestedQuantity
-      );
-      if (existing) {
-        return current.map((item) => item.productId === prediction.product.id
-          ? { ...item, quantity: nextQuantity }
-          : item);
-      }
-      return [...current, { productId: prediction.product.id, quantity: nextQuantity }];
-    });
-    setShowFamilyShopping(true);
-    setShoppingListMessage(`${prediction.product.name} আপনার বাজারের তালিকায় যোগ করা হয়েছে।`);
-  }
-
-  function replaceWithCheaperAlternative(originalProduct, alternativeProduct) {
-    setShoppingList((current) => {
-      const original = current.find((item) => item.productId === originalProduct.id);
-      if (!original) return current;
-      const alternative = current.find((item) => item.productId === alternativeProduct.id);
-      const quantity = Math.min(
-        Math.floor(Number(alternativeProduct.stock)),
-        original.quantity + (alternative?.quantity || 0)
-      );
-      return [
-        ...current.filter((item) => item.productId !== originalProduct.id && item.productId !== alternativeProduct.id),
-        { productId: alternativeProduct.id, quantity },
-      ];
-    });
-    setShoppingListMessage(`${originalProduct.name}-এর বদলে ${alternativeProduct.name} নেওয়া হয়েছে।`);
   }
 
   function addProductToShoppingList(product) {
@@ -2317,27 +2167,6 @@ function updateQuantity(productId, change) {
 const selectedShoppingProducts = shoppingList
   .map((item) => ({ item, product: products.find((product) => product.id === item.productId) }))
   .filter(({ product }) => Boolean(product));
-const budgetSavingSuggestions = selectedShoppingProducts.map(({ product, item }) => {
-  const group = getProductAlternativeGroup(product.name);
-  const unit = String(product.unit || "").trim().toLowerCase();
-  if (!group || !unit) return null;
-  const alternative = products
-    .filter((candidate) => candidate.id !== product.id
-      && candidate.is_active !== false
-      && Number(candidate.stock) > 0
-      && getProductAlternativeGroup(candidate.name) === group
-      && String(candidate.unit || "").trim().toLowerCase() === unit
-      && Number(candidate.price) > 0
-      && Number(candidate.price) < Number(product.price))
-    .sort((a, b) => Number(a.price) - Number(b.price))[0];
-  if (!alternative) return null;
-  return {
-    product,
-    alternative,
-    quantity: Number(item.quantity) || 1,
-    saving: (Number(product.price) - Number(alternative.price)) * (Number(item.quantity) || 1),
-  };
-}).filter(Boolean).sort((a, b) => b.saving - a.saving).slice(0, 4);
 const shoppingListTotal = selectedShoppingProducts.reduce(
   (sum, { product, item }) => sum + Number(product.price || 0) * Number(item.quantity || 0),
   0,
@@ -2411,11 +2240,11 @@ const productPickerItems = products.filter((product) => {
           onClick={() => setShowMonthlyInsight((current) => !current)}
           aria-expanded={showMonthlyInsight}
           aria-controls="bb-monthly-insight"
-          aria-label={showMonthlyInsight ? "স্মার্ট বাজার সহকারী বন্ধ করুন" : "স্মার্ট বাজার সহকারী দেখুন"}
+          aria-label={showMonthlyInsight ? "বাজারের অগ্রগতি বন্ধ করুন" : "বাজারের অগ্রগতি দেখুন"}
         >
-          <span aria-hidden="true">✨</span>
-          <strong>Smart</strong>
-          <span className="bb-campaign-progress-toggle-label">বাজার</span>
+          <span aria-hidden="true">🛒</span>
+          <strong>{monthlySpendProgress.toLocaleString("bn-BD")}%</strong>
+          <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
           <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
         </button>
         <div className="bb-campaign-copy">
@@ -2741,94 +2570,59 @@ const productPickerItems = products.filter((product) => {
       </section>
 
       {showMonthlyInsight && (
-      <section className="bb-household-predictor" id="bb-monthly-insight" aria-label="সংসারের স্মার্ট বাজার সহকারী">
-        <div className="bb-predictor-heading">
-          <div>
-            <span className="bb-predictor-eyebrow">BAZARBONDHU SMART ASSISTANT</span>
-            <h2>আপনার সংসারের স্মার্ট বাজার</h2>
-            <p>আগের কেনাকাটার অভ্যাস দেখে পরের বাজারের পরিকল্পনায় সাহায্য করবে</p>
+      <section className="bb-monthly-insight" id="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
+        <div className="bb-monthly-progress-panel">
+          <div
+            className="bb-monthly-progress-ring"
+            role="progressbar"
+            aria-label="নির্বাচিত প্যাকেজ বাজেট ব্যবহারের অগ্রগতি"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={monthlySpendProgress}
+            style={{ "--bb-monthly-progress": `${monthlySpendProgress}%` }}
+          >
+            <div className="bb-monthly-progress-inner">
+              <span aria-hidden="true">🛒</span>
+              <strong>{monthlySpendProgress}%</strong>
+            </div>
           </div>
-          <span className="bb-predictor-heading-icon" aria-hidden="true">✨</span>
+          <strong className="bb-monthly-progress-label">
+            {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
+          </strong>
+          <span className="bb-monthly-spend-caption">
+            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{packageBudgetLimit.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}
+          </span>
         </div>
 
-        <div className="bb-predictor-cycle-card">
-          <span className="bb-predictor-cycle-icon" aria-hidden="true">◷</span>
-          <div>
-            <strong>প্যাকেজের আনুমানিক শেষ সময়</strong>
-            {packageCycleEndDate ? (
-              <p>
+        <div className="bb-monthly-estimate-panel">
+          <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
+          {packageCycleEndDate ? (
+            <>
+              <strong className="bb-monthly-estimate-date">
                 {packageCycleEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
-                <span>{daysUntilCycleEnds === 0 ? "আজ প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}</span>
-              </p>
-            ) : (
-              <p>{isBudgetSmartPackage
-                ? "Budget Smart নির্দিষ্ট মেয়াদের সাবস্ক্রিপশন নয়; এটি নির্বাচিত দিনের বাজার পরিকল্পনা।"
-                : "এই প্যাকেজের অর্ডার কনফার্ম হলে আনুমানিক শেষ সময় দেখানো হবে।"}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="bb-predictor-section">
-          <div className="bb-predictor-section-heading">
-            <div>
-              <h3>পণ্য কেনার সম্ভাব্য সময়</h3>
-              <p>আগের কনফার্ম অর্ডারের ব্যবধান ধরে হিসাব করা হয়েছে</p>
-            </div>
-            {loadingHouseholdPredictions && <span className="bb-predictor-loading">হিসাব হচ্ছে...</span>}
-          </div>
-          {householdPredictions.length > 0 ? (
-            <div className="bb-predictor-product-grid">
-              {householdPredictions.map((prediction) => (
-                <article className="bb-predictor-product" key={prediction.product.id}>
-                  <div className="bb-predictor-product-top">
-                    <strong>{prediction.product.name}</strong>
-                    <span>{prediction.daysUntil < 0 ? "সময় পার হয়েছে" : prediction.daysUntil === 0 ? "আজ কেনার সময়" : `আর ${prediction.daysUntil.toLocaleString("bn-BD")} দিন`}</span>
-                  </div>
-                  <p>সম্ভাব্য তারিখ: {prediction.expectedDate.toLocaleDateString("bn-BD", { day: "numeric", month: "short" })}</p>
-                  <small>আগের {prediction.purchaseCount.toLocaleString("bn-BD")}টি কেনাকাটার ব্যবধান: প্রায় {prediction.typicalInterval.toLocaleString("bn-BD")} দিন</small>
-                  <button type="button" onClick={() => addPredictedProductToShoppingList(prediction)}>
-                    + তালিকায় যোগ করুন
-                  </button>
-                </article>
-              ))}
-            </div>
+              </strong>
+              <span className="bb-monthly-estimate-countdown">
+                {daysUntilCycleEnds === 0 ? "প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}
+              </span>
+            </>
           ) : (
-            <p className="bb-predictor-empty">{loadingHouseholdPredictions ? "আপনার কেনাকাটার ইতিহাস বিশ্লেষণ করা হচ্ছে..." : householdPredictionMessage || "পূর্বাভাস তৈরি করতে আগের কনফার্ম অর্ডার প্রয়োজন।"}</p>
-          )}
-          <p className="bb-predictor-disclaimer">এগুলো আনুমানিক পরামর্শ—বাসার প্রকৃত মজুত বা পণ্য শেষ হওয়ার নিশ্চিত সময় নয়।</p>
-        </div>
-
-        <div className="bb-predictor-section bb-predictor-savings">
-          <div className="bb-predictor-section-heading">
-            <div>
-              <h3>কম দামের বিকল্পে সাশ্রয়</h3>
-              <p>একই ধরনের পণ্য ও একই ইউনিটের মধ্যে কম দামের বিকল্প</p>
-            </div>
-            <span aria-hidden="true">৳</span>
-          </div>
-          {budgetSavingSuggestions.length > 0 ? (
-            <div className="bb-predictor-savings-list">
-              {budgetSavingSuggestions.map((suggestion) => (
-                <div className="bb-predictor-saving-row" key={suggestion.product.id}>
-                  <div>
-                    <strong>{suggestion.product.name} → {suggestion.alternative.name}</strong>
-                    <span>প্রতি ইউনিটে ৳{(Number(suggestion.product.price) - Number(suggestion.alternative.price)).toLocaleString("bn-BD")} কম; মোট সাশ্রয় প্রায় ৳{suggestion.saving.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}</span>
-                  </div>
-                  <button type="button" onClick={() => replaceWithCheaperAlternative(suggestion.product, suggestion.alternative)}>
-                    বিকল্প নিন
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="bb-predictor-empty">আপনার বর্তমান তালিকার একই ধরনের ও একই ইউনিটের কম দামের বিকল্প পাওয়া যায়নি।</p>
+            <p className="bb-monthly-estimate-empty">
+              {isBudgetSmartPackage
+                ? "এটি নির্দিষ্ট মেয়াদের সাবস্ক্রিপশন নয়; নির্বাচিত দিনের জন্য বাজার পরিকল্পনা।"
+                : "আপনার এই প্যাকেজের অর্ডার কনফার্ম হলে মেয়াদের হিসাব শুরু হবে।"}
+            </p>
           )}
         </div>
 
-        <div className="bb-predictor-footer">
-          <span>তালিকায় যোগ করা পণ্য আপনি চাইলে পরিবর্তন করতে পারবেন।</span>
+        <div className="bb-monthly-reminder-panel">
+          <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
+          <p>
+            {monthlySpendProgress >= 75
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : isBudgetSmartPackage ? "বাজেট স্মার্ট" : "মাসিক"} বাজারের বাজেট প্রায় শেষ। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
+          </p>
           <button type="button" onClick={() => setShowFamilyShopping(true)}>
-            বাজারের তালিকা খুলুন <span aria-hidden="true">→</span>
+            এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
           </button>
         </div>
       </section>
