@@ -1071,7 +1071,9 @@ if (orderError) throw orderError;
 
     await loadMonthlySpend();
 
-    alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
+    alert(pendingCustomItems.length
+      ? "আপনার নিজের পণ্যের অর্ডার অনুরোধ পাঠানো হয়েছে। Admin দাম ও প্রাপ্যতা নিশ্চিত করলে My Orders-এ চূড়ান্ত বিল দেখতে পাবেন।"
+      : "আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
     setCartPackageId(null);
@@ -2116,7 +2118,7 @@ fontWeight: "bold"
         </button>
 
         <button
-          onClick={() => setShowCheckout(false)}
+          onClick={() => { setPendingCustomItems([]); setShowCheckout(false); }}
           style={{
             width: "100%",
             background: "#f1f3f2",
