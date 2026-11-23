@@ -73,6 +73,17 @@ function normalizeShoppingList(value = []) {
     .map((item) => ({ productId: String(item.productId), quantity: Math.min(10000, Number(item.quantity)) }));
 }
 
+function normalizeCustomShoppingItems(value = []) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item?.name === "string" && item.name.trim().length >= 2
+    && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0)
+    .slice(0, 30).map((item, index) => ({
+      id: String(item.id || `custom-${index}-${item.name}`),
+      name: item.name.trim().slice(0, 100),
+      quantity: Math.min(1000, Number(item.quantity)),
+    }));
+}
+
 function getPackageCycleEnd(confirmedAt, packageId) {
   if (!confirmedAt) return null;
   const endDate = new Date(confirmedAt);
@@ -234,6 +245,12 @@ const [latestConfirmedAt, setLatestConfirmedAt] = useState(null);
 
 const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
+const [customShoppingItems, setCustomShoppingItems] = useState([]);
+const [customProductName, setCustomProductName] = useState("");
+const [customProductQuantity, setCustomProductQuantity] = useState("1");
+const [pendingCustomItems, setPendingCustomItems] = useState([]);
+const [customQuotePaymentMethod, setCustomQuotePaymentMethod] = useState("cod");
+const [customQuoteTransactionId, setCustomQuoteTransactionId] = useState("");
 const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
@@ -349,6 +366,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     const savedSmartDays = Number(user.user_metadata?.family_preferences?.smartBudgetDays);
     setSmartBudgetDays([7, 15, 30].includes(savedSmartDays) ? savedSmartDays : 7);
     setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
+    setCustomShoppingItems(normalizeCustomShoppingItems(user.user_metadata?.family_preferences?.customShoppingItems));
   }, [user?.id, user?.user_metadata?.family_preferences]);
 
   useEffect(() => {
@@ -468,6 +486,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
             ...user.user_metadata?.family_preferences,
             ...preferences,
             shoppingList,
+            customShoppingItems,
             smartBudgetDays,
           },
         },
@@ -498,6 +517,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
             ...user.user_metadata?.family_preferences,
             ...familyPreferences,
             shoppingList,
+            customShoppingItems,
             smartBudgetDays,
           },
         },
@@ -625,6 +645,52 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       return;
     }
     if (data.user) setUser(data.user);
+  }
+
+  function addCustomShoppingItem() {
+    const name = customProductName.trim();
+    const quantity = Number(customProductQuantity);
+    if (name.length < 2 || name.length > 100) {
+      setShoppingListMessage("পণ্যের নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
+      setShoppingListMessage("পরিমাণ ১ থেকে ১০০০-এর মধ্যে লিখুন।");
+      return;
+    }
+    const existing = customShoppingItems.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if (existing) {
+      setCustomShoppingItems((items) => items.map((item) => item.id === existing.id ? { ...item, quantity: Math.min(1000, item.quantity + quantity) } : item));
+    } else if (customShoppingItems.length >= 30) {
+      setShoppingListMessage("সর্বোচ্চ ৩০টি নিজের পছন্দের পণ্য যোগ করা যাবে।");
+      return;
+    } else {
+      setCustomShoppingItems((items) => [...items, { id: `custom-${Date.now()}`, name, quantity }]);
+    }
+    setCustomProductName("");
+    setCustomProductQuantity("1");
+    setShoppingListMessage("নিজের পছন্দের পণ্য তালিকায় যোগ হয়েছে। Admin দাম ও প্রাপ্যতা নিশ্চিত করবেন।");
+  }
+
+  function changeCustomShoppingQuantity(itemId, change) {
+    setCustomShoppingItems((items) => items.map((item) => item.id === itemId
+      ? { ...item, quantity: Math.max(0, Math.min(1000, item.quantity + change)) } : item).filter((item) => item.quantity > 0));
+  }
+
+  async function approveCustomQuote(orderId) {
+    if (customQuotePaymentMethod !== "cod" && !customQuoteTransactionId.trim()) {
+      alert("পেমেন্ট করার পর Transaction ID লিখুন।");
+      return;
+    }
+    const { error } = await supabase.rpc("approve_custom_package_quote", {
+      p_order_id: orderId,
+      p_payment_method: customQuotePaymentMethod,
+      p_transaction_id: customQuoteTransactionId.trim() || null,
+    });
+    if (error) { alert("অর্ডার অনুমোদন করা যায়নি: " + error.message); return; }
+    alert("আপনার সম্মতি গ্রহণ করা হয়েছে। অর্ডার কনফার্ম হয়েছে।");
+    setCustomQuoteTransactionId("");
+    await loadMyOrders();
   }
 
   function changeShoppingQuantity(product, change) {
@@ -773,16 +839,16 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     handleMenuClick("cart");
   }
 
-  function checkoutFamilyShoppingList(selectedProducts, subtotal) {
+  function checkoutFamilyShoppingList(selectedProducts, subtotal, customItems = customShoppingItems) {
     const packageId = familyPreferences.packageId;
     const minimum = packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(packageId);
     const packageLabel = FAMILY_PACKAGES.find((item) => item.id === packageId)?.label || "এই প্যাকেজ";
 
-    if (!selectedProducts.length) {
+    if (!selectedProducts.length && !customItems.length) {
       setShoppingListMessage("Checkout করতে আগে বাজারের তালিকায় পণ্য যোগ করুন।");
       return;
     }
-    if (subtotal < minimum) {
+    if (!customItems.length && subtotal < minimum) {
       setShoppingListMessage(packageLabel + " থেকে Checkout করতে পণ্যের মোট মূল্য কমপক্ষে ৳" + minimum.toLocaleString("en-IN") + " হতে হবে। আরও ৳" + (minimum - subtotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।");
       return;
     }
@@ -809,6 +875,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       return next;
     });
     setCartPackageId(packageId);
+    setPendingCustomItems(normalizeCustomShoppingItems(customItems));
     setShoppingListMessage("");
     setShowCheckout(true);
   }
@@ -896,18 +963,19 @@ async function placeOrder() {
     return;
   }
 
-  if (cart.length === 0) {
-    alert("আপনার কার্ট খালি!");
+  if (cart.length === 0 && pendingCustomItems.length === 0) {
+    alert("আপনার কার্ট বা নিজের পণ্যের তালিকা খালি!");
     return;
   }
 if (
+    pendingCustomItems.length === 0 &&
     (paymentMethod === "bkash" || paymentMethod === "nagad") &&
     !transactionId.trim()
   ) {
     alert("দয়া করে Transaction ID লিখুন");
     return;  }
 
-  const pointsToRedeem = Number(rewardPointsToUse) || 0;
+  const pointsToRedeem = pendingCustomItems.length ? 0 : (Number(rewardPointsToUse) || 0);
   if (pointsToRedeem > 0 && (pointsToRedeem < 100 || pointsToRedeem % 10 !== 0)) {
     alert("কমপক্ষে ১০০ পয়েন্ট এবং ১০-এর গুণিতক ব্যবহার করতে হবে।");
     return;
@@ -923,12 +991,12 @@ if (
 
   const packageMinimum = getFamilyPackageMinimum(cartPackageId);
   const budgetSmartMinimum = cartPackageId === "budget-smart" ? BUDGET_SMART_MINIMUM : 0;
-  if (budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
+  if (pendingCustomItems.length === 0 && budgetSmartMinimum > 0 && cartTotal < budgetSmartMinimum) {
     const remaining = budgetSmartMinimum - cartTotal;
     alert(`Budget Smart থেকে অর্ডার করতে পণ্যের মূল্য কমপক্ষে ৳${budgetSmartMinimum.toLocaleString("en-IN")} হতে হবে। ডেলিভারি ও সার্ভিস চার্জ বাদে আরও ৳${remaining.toLocaleString("en-IN", { maximumFractionDigits: 2 })} টাকার পণ্য যোগ করুন।`);
     return;
   }
-  if (packageMinimum > 0 && cartTotal < packageMinimum) {
+  if (pendingCustomItems.length === 0 && packageMinimum > 0 && cartTotal < packageMinimum) {
     const remaining = packageMinimum - cartTotal;
     const packageLabel = FAMILY_PACKAGES.find((item) => item.id === cartPackageId)?.label || "প্যাকেজ";
     alert(
@@ -972,9 +1040,15 @@ if (
       }
     }
 
-    const { error: orderError } = await supabase.rpc(
-  "create_order_with_payment_atomic",
-  {
+    const orderRpcName = pendingCustomItems.length ? "create_custom_package_order" : "create_order_with_payment_atomic";
+    const orderRpcArgs = pendingCustomItems.length ? {
+      p_customer_name: customerName.trim(),
+      p_phone: customerPhone.trim(),
+      p_delivery_address: deliveryAddress.trim(),
+      p_package_id: cartPackageId,
+      p_catalog_items: cart.map(item => ({ product_id: item.id, quantity: Number(item.quantity) || 1 })),
+      p_custom_items: pendingCustomItems.map(item => ({ product_name: item.name, quantity: item.quantity })),
+    } : {
     p_customer_name: customerName.trim(),
     p_phone: customerPhone.trim(),
     p_delivery_address: deliveryAddress.trim(),
@@ -990,14 +1064,16 @@ if (
     p_transaction_id: transactionId.trim() || null,
      p_package_id: cartPackageId,
      p_reward_points: Number(rewardPointsToUse) || 0
-  }
-);
+    };
+    const { error: orderError } = await supabase.rpc(orderRpcName, orderRpcArgs);
 
 if (orderError) throw orderError;
 
     await loadMonthlySpend();
 
-    alert("আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
+    alert(pendingCustomItems.length
+      ? "আপনার নিজের পণ্যের অর্ডার অনুরোধ পাঠানো হয়েছে। Admin দাম ও প্রাপ্যতা নিশ্চিত করলে My Orders-এ চূড়ান্ত বিল দেখতে পাবেন।"
+      : "আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
     setCart([]);
     setCartPackageId(null);
@@ -1007,6 +1083,14 @@ if (orderError) throw orderError;
     setDeliveryAddress("");
     setTransactionId("");
     setRewardPointsToUse(0);
+    setPendingCustomItems([]);
+    if (pendingCustomItems.length) {
+      setCustomShoppingItems([]);
+      const { data: refreshedUser } = await supabase.auth.updateUser({
+        data: { ...user.user_metadata, family_preferences: { ...user.user_metadata?.family_preferences, customShoppingItems: [] } }
+      });
+      if (refreshedUser?.user) setUser(refreshedUser.user);
+    }
     await loadRewards();
   } catch (error) {
     console.error("Order error:", error);
@@ -1464,6 +1548,27 @@ fontWeight: "bold"
 }}>
   📦 অর্ডার স্ট্যাটাস: {order.order_status}
 </p>
+              {order.custom_items_status === "pending" && (
+                <div style={{ marginTop: 12, padding: 13, borderRadius: 10, background: "#fff8e8", border: "1px solid #ead9ad", color: "#76551a", fontSize: 13, lineHeight: 1.6 }}>
+                  ⏳ আপনার নিজের লেখা পণ্যের দাম ও প্রাপ্যতা Admin যাচাই করছেন। এখনই কোনো টাকা পাঠাবেন না। মূল্য প্রস্তুত হলে এখানে দেখবেন।
+                </div>
+              )}
+              {order.custom_items_status === "quoted" && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "#e8f5ed", border: "1px solid #cce8d5" }}>
+                  <strong style={{ color: "#14532D" }}>✓ আপনার অর্ডারের চূড়ান্ত মূল্য প্রস্তুত</strong>
+                  <p style={{ margin: "7px 0", color: "#31543d", fontSize: 13 }}>মোট বিল: <strong>৳{Number(order.total).toLocaleString("bn-BD")}</strong>। পণ্য ও মূল্য যাচাই করে সম্মতি দিলে অর্ডার কনফার্ম হবে।</p>
+                  <label style={{ display: "block", marginTop: 10, color: "#31543d", fontSize: 13, fontWeight: 700 }}>পেমেন্ট পদ্ধতি
+                    <select value={customQuotePaymentMethod} onChange={(event) => setCustomQuotePaymentMethod(event.target.value)} style={{ display: "block", width: "100%", padding: 10, marginTop: 5, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }}>
+                      <option value="cod">Cash on Delivery</option><option value="bkash">bKash</option><option value="nagad">Nagad</option>
+                    </select>
+                  </label>
+                  {customQuotePaymentMethod !== "cod" && <>
+                    <p style={{ fontSize: 12, color: "#52665a", margin: "8px 0" }}>নম্বর 01772845524-এ ৳{Number(order.total).toLocaleString("bn-BD")} Send Money করে TrxID লিখুন।</p>
+                    <input value={customQuoteTransactionId} onChange={(event) => setCustomQuoteTransactionId(event.target.value)} placeholder="Transaction ID (TrxID)" style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #cbd8cf", borderRadius: 8 }} />
+                  </>}
+                  <button type="button" onClick={() => void approveCustomQuote(order.id)} style={{ width: "100%", marginTop: 11, padding: 12, border: 0, borderRadius: 9, background: "#087F45", color: "#fff", fontWeight: 700 }}>চূড়ান্ত মূল্য মেনে অর্ডার কনফার্ম করুন</button>
+                </div>
+              )}
               {order.cancel_reason && (
   <p style={{
     background: "#fff1f1",
@@ -1506,7 +1611,8 @@ fontWeight: "bold"
   border: `1px solid ${order.payment_status === "paid" ? "#cce8d5" : order.payment_status === "rejected" ? "#f2cccc" : "#f0dfb7"}`
 }}>
   💳 পেমেন্ট স্ট্যাটাস: <strong>{order.payment_status === "paid" ? "পরিশোধিত ✓" : order.payment_status === "rejected" ? "পেমেন্ট গ্রহণ করা হয়নি" : order.payment_status === "refunded" ? "টাকা ফেরত দেওয়া হয়েছে" : "যাচাই অপেক্ষমাণ"}</strong>
-  {order.payment_method === "cod" && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পণ্য হাতে পেয়ে ডেলিভারির সময় নগদ টাকা দিন।</p>}
+  {order.custom_items_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>চূড়ান্ত মূল্য নিশ্চিত হওয়ার আগে পেমেন্ট করতে হবে না।</p>}
+  {order.custom_items_status !== "pending" && order.payment_method === "cod" && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পণ্য হাতে পেয়ে ডেলিভারির সময় নগদ টাকা দিন।</p>}
   {["bkash", "nagad"].includes(order.payment_method) && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>আপনার পেমেন্টের তথ্য Admin যাচাই করছেন। যাচাই শেষ হলে এখানে আপডেট দেখবেন।</p>}
   {order.payment_status === "rejected" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পেমেন্ট বা Transaction ID মেলেনি। অনুগ্রহ করে BazarBondhu কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।</p>}
 </div>
@@ -1534,7 +1640,7 @@ fontWeight: "bold"
 }}>
   🛍️ {item.product_name}
   <br />
-  পরিমাণ: {item.quantity} টি × ৳{item.unit_price}
+  পরিমাণ: {item.quantity} টি × {item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : "৳" + item.unit_price}
 </p>
               ))}
 
@@ -1549,7 +1655,7 @@ fontWeight: "bold"
   marginTop: 18,
   border: "1px solid #cce8d5"
 }}>
-  💰 মোট বিল: ৳{order.total}
+  💰 মোট বিল: {order.custom_items_status === "pending" ? "Admin-এর মূল্য নিশ্চিতের অপেক্ষায়" : "৳" + order.total}
 </h3>
             </div>
           ))
@@ -1757,6 +1863,12 @@ fontWeight: "bold"
           }}
         />
 
+        {pendingCustomItems.length > 0 ? (
+          <div style={{ marginTop: 18, padding: 14, borderRadius: 12, background: "#fff8e8", border: "1px solid #ead9ad", color: "#76551a", fontSize: 13, lineHeight: 1.7 }}>
+            <strong>নিজের পণ্যের অর্ডার অনুরোধ</strong><br />
+            এখনই কোনো টাকা পাঠাবেন না। Admin পণ্যের দাম ও প্রাপ্যতা নিশ্চিত করে চূড়ান্ত বিল পাঠাবেন। আপনি সম্মতি দেওয়ার পর পেমেন্ট পদ্ধতি নির্বাচন করবেন।
+          </div>
+        ) : <>
         <h3 style={{
           color: "#176b40",
           fontSize: 16,
@@ -1882,13 +1994,14 @@ fontWeight: "bold"
           </div>
         )}
 
-        <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
+        </>}
+        {pendingCustomItems.length === 0 && <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
           <strong style={{ display: "block", color: "#176b40", marginBottom: 8 }}>🎁 Reward পয়েন্ট ব্যবহার</strong>
           <p style={{ color: "#68786d", fontSize: 12, margin: "0 0 9px" }}>আপনার ব্যালেন্স: {Number(rewardSummary?.balance || 0).toLocaleString("bn-BD")} পয়েন্ট · সর্বোচ্চ ছাড় ৳{Math.floor(cartTotal * 0.1).toLocaleString("bn-BD")}</p>
           <input type="number" min="0" step="10" max={Number(rewardSummary?.balance || 0)} value={rewardPointsToUse || ""} onChange={(event) => setRewardPointsToUse(Math.max(0, Number(event.target.value) || 0))} placeholder="ব্যবহার করতে পয়েন্ট লিখুন (সর্বনিম্ন ১০০)" style={inputStyle} />
           <small style={{ display: "block", marginTop: 7, color: "#68786d" }}>১০ পয়েন্ট = ৳১ · Delivery ও Service Fee-তে পয়েন্ট ব্যবহার করা যাবে না।</small>
           {Number(rewardPointsToUse) > 0 && <strong style={{ display: "block", marginTop: 8, color: "#087f45" }}>সম্ভাব্য ছাড়: ৳{Math.min(Number(rewardPointsToUse) / 10, Math.floor(cartTotal * 0.1)).toLocaleString("bn-BD")}</strong>}
-        </div>
+        </div>}
         <div style={{
           background: "#f4faf5",
           padding: 16,
@@ -1903,7 +2016,7 @@ fontWeight: "bold"
           }}>
             🧾 অর্ডারের হিসাব
           </h3>
-          {getFamilyPackageMinimum(cartPackageId) > 0 && (
+          {pendingCustomItems.length === 0 && getFamilyPackageMinimum(cartPackageId) > 0 && (
             <p role="status" style={{
               color: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#087f45" : "#9a5b00",
               background: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#e8f5ed" : "#fff6e5",
@@ -1927,7 +2040,7 @@ fontWeight: "bold"
             marginBottom: 12,
             color: "#555"
           }}>
-            <span>পণ্যের মূল্য</span>
+            <span>{pendingCustomItems.length ? "ক্যাটালগ পণ্যের মূল্য (নিজের পণ্যের দাম পরে যোগ হবে)" : "পণ্যের মূল্য"}</span>
             <strong>৳{cartTotal}</strong>
           </div>
 
@@ -1960,7 +2073,7 @@ fontWeight: "bold"
   fontSize: 17
 }}>
   <strong>সর্বমোট বিল</strong>
-  <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee - (Number(rewardPointsToUse) / 10)}</strong>
+  <strong>{pendingCustomItems.length ? "Admin-এর মূল্য নিশ্চিতের অপেক্ষায়" : `৳${cartTotal + checkoutServiceCharge + checkoutDeliveryFee - (Number(rewardPointsToUse) / 10)}`}</strong>
 </div>
 
 <p style={{
@@ -2001,11 +2114,11 @@ fontWeight: "bold"
         >
           {placingOrder
             ? "⏳ অর্ডার হচ্ছে..."
-            : "✓ অর্ডার নিশ্চিত করুন"}
+            : pendingCustomItems.length ? "✓ মূল্য নিশ্চিতের অনুরোধ পাঠান" : "✓ অর্ডার নিশ্চিত করুন"}
         </button>
 
         <button
-          onClick={() => setShowCheckout(false)}
+          onClick={() => { setPendingCustomItems([]); setShowCheckout(false); }}
           style={{
             width: "100%",
             background: "#f1f3f2",
@@ -2486,12 +2599,12 @@ const productPickerItems = products.filter((product) => {
                 </article>
               ))}
             </div>
-          ) : (
+          ) : customShoppingItems.length === 0 ? (
             <div className="bb-shopping-empty">
               <span aria-hidden="true">🧺</span>
               <div><strong>আপনার বাজারের তালিকা এখনো খালি</strong><p>পণ্য যোগ করে দাম ও মোট খরচ একসাথে দেখুন।</p></div>
             </div>
-          )}
+          ) : null}
 
           {showProductPicker && (            <div className="bb-product-picker">
               <label className="bb-product-search">
@@ -2527,15 +2640,25 @@ const productPickerItems = products.filter((product) => {
             </div>
           )}
 
+          <div className="bb-custom-product-box" style={{ margin: "16px 0", padding: 14, border: "1px solid #cce8d5", borderRadius: 12, background: "#f7fcf8" }}>
+            <strong style={{ display: "block", color: "#14532D", marginBottom: 8 }}>＋ নিজের পছন্দের পণ্য লিখুন</strong>
+            <p style={{ margin: "0 0 10px", color: "#52665a", fontSize: 12, lineHeight: 1.6 }}>ক্যাটালগে না থাকা পণ্যের নাম ও পরিমাণ লিখুন। Admin দাম ও প্রাপ্যতা নিশ্চিত করে আপনাকে চূড়ান্ত মূল্য পাঠাবেন।</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input value={customProductName} onChange={(event) => setCustomProductName(event.target.value)} maxLength={100} placeholder="পণ্যের নাম লিখুন" aria-label="নিজের পণ্যের নাম" style={{ flex: "1 1 170px", minWidth: 0, padding: "10px 12px", border: "1px solid #cbd8cf", borderRadius: 9, fontSize: 14 }} />
+              <input type="number" min="1" max="1000" step="1" value={customProductQuantity} onChange={(event) => setCustomProductQuantity(event.target.value)} aria-label="পণ্যের পরিমাণ" style={{ width: 78, padding: "10px 8px", border: "1px solid #cbd8cf", borderRadius: 9, fontSize: 14 }} />
+              <button type="button" onClick={addCustomShoppingItem} style={{ border: 0, borderRadius: 9, padding: "10px 14px", background: "#087F45", color: "#fff", fontWeight: 700 }}>তালিকায় যোগ</button>
+            </div>
+            {customShoppingItems.length > 0 && <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {customShoppingItems.map((item) => <div key={item.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "9px 10px", background: "#fff", border: "1px solid #e0ece3", borderRadius: 9 }}>
+                <div style={{ minWidth: 0 }}><strong style={{ color: "#234b33" }}>{item.name}</strong><small style={{ display: "block", color: "#758278" }}>দাম Admin নিশ্চিত করবেন</small></div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                  <button type="button" onClick={() => changeCustomShoppingQuantity(item.id, -1)} aria-label="পরিমাণ কমান">−</button><strong>{item.quantity}</strong><button type="button" onClick={() => changeCustomShoppingQuantity(item.id, 1)} aria-label="পরিমাণ বাড়ান">+</button>
+                  <button type="button" onClick={() => setCustomShoppingItems((items) => items.filter((entry) => entry.id !== item.id))} aria-label="পণ্য সরান" style={{ color: "#b42318" }}>×</button>
+                </div>
+              </div>)}
+            </div>}
+          </div>
           <div className="bb-planner-actions">
-            <button
-              type="button"
-              className="bb-fill-budget-button"
-              disabled={!selectedShoppingProducts.length}
-              onClick={() => autoFillShoppingBudget(selectedShoppingProducts, shoppingListTotal)}
-            >
-              ✨ বাজেট অনুযায়ী পরিমাণ সাজান
-            </button>
             <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
               {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
             </button>
@@ -2547,8 +2670,8 @@ const productPickerItems = products.filter((product) => {
             <button
               type="button"
               className="bb-cart-list-button"
-              disabled={!selectedShoppingProducts.length || shoppingListTotal < (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))}
-              onClick={() => checkoutFamilyShoppingList(selectedShoppingProducts, shoppingListTotal)}
+              disabled={!selectedShoppingProducts.length && !customShoppingItems.length}
+              onClick={() => checkoutFamilyShoppingList(selectedShoppingProducts, shoppingListTotal, customShoppingItems)}
               style={{ background: "#176b40", color: "#fff", borderColor: "#176b40" }}
             >
               ✓ সকল পণ্য নিয়ে Checkout করুন
@@ -2560,9 +2683,11 @@ const productPickerItems = products.filter((product) => {
             margin: "8px 0 0",
             lineHeight: 1.6
           }}>
-            {shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))
-              ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
-              : (FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "এই প্যাকেজ") + " Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳" + (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)).toLocaleString("en-IN") + " হতে হবে। আরও ৳" + ((familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।"}
+            {customShoppingItems.length
+              ? "নিজের লেখা পণ্যের দাম Admin নিশ্চিত করবেন। চূড়ান্ত মূল্য দেখে সম্মতি দেওয়ার পর অর্ডার কনফার্ম হবে।"
+              : shoppingListTotal >= (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId))
+                ? "ন্যূনতম বাজারের শর্ত পূরণ হয়েছে। এখন সরাসরি Checkout করতে পারবেন।"
+                : (FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "এই প্যাকেজ") + " Checkout-এর জন্য পণ্যের মোট মূল্য কমপক্ষে ৳" + (familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)).toLocaleString("en-IN") + " হতে হবে। আরও ৳" + ((familyPreferences.packageId === "budget-smart" ? BUDGET_SMART_MINIMUM : getFamilyPackageMinimum(familyPreferences.packageId)) - shoppingListTotal).toLocaleString("en-IN", { maximumFractionDigits: 2 }) + " টাকার পণ্য যোগ করুন।"}
           </p>
           <p className="bb-planner-message" role="status" aria-live="polite">{shoppingListMessage}</p>
         </div>

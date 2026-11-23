@@ -48,6 +48,7 @@ function App() {
   const [productQuery, setProductQuery] = useState("");
   const [orderQuery, setOrderQuery] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [customQuotePrices, setCustomQuotePrices] = useState({});
   const [customerQuery, setCustomerQuery] = useState("");
   const [toast, setToast] = useState(null);
 
@@ -118,7 +119,7 @@ function App() {
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select("id, order_id, product_name, quantity, unit_price, line_total");
+      .select("id, order_id, product_id, product_name, quantity, unit_price, line_total");
     if (itemsError) {
       notify(`অর্ডারের পণ্য লোড করা যায়নি: ${itemsError.message}`, "error");
       return;
@@ -271,6 +272,28 @@ function App() {
       return;
     }
     notify(patch.payment_status === "paid" ? "পেমেন্ট যাচাই করে অনুমোদন করা হয়েছে" : patch.payment_status === "rejected" ? "পেমেন্ট Reject করা হয়েছে" : "অর্ডার আপডেট হয়েছে");
+    await loadOrders();
+  }
+
+  async function quoteCustomPackageOrder(orderId, customItems) {
+    const prices = customItems.map((item) => ({
+      item_id: item.id,
+      unit_price: Number(customQuotePrices[item.id] ?? item.unit_price),
+    }));
+    if (prices.some((item) => !Number.isFinite(item.unit_price) || item.unit_price <= 0)) {
+      notify("নিজের লেখা প্রতিটি পণ্যের সঠিক দাম লিখুন।", "error");
+      return;
+    }
+    if (!window.confirm("পণ্যের দাম ও প্রাপ্যতা যাচাই করেছেন? এই মূল্য কাস্টমারের কাছে পাঠাবেন?")) return;
+    const { error } = await supabase.rpc("admin_quote_custom_package_order", {
+      p_order_id: orderId,
+      p_custom_prices: prices,
+    });
+    if (error) {
+      notify(`মূল্য পাঠানো যায়নি: ${error.message}`, "error");
+      return;
+    }
+    notify("চূড়ান্ত মূল্য কাস্টমারের কাছে পাঠানো হয়েছে।");
     await loadOrders();
   }
 
@@ -497,7 +520,21 @@ function App() {
             {filteredOrders.length === 0 ? <div className="panel empty-state"><span>▤</span><strong>{orderQuery || orderStatusFilter !== "all" ? "কোনো অর্ডার মেলেনি" : "এখনো অর্ডার আসেনি"}</strong><p>ফিল্টার বদলে আবার দেখুন।</p></div> : <div className="orders-list">{filteredOrders.map((order) => {
               const itemsForOrder = orderItems.filter((item) => item.order_id === order.id);
               return <article className="panel order-card" key={order.id}><div className="order-card-top"><div><span className="order-id">অর্ডার #{String(order.id).slice(-6)}</span><p>{new Date(order.created_at).toLocaleString("bn-BD")}</p></div><strong className="order-total">{money(order.total)}</strong></div><div className="order-customer"><div className="customer-avatar">{(order.customer_name || "?").slice(0, 1)}</div><div><strong>{order.customer_name || "—"}</strong><p>{order.phone || "ফোন দেওয়া হয়নি"}</p><p>{order.delivery_address || "ঠিকানা দেওয়া হয়নি"}</p></div></div>
-                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item.product_name || "পণ্য"} × {item.quantity}</span><span>{money(item.line_total ?? Number(item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
+                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item.product_name || "পণ্য"} × {item.quantity}{item.product_id == null && <small style={{ display: "block", color: "#9a6700" }}>কাস্টম পণ্য</small>}</span><span>{item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : money(item.line_total ?? Number(item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
+                {order.custom_items_status === "pending" && (
+                  <div style={{ marginTop: 12, padding: 14, borderRadius: 12, border: "1px solid #ead9ad", background: "#fffaf0" }}>
+                    <strong style={{ color: "#76551a" }}>কাস্টম পণ্যের দাম ও প্রাপ্যতা নিশ্চিত করুন</strong>
+                    <p style={{ margin: "6px 0 10px", color: "#76551a", fontSize: 12 }}>প্রতিটি পণ্যের একক দাম লিখুন। যাচাই শেষে কোট পাঠালে কাস্টমার সম্মতি দিতে পারবেন।</p>
+                    {itemsForOrder.filter((item) => item.product_id == null).map((item) => (
+                      <label key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginTop: 8, fontSize: 13 }}>
+                        <span>{item.product_name} × {item.quantity}</span>
+                        <input type="number" min="0.01" step="0.01" placeholder="একক দাম ৳" value={customQuotePrices[item.id] ?? ""} onChange={(event) => setCustomQuotePrices((current) => ({ ...current, [item.id]: event.target.value }))} style={{ width: 115, padding: 8, border: "1px solid #d8c99f", borderRadius: 8 }} />
+                      </label>
+                    ))}
+                    <button type="button" onClick={() => void quoteCustomPackageOrder(order.id, itemsForOrder.filter((item) => item.product_id == null))} style={{ width: "100%", marginTop: 12, padding: 11, border: 0, borderRadius: 9, background: "#087F45", color: "#fff", fontWeight: 700, cursor: "pointer" }}>দাম নিশ্চিত করে কাস্টমারকে পাঠান</button>
+                  </div>
+                )}
+                {order.custom_items_status === "quoted" && <p style={{ marginTop: 10, color: "#087F45", fontWeight: 700 }}>চূড়ান্ত মূল্য পাঠানো হয়েছে — কাস্টমারের সম্মতির অপেক্ষায়।</p>}
                 {order.cancel_reason && <p className="cancel-reason">বাতিলের কারণ: {order.cancel_reason}</p>}
                 <div style={{ marginTop: 14, padding: 14, borderRadius: 12, border: "1px solid #dcebe0", background: "#f7fbf8" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -516,7 +553,7 @@ function App() {
                     </div>
                   )}
                   <label style={{ display: "block", marginTop: 12, fontSize: 13, fontWeight: 600, color: "#34483a" }}>পেমেন্ট স্ট্যাটাস
-                    <select style={{ display: "block", width: "100%", marginTop: 6, padding: 10, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }} value={order.payment_status || "pending"} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}>
+                    <select style={{ display: "block", width: "100%", marginTop: 6, padding: 10, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }} value={order.payment_status || "pending"} disabled={["pending", "quoted"].includes(order.custom_items_status)} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}>
                       <option value="pending">যাচাই অপেক্ষমাণ</option>
                       <option value="paid">টাকা পেয়েছি — Approve</option>
                       <option value="rejected">টাকা পাইনি / TrxID ভুল — Reject</option>
@@ -527,7 +564,7 @@ function App() {
                     <p style={{ margin: "9px 0 0", fontSize: 12, lineHeight: 1.5, color: "#805b16" }}>ব্যাংক/মোবাইল ফাইন্যান্সিয়াল সার্ভিস অ্যাপে টাকা ও Transaction ID মিলিয়ে তারপর Approve করুন। শুধু TrxID থাকলেই পেমেন্ট নিশ্চিত হয় না।</p>
                   )}
                 </div>
-                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
+                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select disabled={["pending", "quoted"].includes(order.custom_items_status)} title={["pending", "quoted"].includes(order.custom_items_status) ? "কাস্টমার চূড়ান্ত মূল্য অনুমোদন না করা পর্যন্ত অপেক্ষা করুন" : undefined} value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
             })}</div>}
           </section>
         )}
