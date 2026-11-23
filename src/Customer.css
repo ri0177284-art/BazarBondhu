@@ -1128,3 +1128,84 @@
 @media (max-width: 800px) {
   .bb-store-search-hidden-mobile { display: none !important; }
 }
+
+
+/* Compact, continuously moving product showcase between package controls and list */
+.bb-grocery-showcase {
+  margin: 12px 0 15px;
+  padding: 9px 10px 8px;
+  overflow: hidden;
+  border: 1px solid #cce8d2;
+  border-radius: 14px;
+  background: linear-gradient(105deg, #f2fbf3, #ffffff 48%, #e8f5ed);
+}
+.bb-grocery-showcase-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 7px;
+  color: #14532d;
+  font-size: 12px;
+  font-weight: 850;
+}
+.bb-grocery-showcase-heading > span { font-size: 16px; }
+.bb-grocery-showcase-viewport { overflow: hidden; width: 100%; }
+.bb-grocery-showcase-track {
+  display: flex;
+  width: max-content;
+  animation: bb-grocery-showcase-scroll 34s linear infinite;
+  will-change: transform;
+}
+.bb-grocery-showcase:hover .bb-grocery-showcase-track { animation-play-state: paused; }
+.bb-grocery-showcase-group {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding-right: 8px;
+}
+.bb-grocery-showcase-item {
+  display: flex;
+  flex: 0 0 66px;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 66px;
+  min-width: 0;
+  color: #315a3d;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+}
+.bb-grocery-showcase-item img {
+  display: block;
+  width: 54px;
+  height: 48px;
+  padding: 3px;
+  border: 1px solid #d9ebdd;
+  border-radius: 10px;
+  background: #fff;
+  object-fit: contain;
+  box-sizing: border-box;
+}
+.bb-grocery-showcase-item span {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes bb-grocery-showcase-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (max-width: 620px) {
+  .bb-grocery-showcase { margin: 9px 0 12px; padding: 7px 8px 6px; border-radius: 12px; }
+  .bb-grocery-showcase-heading { margin-bottom: 5px; font-size: 11px; }
+  .bb-grocery-showcase-group { gap: 6px; padding-right: 6px; }
+  .bb-grocery-showcase-item { flex-basis: 58px; width: 58px; font-size: 8px; }
+  .bb-grocery-showcase-item img { width: 46px; height: 40px; border-radius: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-grocery-showcase-track { animation: none; }
+}
