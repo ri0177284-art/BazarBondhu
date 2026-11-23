@@ -2346,53 +2346,117 @@ const productPickerItems = products.filter((product) => {
       </div>
 
 
-      <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
-        <button
-          type="button"
-          className="bb-campaign-progress-toggle"
-          onClick={() => setShowMonthlyInsight((current) => !current)}
-          aria-expanded={showMonthlyInsight}
-          aria-controls="bb-monthly-insight"
-          aria-label={showMonthlyInsight ? "বাজারের অগ্রগতি বন্ধ করুন" : "বাজারের অগ্রগতি দেখুন"}
-        >
-          <span aria-hidden="true">🛒</span>
-          <strong>{monthlySpendProgress.toLocaleString("bn-BD")}%</strong>
-          <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
-          <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
-        </button>
-        <div className="bb-campaign-copy">
-          <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU-এর বিশেষ সুবিধা</span>
-          <h2 id="bb-campaign-title">
-            পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em>
-          </h2>
-          <p>পরিবারের সদস্য ও বাজেট অনুযায়ী মাসের বাজারের তালিকা তৈরি করুন, পছন্দমতো পণ্য বেছে নিন এবং সহজেই অর্ডার করুন।</p>
-          <div className="bb-campaign-benefits" aria-label="মাসিক প্যাকেজের সুবিধা">
-            <span><b aria-hidden="true">✓</b> নিজের বাজারের তালিকা</span>
-            <span><b aria-hidden="true">✓</b> বাজেট অনুযায়ী পরিকল্পনা</span>
-            <span><b aria-hidden="true">✓</b> একসঙ্গে মাসের বাজার</span>
-          </div>
+      {!showFamilyShopping ? (
+        <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
           <button
             type="button"
-            onClick={() => {
-              setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
-              setFamilyPreferencesMessage("");
-              setEditingFamilyPreferences(true);
-              document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
-            }}
+            className="bb-campaign-progress-toggle"
+            onClick={() => setShowMonthlyInsight((current) => !current)}
+            aria-expanded={showMonthlyInsight}
+            aria-controls="bb-monthly-insight"
+            aria-label={showMonthlyInsight ? "বাজারের অগ্রগতি বন্ধ করুন" : "বাজারের অগ্রগতি দেখুন"}
           >
-            মাসিক প্যাকেজ বেছে নিন <span aria-hidden="true">→</span>
+            <span aria-hidden="true">🛒</span>
+            <strong>{monthlySpendProgress.toLocaleString("bn-BD")}%</strong>
+            <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
+            <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
           </button>
-        </div>
-        <div className="bb-campaign-visual" aria-hidden="true">
-          <div className="bb-campaign-orbit bb-campaign-orbit-one" />
-          <div className="bb-campaign-orbit bb-campaign-orbit-two" />
-          <div className="bb-campaign-basket">🧺</div>
-          <span className="bb-campaign-float bb-campaign-float-one">🥬</span>
-          <span className="bb-campaign-float bb-campaign-float-two">🍅</span>
-          <span className="bb-campaign-float bb-campaign-float-three">🥚</span>
-          <span className="bb-campaign-visual-label">পরিবারের মাসিক বাজার</span>
-        </div>
-      </section>
+          <div className="bb-campaign-copy">
+            <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU-এর বিশেষ সুবিধা</span>
+            <h2 id="bb-campaign-title">
+              পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em>
+            </h2>
+            <p>পরিবারের সদস্য ও বাজেট অনুযায়ী মাসের বাজারের তালিকা তৈরি করুন, পছন্দমতো পণ্য বেছে নিন এবং সহজেই অর্ডার করুন।</p>
+            <div className="bb-campaign-benefits" aria-label="মাসিক প্যাকেজের সুবিধা">
+              <span><b aria-hidden="true">✓</b> নিজের বাজারের তালিকা</span>
+              <span><b aria-hidden="true">✓</b> বাজেট অনুযায়ী পরিকল্পনা</span>
+              <span><b aria-hidden="true">✓</b> একসঙ্গে মাসের বাজার</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
+                setFamilyPreferencesMessage("");
+                setEditingFamilyPreferences(true);
+                document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              মাসিক প্যাকেজ বেছে নিন <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <div className="bb-campaign-visual" aria-hidden="true">
+            <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+            <div className="bb-campaign-orbit bb-campaign-orbit-two" />
+            <div className="bb-campaign-basket">🧺</div>
+            <span className="bb-campaign-float bb-campaign-float-one">🥬</span>
+            <span className="bb-campaign-float bb-campaign-float-two">🍅</span>
+            <span className="bb-campaign-float bb-campaign-float-three">🥚</span>
+            <span className="bb-campaign-visual-label">পরিবারের মাসিক বাজার</span>
+          </div>
+        </section>
+      ) : (
+        <section className="bb-campaign-banner bb-package-benefits-banner" aria-labelledby="bb-package-benefits-title">
+          <button
+            type="button"
+            className="bb-campaign-progress-toggle"
+            onClick={() => setShowMonthlyInsight((current) => !current)}
+            aria-expanded={showMonthlyInsight}
+            aria-controls="bb-monthly-insight"
+            aria-label={showMonthlyInsight ? "বাজারের অগ্রগতি বন্ধ করুন" : "বাজারের অগ্রগতি দেখুন"}
+          >
+            <span aria-hidden="true">🛒</span>
+            <strong>{monthlySpendProgress.toLocaleString("bn-BD")}%</strong>
+            <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
+            <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
+          </button>
+          <div className="bb-package-benefits-copy">
+            <span className="bb-package-benefits-kicker">🌟 আপনার মাসিক Family Package-এর বিশেষ সুবিধা</span>
+            <h2 id="bb-package-benefits-title">পরিবারের বাজারে <em>আরও সুবিধা!</em></h2>
+            <p>এক জায়গায় বাজারের পরিকল্পনা, পছন্দের পণ্য এবং বাড়তি সাশ্রয়—সবকিছু পরিবারের কথা ভেবে।</p>
+            <div className="bb-package-highlight-grid">
+              <div className="bb-package-highlight-card is-delivery">
+                <span className="bb-package-highlight-emoji" aria-hidden="true">🚚</span>
+                <div>
+                  <small>মাসিক পণ্যের বাজার ৳৫,০০০ বা বেশি হলে</small>
+                  <strong>ডেলিভারি মাত্র ৳১১</strong>
+                  <em>সার্ভিস ফি-ও মাত্র ৳১১</em>
+                </div>
+              </div>
+              <div className="bb-package-highlight-card is-reward">
+                <span className="bb-package-highlight-emoji" aria-hidden="true">🎁</span>
+                <div>
+                  <small>আপনার প্রথম সফল অর্ডারে</small>
+                  <strong>৫০ Rewards পয়েন্ট</strong>
+                  <em>প্রতি গ্রাহকের জীবনে একবার</em>
+                </div>
+              </div>
+            </div>
+            <div className="bb-package-benefits-list" aria-label="মাসিক প্যাকেজের অন্যান্য সুবিধা">
+              <span>📝 নিজের পছন্দমতো বাজারের তালিকা</span>
+              <span>💰 পরিবারের সদস্য ও বাজেট অনুযায়ী পরিকল্পনা</span>
+              <span>🔁 আগের প্যাকেজের বাজারের তালিকা আবার ব্যবহার</span>
+              <span>🧺 ক্যাটালগে নেই এমন পণ্যও অনুরোধ করতে পারবেন</span>
+              <span>⭐ অর্ডার সম্পন্ন হলে Rewards পয়েন্ট অর্জন</span>
+            </div>
+            <button
+              type="button"
+              className="bb-package-benefits-cta"
+              onClick={() => document.getElementById("bb-family-shopping")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              আমার বাজারের তালিকা দেখুন <span aria-hidden="true">↓</span>
+            </button>
+          </div>
+          <div className="bb-package-benefits-art" aria-hidden="true">
+            <div className="bb-package-benefits-art-orbit" />
+            <div className="bb-package-benefits-basket">🧺</div>
+            <span className="bb-package-benefits-float float-one">🥬</span>
+            <span className="bb-package-benefits-float float-two">🍅</span>
+            <span className="bb-package-benefits-float float-three">🥚</span>
+            <span className="bb-package-benefits-float float-four">🥕</span>
+            <div className="bb-package-benefits-art-caption">সাশ্রয়ী বাজার, নিশ্চিন্ত পরিবার 💚</div>
+          </div>
+        </section>
+      )}
 
       <section className="bb-family-card bb-family-card-featured" id="bb-family-package" aria-labelledby="bb-family-title">
         <div className="bb-family-card-heading">
