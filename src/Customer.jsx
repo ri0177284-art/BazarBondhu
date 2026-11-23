@@ -73,6 +73,17 @@ function normalizeShoppingList(value = []) {
     .map((item) => ({ productId: String(item.productId), quantity: Math.min(10000, Number(item.quantity)) }));
 }
 
+function normalizeCustomShoppingItems(value = []) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item?.name === "string" && item.name.trim().length >= 2
+    && Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0)
+    .slice(0, 30).map((item, index) => ({
+      id: String(item.id || `custom-${index}-${item.name}`),
+      name: item.name.trim().slice(0, 100),
+      quantity: Math.min(1000, Number(item.quantity)),
+    }));
+}
+
 function getPackageCycleEnd(confirmedAt, packageId) {
   if (!confirmedAt) return null;
   const endDate = new Date(confirmedAt);
@@ -234,6 +245,12 @@ const [latestConfirmedAt, setLatestConfirmedAt] = useState(null);
 
 const [showFamilyShopping, setShowFamilyShopping] = useState(false);
 const [shoppingList, setShoppingList] = useState([]);
+const [customShoppingItems, setCustomShoppingItems] = useState([]);
+const [customProductName, setCustomProductName] = useState("");
+const [customProductQuantity, setCustomProductQuantity] = useState("1");
+const [pendingCustomItems, setPendingCustomItems] = useState([]);
+const [customQuotePaymentMethod, setCustomQuotePaymentMethod] = useState("cod");
+const [customQuoteTransactionId, setCustomQuoteTransactionId] = useState("");
 const [productSearch, setProductSearch] = useState("");
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
@@ -349,6 +366,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     const savedSmartDays = Number(user.user_metadata?.family_preferences?.smartBudgetDays);
     setSmartBudgetDays([7, 15, 30].includes(savedSmartDays) ? savedSmartDays : 7);
     setShoppingList(normalizeShoppingList(user.user_metadata?.family_preferences?.shoppingList));
+    setCustomShoppingItems(normalizeCustomShoppingItems(user.user_metadata?.family_preferences?.customShoppingItems));
   }, [user?.id, user?.user_metadata?.family_preferences]);
 
   useEffect(() => {
@@ -468,6 +486,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
             ...user.user_metadata?.family_preferences,
             ...preferences,
             shoppingList,
+            customShoppingItems,
             smartBudgetDays,
           },
         },
@@ -625,6 +644,52 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       return;
     }
     if (data.user) setUser(data.user);
+  }
+
+  function addCustomShoppingItem() {
+    const name = customProductName.trim();
+    const quantity = Number(customProductQuantity);
+    if (name.length < 2 || name.length > 100) {
+      setShoppingListMessage("পণ্যের নাম ২ থেকে ১০০ অক্ষরের মধ্যে লিখুন।");
+      return;
+    }
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
+      setShoppingListMessage("পরিমাণ ১ থেকে ১০০০-এর মধ্যে লিখুন।");
+      return;
+    }
+    const existing = customShoppingItems.find((item) => item.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if (existing) {
+      setCustomShoppingItems((items) => items.map((item) => item.id === existing.id ? { ...item, quantity: Math.min(1000, item.quantity + quantity) } : item));
+    } else if (customShoppingItems.length >= 30) {
+      setShoppingListMessage("সর্বোচ্চ ৩০টি নিজের পছন্দের পণ্য যোগ করা যাবে।");
+      return;
+    } else {
+      setCustomShoppingItems((items) => [...items, { id: `custom-${Date.now()}`, name, quantity }]);
+    }
+    setCustomProductName("");
+    setCustomProductQuantity("1");
+    setShoppingListMessage("নিজের পছন্দের পণ্য তালিকায় যোগ হয়েছে। Admin দাম ও প্রাপ্যতা নিশ্চিত করবেন।");
+  }
+
+  function changeCustomShoppingQuantity(itemId, change) {
+    setCustomShoppingItems((items) => items.map((item) => item.id === itemId
+      ? { ...item, quantity: Math.max(0, Math.min(1000, item.quantity + change)) } : item).filter((item) => item.quantity > 0));
+  }
+
+  async function approveCustomQuote(orderId) {
+    if (customQuotePaymentMethod !== "cod" && !customQuoteTransactionId.trim()) {
+      alert("পেমেন্ট করার পর Transaction ID লিখুন।");
+      return;
+    }
+    const { error } = await supabase.rpc("approve_custom_package_quote", {
+      p_order_id: orderId,
+      p_payment_method: customQuotePaymentMethod,
+      p_transaction_id: customQuoteTransactionId.trim() || null,
+    });
+    if (error) { alert("অর্ডার অনুমোদন করা যায়নি: " + error.message); return; }
+    alert("আপনার সম্মতি গ্রহণ করা হয়েছে। অর্ডার কনফার্ম হয়েছে।");
+    setCustomQuoteTransactionId("");
+    await loadMyOrders();
   }
 
   function changeShoppingQuantity(product, change) {
