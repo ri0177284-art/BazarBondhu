@@ -2188,6 +2188,23 @@ const productPickerItems = products.filter((product) => {
   return withSidebar(
     <div className="bb-storefront-content">
 
+      <div className="bb-store-search">
+        <span className="bb-store-search-icon" aria-hidden="true">🔍</span>
+        <input
+          type="text"
+          placeholder="আপনার প্রয়োজনীয় পণ্য খুঁজুন..."
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          aria-label="পণ্য খুঁজুন"
+        />
+        {search && (
+          <button type="button" className="bb-store-search-clear" onClick={() => setSearch("")} aria-label="সার্চ মুছুন">
+            ×
+          </button>
+        )}
+      </div>
+
+
       <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
         <button
           type="button"
@@ -2607,22 +2624,6 @@ const productPickerItems = products.filter((product) => {
           </div>
         </div>
       </section>
-
-      <div className="bb-store-search">
-        <span className="bb-store-search-icon" aria-hidden="true">🔍</span>
-        <input
-          type="text"
-          placeholder="আপনার প্রয়োজনীয় পণ্য খুঁজুন..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          aria-label="পণ্য খুঁজুন"
-        />
-        {search && (
-          <button type="button" className="bb-store-search-clear" onClick={() => setSearch("")} aria-label="সার্চ মুছুন">
-            ×
-          </button>
-        )}
-      </div>
 
       <section className="bb-category-section" aria-labelledby="bb-category-title">
         <div className="bb-category-heading">
