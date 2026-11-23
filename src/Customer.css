@@ -1121,3 +1121,144 @@
 @media (max-width: 800px) {
   .bb-store-search-hidden-mobile { display: none !important; }
 }
+
+
+/* Restore the previous compact, three-panel family insight layout for Smart Household Predictor. */
+.bb-household-predictor {
+  grid-template-columns: minmax(180px, .82fr) minmax(240px, 1.12fr) minmax(240px, 1.12fr);
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #cfe4d4;
+  border-radius: 22px;
+  background: linear-gradient(115deg, #f2fff0 0%, #fcfff7 53%, #f4fbf5 100%);
+  box-shadow: 0 6px 20px rgba(34, 91, 47, .07);
+}
+.bb-predictor-heading {
+  grid-column: 1 / -1;
+  padding: 0 2px 13px;
+  border-bottom: 1px solid #d6e8d9;
+}
+.bb-predictor-heading h2 { font-size: 21px; }
+.bb-predictor-heading-icon {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #c5e3cd;
+  border-radius: 15px;
+  background: #e8f5ed;
+  color: #087f45;
+}
+.bb-predictor-cycle-card {
+  min-height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 11px;
+  padding: 18px 14px;
+  border: 1px solid #cfe5d4;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #e8f5ed, #ffffff);
+  text-align: center;
+}
+.bb-predictor-cycle-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: #087f45;
+  color: #fff;
+  font-size: 27px;
+}
+.bb-predictor-cycle-card strong { font-size: 14px; }
+.bb-predictor-cycle-card p {
+  flex-direction: column;
+  gap: 5px;
+  font-size: 17px;
+}
+.bb-predictor-cycle-card p span { font-size: 12px; }
+.bb-predictor-section {
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #d9e9dc;
+  border-radius: 18px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 3px 12px rgba(34, 91, 47, .035);
+}
+.bb-predictor-section-heading {
+  min-height: 43px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e4eee5;
+}
+.bb-predictor-section-heading h3 { font-size: 14px; }
+.bb-predictor-section-heading p { font-size: 10px; }
+.bb-predictor-product-grid { grid-template-columns: 1fr; gap: 8px; }
+.bb-predictor-product {
+  gap: 6px;
+  padding: 11px;
+  border-color: #e0ece2;
+  border-radius: 13px;
+  box-shadow: 0 2px 7px rgba(34, 91, 47, .035);
+}
+.bb-predictor-product-top strong { font-size: 12px; }
+.bb-predictor-product p { font-size: 10px; }
+.bb-predictor-product small { font-size: 9px; }
+.bb-predictor-product button,
+.bb-predictor-saving-row button,
+.bb-predictor-footer button {
+  background: linear-gradient(135deg, #087f45, #159653);
+}
+.bb-predictor-savings {
+  background: linear-gradient(145deg, #f1faf3, #ffffff);
+}
+.bb-predictor-savings-list { gap: 9px; }
+.bb-predictor-saving-row {
+  align-items: center;
+  padding: 11px;
+  border: 1px solid #e0ece2;
+  border-radius: 13px;
+  background: #fff;
+}
+.bb-predictor-saving-row strong { font-size: 11px; }
+.bb-predictor-saving-row span { font-size: 9px; }
+.bb-predictor-footer {
+  grid-column: 1 / -1;
+  padding-top: 12px;
+  border-top: 1px solid #d6e8d9;
+}
+@media (max-width: 900px) {
+  .bb-household-predictor {
+    grid-template-columns: minmax(160px, .8fr) minmax(0, 1.2fr);
+  }
+  .bb-predictor-savings { grid-column: 1 / -1; }
+  .bb-predictor-savings-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .bb-household-predictor {
+    grid-template-columns: 1fr;
+    gap: 11px;
+    padding: 13px;
+    border-radius: 17px;
+  }
+  .bb-predictor-heading { grid-column: 1; padding-bottom: 11px; }
+  .bb-predictor-heading h2 { font-size: 17px; }
+  .bb-predictor-heading-icon { width: 40px; height: 40px; }
+  .bb-predictor-cycle-card {
+    min-height: 0;
+    flex-direction: row;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 12px;
+  }
+  .bb-predictor-cycle-icon { width: 40px; height: 40px; }
+  .bb-predictor-cycle-card p {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 14px;
+  }
+  .bb-predictor-section { padding: 12px; border-radius: 15px; }
+  .bb-predictor-savings { grid-column: 1; }
+  .bb-predictor-savings-list { grid-template-columns: 1fr; }
+  .bb-predictor-footer { grid-column: 1; align-items: stretch; flex-direction: column; }
+  .bb-predictor-footer button { width: 100%; justify-content: center; }
+}
