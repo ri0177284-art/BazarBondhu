@@ -295,7 +295,10 @@ function Customer() {
   const [deliveryFee, setDeliveryFee] = useState(0);
 
   const [user, setUser] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);\n  const [showRoseWelcome, setShowRoseWelcome] = useState(false);\n  const [rosePetalCount, setRosePetalCount] = useState(0);\n  const [roseNeedsEmailVerification, setRoseNeedsEmailVerification] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [showRoseWelcome, setShowRoseWelcome] = useState(false);
+  const [rosePetalCount, setRosePetalCount] = useState(0);
+  const [roseNeedsEmailVerification, setRoseNeedsEmailVerification] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -347,6 +350,27 @@ const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
   const [campaignSlide, setCampaignSlide] = useState(0);
   const campaignTouchStartX = useRef(null);
+
+  useEffect(() => {
+    if (!showRoseWelcome || rosePetalCount < 10) return undefined;
+    const timer = window.setTimeout(() => {
+      setShowRoseWelcome(false);
+      setRosePetalCount(0);
+      if (roseNeedsEmailVerification) {
+        alert("অ্যাকাউন্ট তৈরি হয়েছে। ইমেইলে পাঠানো লিংক দিয়ে যাচাই করে তারপর লগইন করুন।");
+        setShowRegister(false);
+        setRoseNeedsEmailVerification(false);
+      }
+    }, 1350);
+    return () => window.clearTimeout(timer);
+  }, [showRoseWelcome, rosePetalCount, roseNeedsEmailVerification]);
+
+  useEffect(() => {
+    if (!showRoseWelcome) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [showRoseWelcome]);
 
   useEffect(() => {
     if (showFamilyShopping) return undefined;
@@ -1007,7 +1031,8 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
         options: {
           data: {
             full_name: fullName.trim(),
-            phone: phone.trim()
+            phone: phone.trim(),
+            welcome_rose_completed: true
           }
         }
       });
