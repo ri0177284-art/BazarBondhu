@@ -2723,7 +2723,7 @@ const productPickerItems = products.filter((product) => {
             </div>
           )}
 
-          <div className="bb-custom-product-box" style={{ margin: "16px 0", padding: 14, border: "1px solid #cce8d5", borderRadius: 12, background: "#f7fcf8" }}>
+          {showProductPicker && (
             <strong style={{ display: "block", color: "#14532D", marginBottom: 8 }}>＋ নিজের পছন্দের পণ্য লিখুন</strong>
             <p style={{ margin: "0 0 10px", color: "#52665a", fontSize: 12, lineHeight: 1.6 }}>ক্যাটালগে না থাকা পণ্যের নাম ও পরিমাণ লিখুন। Admin দাম ও প্রাপ্যতা নিশ্চিত করে আপনাকে চূড়ান্ত মূল্য পাঠাবেন।</p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -2740,7 +2740,7 @@ const productPickerItems = products.filter((product) => {
                 </div>
               </div>)}
             </div>}
-          </div>
+          )}
           <div className="bb-planner-actions">
             <button type="button" className="bb-save-list-button" disabled={savingShoppingList} onClick={saveShoppingList}>
               {savingShoppingList ? "সেভ হচ্ছে…" : "তালিকা সেভ করুন"}
