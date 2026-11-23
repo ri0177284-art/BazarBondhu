@@ -1653,7 +1653,7 @@ fontWeight: "bold"
   marginTop: 18,
   border: "1px solid #cce8d5"
 }}>
-  💰 মোট বিল: ৳{order.total}
+  💰 মোট বিল: {order.custom_items_status === "pending" ? "Admin-এর মূল্য নিশ্চিতের অপেক্ষায়" : "৳" + order.total}
 </h3>
             </div>
           ))
@@ -2597,12 +2597,12 @@ const productPickerItems = products.filter((product) => {
                 </article>
               ))}
             </div>
-          ) : (
+          ) : customShoppingItems.length === 0 ? (
             <div className="bb-shopping-empty">
               <span aria-hidden="true">🧺</span>
               <div><strong>আপনার বাজারের তালিকা এখনো খালি</strong><p>পণ্য যোগ করে দাম ও মোট খরচ একসাথে দেখুন।</p></div>
             </div>
-          )}
+          ) : null}
 
           {showProductPicker && (            <div className="bb-product-picker">
               <label className="bb-product-search">
