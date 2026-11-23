@@ -1436,3 +1436,111 @@
   .bb-package-benefits-banner *::before,
   .bb-package-benefits-banner *::after { scroll-behavior: auto; }
 }
+
+
+/* Four-slide home campaign carousel */
+.bb-campaign-banner.bb-campaign-slider-shell {
+  display: block;
+  padding: 0;
+  min-height: 0;
+  isolation: isolate;
+}
+.bb-campaign-carousel { width: 100%; overflow: hidden; touch-action: pan-y; }
+.bb-campaign-track {
+  display: flex;
+  width: 400%;
+  transition: transform .62s cubic-bezier(.22,.75,.25,1);
+  will-change: transform;
+}
+.bb-campaign-slide {
+  position: relative;
+  display: grid;
+  flex: 0 0 25%;
+  grid-template-columns: minmax(0, 1.45fr) minmax(190px, .75fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 255px;
+  padding: clamp(22px, 4vw, 38px);
+  overflow: hidden;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 83% 48%, rgba(255,255,255,.78), transparent 30%),
+    linear-gradient(120deg, #f0f8ed 0%, #e4f3e5 58%, #d8eedb 100%);
+}
+.bb-campaign-slide.is-budget {
+  background:
+    radial-gradient(circle at 83% 48%, rgba(255,244,204,.92), transparent 31%),
+    linear-gradient(120deg, #fffaf0 0%, #f2f8e9 55%, #e8f5ed 100%);
+}
+.bb-campaign-slide.is-choice {
+  background:
+    radial-gradient(circle at 83% 48%, rgba(255,255,255,.82), transparent 31%),
+    linear-gradient(120deg, #e8f5ed 0%, #f5fbf5 55%, #dcefe2 100%);
+}
+.bb-campaign-slide.is-fresh {
+  background:
+    radial-gradient(circle at 83% 48%, rgba(255,244,204,.75), transparent 31%),
+    linear-gradient(120deg, #f4fbf5 0%, #e8f5ed 55%, #fff4cc 100%);
+}
+.bb-campaign-slide .bb-campaign-copy { max-width: 650px; padding-top: 8px; }
+.bb-campaign-slide .bb-campaign-copy h2 { max-width: 600px; }
+.bb-campaign-slide .bb-campaign-visual { min-height: 180px; }
+.bb-campaign-dots {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 1px solid rgba(185,221,194,.8);
+  border-radius: 999px;
+  background: rgba(255,255,255,.78);
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+}
+.bb-campaign-dots button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #a9cdb2;
+  cursor: pointer;
+  transition: width .22s ease, background .22s ease;
+}
+.bb-campaign-dots button.is-active { width: 22px; background: #087f45; }
+.bb-campaign-dots button:focus-visible { outline: 2px solid #14532d; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .bb-campaign-banner.bb-campaign-slider-shell { padding: 0; }
+  .bb-campaign-slide {
+    grid-template-columns: minmax(0, 1fr) 82px;
+    gap: 5px;
+    min-height: 148px;
+    padding: 12px 12px 31px;
+    border-radius: 14px;
+  }
+  .bb-campaign-slide .bb-campaign-copy { padding-top: 22px; }
+  .bb-campaign-slide .bb-campaign-kicker { display: inline-flex; margin-bottom: 5px; padding: 3px 7px; font-size: 8px; }
+  .bb-campaign-slide .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(17px, 4.8vw, 21px); line-height: 1.18; }
+  .bb-campaign-slide .bb-campaign-copy > p { display: block; margin: 5px 0 0; font-size: 9px; line-height: 1.35; }
+  .bb-campaign-slide .bb-campaign-copy > button { min-height: 29px; margin-top: 6px; padding: 0 10px; font-size: 9px; }
+  .bb-campaign-slide .bb-campaign-visual { display: grid; min-height: 75px; align-self: center; }
+  .bb-campaign-slide .bb-campaign-orbit-one { width: 74px; height: 74px; }
+  .bb-campaign-slide .bb-campaign-orbit-two { display: none; }
+  .bb-campaign-slide .bb-campaign-basket { width: 54px; height: 54px; border-radius: 17px; font-size: 34px; }
+  .bb-campaign-slide .bb-campaign-float { width: 24px; height: 24px; border-radius: 8px; font-size: 13px; }
+  .bb-campaign-slide .bb-campaign-float-one { top: 0; left: 0; }
+  .bb-campaign-slide .bb-campaign-float-two { top: 0; right: 0; }
+  .bb-campaign-slide .bb-campaign-float-three { right: 0; bottom: 0; }
+  .bb-campaign-slide .bb-campaign-visual-label { display: none; }
+  .bb-campaign-dots { bottom: 7px; gap: 6px; padding: 4px 8px; }
+  .bb-campaign-dots button { width: 6px; height: 6px; }
+  .bb-campaign-dots button.is-active { width: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-campaign-track { transition: none; }
+  .bb-campaign-dots button { transition: none; }
+}
