@@ -1597,3 +1597,108 @@
   .bb-campaign-delivery-copy h2 { font-size: clamp(23px, 6.3vw, 30px); }
   .bb-campaign-wow { font-size: 43px; }
 }
+
+
+/* First-registration full-screen rose welcome */
+.bb-rose-welcome {
+  position: fixed;
+  z-index: 999999;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 24px 18px max(28px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(139, 0, 25, .48), transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(8, 75, 42, .72), transparent 48%),
+    linear-gradient(155deg, #071a12 0%, #10281b 46%, #050d09 100%);
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  animation: bb-rose-screen-in .75s ease both;
+}
+.bb-rose-glow {
+  position: absolute;
+  width: min(92vw, 520px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 30, 50, .17), rgba(255, 30, 50, .04) 48%, transparent 72%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+.bb-rose-scene {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: min(94vw, 510px);
+  height: min(70vh, 650px);
+  min-height: 390px;
+}
+.bb-rose-flower {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 20px 25px rgba(0,0,0,.34));
+  animation: bb-rose-bloom 1.15s cubic-bezier(.2,.8,.2,1) both;
+}
+.bb-rose-falling-petal {
+  position: absolute;
+  z-index: 3;
+  width: clamp(22px, 7vw, 37px);
+  height: clamp(31px, 9vw, 48px);
+  border-radius: 85% 12% 80% 18%;
+  background: linear-gradient(135deg, #ff9b91 0%, #f02a3b 34%, #a90020 72%, #520014 100%);
+  box-shadow: inset 3px 2px 5px rgba(255,255,255,.26), 0 7px 15px rgba(0,0,0,.24);
+  transform-origin: 80% 80%;
+  animation: bb-rose-petal-fall 1.15s cubic-bezier(.25,.65,.45,1) var(--petal-delay) both;
+  pointer-events: none;
+}
+.bb-rose-welcome-copy {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  margin-top: -10px;
+  text-align: center;
+  text-shadow: 0 2px 14px rgba(0,0,0,.48);
+  pointer-events: none;
+}
+.bb-rose-welcome-copy > span { font-size: 23px; line-height: 1; }
+.bb-rose-welcome-copy strong { font-size: clamp(20px, 5.4vw, 27px); font-weight: 850; letter-spacing: .2px; }
+.bb-rose-welcome-copy small { color: rgba(255,255,255,.76); font-size: 12px; }
+.bb-rose-bottom-glow {
+  position: absolute;
+  bottom: -18%;
+  width: 100%;
+  height: 34%;
+  background: radial-gradient(ellipse, rgba(16, 118, 64, .24), transparent 68%);
+  pointer-events: none;
+}
+@keyframes bb-rose-screen-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes bb-rose-bloom {
+  0% { opacity: 0; transform: scale(.68); }
+  72% { opacity: 1; transform: scale(1.045); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes bb-rose-petal-fall {
+  0% { opacity: 0; transform: translate3d(0,0,0) rotate(var(--petal-rotate)) scale(.65); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(42px, 280px, 0) rotate(235deg) scale(.78); }
+}
+@media (max-width: 480px) {
+  .bb-rose-scene { width: 108vw; height: 63vh; min-height: 350px; margin-top: -18px; }
+  .bb-rose-welcome-copy { margin-top: -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-rose-welcome, .bb-rose-flower, .bb-rose-falling-petal { animation-duration: .01ms !important; }
+}
