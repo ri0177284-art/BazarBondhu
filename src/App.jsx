@@ -119,7 +119,7 @@ function App() {
 
     const { data: items, error: itemsError } = await supabase
       .from("order_items")
-      .select("id, order_id, product_name, quantity, unit_price, line_total");
+      .select("id, order_id, product_id, product_name, quantity, unit_price, line_total");
     if (itemsError) {
       notify(`অর্ডারের পণ্য লোড করা যায়নি: ${itemsError.message}`, "error");
       return;
@@ -564,7 +564,7 @@ function App() {
                     <p style={{ margin: "9px 0 0", fontSize: 12, lineHeight: 1.5, color: "#805b16" }}>ব্যাংক/মোবাইল ফাইন্যান্সিয়াল সার্ভিস অ্যাপে টাকা ও Transaction ID মিলিয়ে তারপর Approve করুন। শুধু TrxID থাকলেই পেমেন্ট নিশ্চিত হয় না।</p>
                   )}
                 </div>
-                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
+                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select disabled={["pending", "quoted"].includes(order.custom_items_status)} title={["pending", "quoted"].includes(order.custom_items_status) ? "কাস্টমার চূড়ান্ত মূল্য অনুমোদন না করা পর্যন্ত অপেক্ষা করুন" : undefined} value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
             })}</div>}
           </section>
         )}
