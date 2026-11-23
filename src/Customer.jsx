@@ -1156,6 +1156,17 @@ useEffect(() => {
 }, [showSearchBar]);
 
 function handleSearchToggle() {
+  // Search is part of the storefront, so first return from any other screen.
+  if (showRewards || showProfile || showMyOrders || showCheckout) {
+    setShowRewards(false);
+    setShowProfile(false);
+    setShowMyOrders(false);
+    setShowCheckout(false);
+    setActiveMenu("home");
+    setShowSearchBar(true);
+    return;
+  }
+
   setShowSearchBar((current) => !current);
 }
 
