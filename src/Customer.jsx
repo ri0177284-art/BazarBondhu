@@ -2785,7 +2785,7 @@ const productPickerItems = products.filter((product) => {
                     <span>{prediction.daysUntil < 0 ? "সময় পার হয়েছে" : prediction.daysUntil === 0 ? "আজ কেনার সময়" : `আর ${prediction.daysUntil.toLocaleString("bn-BD")} দিন`}</span>
                   </div>
                   <p>সম্ভাব্য তারিখ: {prediction.expectedDate.toLocaleDateString("bn-BD", { day: "numeric", month: "short" })}</p>
-                  <small>আগের ${prediction.purchaseCount.toLocaleString("bn-BD")}টি কেনাকাটার ব্যবধান: প্রায় ${prediction.typicalInterval.toLocaleString("bn-BD")} দিন</small>
+                  <small>আগের {prediction.purchaseCount.toLocaleString("bn-BD")}টি কেনাকাটার ব্যবধান: প্রায় {prediction.typicalInterval.toLocaleString("bn-BD")} দিন</small>
                   <button type="button" onClick={() => addPredictedProductToShoppingList(prediction)}>
                     + তালিকায় যোগ করুন
                   </button>
