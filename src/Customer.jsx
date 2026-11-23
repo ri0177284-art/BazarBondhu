@@ -258,6 +258,17 @@ const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(fal
 const [shoppingListMessage, setShoppingListMessage] = useState("");
 const [smartBudgetDays, setSmartBudgetDays] = useState(7);
 const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
+  const [campaignSlide, setCampaignSlide] = useState(0);
+  const campaignTouchStartX = useRef(null);
+
+  useEffect(() => {
+    if (showFamilyShopping) return undefined;
+    const slideTimer = window.setInterval(() => {
+      setCampaignSlide((current) => (current + 1) % 4);
+    }, 4800);
+    return () => window.clearInterval(slideTimer);
+  }, [showFamilyShopping]);
+
 
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
@@ -2347,7 +2358,7 @@ const productPickerItems = products.filter((product) => {
 
 
       {!showFamilyShopping ? (
-        <section className="bb-campaign-banner" aria-labelledby="bb-campaign-title">
+        <section className="bb-campaign-banner bb-campaign-slider-shell" aria-label="BazarBondhu-এর বিশেষ সুবিধা">
           <button
             type="button"
             className="bb-campaign-progress-toggle"
@@ -2361,37 +2372,120 @@ const productPickerItems = products.filter((product) => {
             <span className="bb-campaign-progress-toggle-label">অগ্রগতি</span>
             <span className="bb-campaign-progress-toggle-chevron" aria-hidden="true">{showMonthlyInsight ? "⌃" : "⌄"}</span>
           </button>
-          <div className="bb-campaign-copy">
-            <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU-এর বিশেষ সুবিধা</span>
-            <h2 id="bb-campaign-title">
-              পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em>
-            </h2>
-            <p>পরিবারের সদস্য ও বাজেট অনুযায়ী মাসের বাজারের তালিকা তৈরি করুন, পছন্দমতো পণ্য বেছে নিন এবং সহজেই অর্ডার করুন।</p>
-            <div className="bb-campaign-benefits" aria-label="মাসিক প্যাকেজের সুবিধা">
-              <span><b aria-hidden="true">✓</b> নিজের বাজারের তালিকা</span>
-              <span><b aria-hidden="true">✓</b> বাজেট অনুযায়ী পরিকল্পনা</span>
-              <span><b aria-hidden="true">✓</b> একসঙ্গে মাসের বাজার</span>
+
+          <div
+            className="bb-campaign-carousel"
+            onTouchStart={(event) => { campaignTouchStartX.current = event.touches[0]?.clientX ?? null; }}
+            onTouchEnd={(event) => {
+              const startX = campaignTouchStartX.current;
+              const endX = event.changedTouches[0]?.clientX;
+              campaignTouchStartX.current = null;
+              if (startX == null || endX == null) return;
+              const distance = endX - startX;
+              if (Math.abs(distance) < 45) return;
+              setCampaignSlide((current) => (current + (distance < 0 ? 1 : 3)) % 4);
+            }}
+          >
+            <div className="bb-campaign-track" style={{ transform: `translateX(-${campaignSlide * 25}%)` }}>
+              <article className="bb-campaign-slide is-family" aria-roledescription="slide" aria-label="১ / ৪">
+                <div className="bb-campaign-copy">
+                  <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU</span>
+                  <h2>পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em></h2>
+                  <p>সব নিত্যপ্রয়োজনীয় পণ্য—একসাথে, এক ঠিকানায়।</p>
+                  <button type="button" onClick={() => {
+                    setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
+                    setFamilyPreferencesMessage("");
+                    setEditingFamilyPreferences(true);
+                    document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}>
+                    মাসিক প্যাকেজ দেখুন <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="bb-campaign-visual" aria-hidden="true">
+                  <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+                  <div className="bb-campaign-orbit bb-campaign-orbit-two" />
+                  <div className="bb-campaign-basket">🧺</div>
+                  <span className="bb-campaign-float bb-campaign-float-one">🥬</span>
+                  <span className="bb-campaign-float bb-campaign-float-two">🍅</span>
+                  <span className="bb-campaign-float bb-campaign-float-three">🥚</span>
+                  <span className="bb-campaign-visual-label">একসাথে পুরো মাসের বাজার</span>
+                </div>
+              </article>
+
+              <article className="bb-campaign-slide is-budget" aria-roledescription="slide" aria-label="২ / ৪">
+                <div className="bb-campaign-copy">
+                  <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> FAMILY PACKAGE</span>
+                  <h2>বাজার হোক <em>পরিকল্পনা মাফিক!</em></h2>
+                  <p>পরিবার ও বাজেট অনুযায়ী নিজের বাজারের তালিকা সাজান।</p>
+                  <button type="button" onClick={() => {
+                    setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
+                    setFamilyPreferencesMessage("");
+                    setEditingFamilyPreferences(true);
+                    document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}>
+                    বাজেট পরিকল্পনা করুন <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="bb-campaign-visual" aria-hidden="true">
+                  <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+                  <div className="bb-campaign-basket">📋</div>
+                  <span className="bb-campaign-float bb-campaign-float-one">💚</span>
+                  <span className="bb-campaign-float bb-campaign-float-two">৳</span>
+                  <span className="bb-campaign-float bb-campaign-float-three">🛒</span>
+                  <span className="bb-campaign-visual-label">স্মার্ট বাজার পরিকল্পনা</span>
+                </div>
+              </article>
+
+              <article className="bb-campaign-slide is-choice" aria-roledescription="slide" aria-label="৩ / ৪">
+                <div className="bb-campaign-copy">
+                  <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> YOUR CHOICE</span>
+                  <h2>আপনার পছন্দের পণ্য <em>আপনিই বেছে নিন!</em></h2>
+                  <p>পছন্দের পণ্য, ব্র্যান্ড ও পরিমাণ—সব আপনার সিদ্ধান্তে।</p>
+                  <button type="button" onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                    পণ্য বাছাই করুন <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="bb-campaign-visual" aria-hidden="true">
+                  <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+                  <div className="bb-campaign-basket">🛍️</div>
+                  <span className="bb-campaign-float bb-campaign-float-one">🫒</span>
+                  <span className="bb-campaign-float bb-campaign-float-two">🍚</span>
+                  <span className="bb-campaign-float bb-campaign-float-three">🥫</span>
+                  <span className="bb-campaign-visual-label">আপনার বাজার, আপনার পছন্দ</span>
+                </div>
+              </article>
+
+              <article className="bb-campaign-slide is-fresh" aria-roledescription="slide" aria-label="৪ / ৪">
+                <div className="bb-campaign-copy">
+                  <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> DAILY ESSENTIALS</span>
+                  <h2>প্রতিদিনের প্রয়োজন <em>সব একসাথে!</em></h2>
+                  <p>তাজা সবজি, ফলমূল ও ঘরের প্রয়োজনীয় বাজার।</p>
+                  <button type="button" onClick={() => document.getElementById("products-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+                    সব পণ্য দেখুন <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="bb-campaign-visual" aria-hidden="true">
+                  <div className="bb-campaign-orbit bb-campaign-orbit-one" />
+                  <div className="bb-campaign-basket">🥦</div>
+                  <span className="bb-campaign-float bb-campaign-float-one">🍎</span>
+                  <span className="bb-campaign-float bb-campaign-float-two">🥕</span>
+                  <span className="bb-campaign-float bb-campaign-float-three">🍋</span>
+                  <span className="bb-campaign-visual-label">টাটকা ও প্রয়োজনীয় পণ্য</span>
+                </div>
+              </article>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setFamilyPreferencesDraft((current) => ({ ...current, packageId: "family-monthly" }));
-                setFamilyPreferencesMessage("");
-                setEditingFamilyPreferences(true);
-                document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }}
-            >
-              মাসিক প্যাকেজ বেছে নিন <span aria-hidden="true">→</span>
-            </button>
           </div>
-          <div className="bb-campaign-visual" aria-hidden="true">
-            <div className="bb-campaign-orbit bb-campaign-orbit-one" />
-            <div className="bb-campaign-orbit bb-campaign-orbit-two" />
-            <div className="bb-campaign-basket">🧺</div>
-            <span className="bb-campaign-float bb-campaign-float-one">🥬</span>
-            <span className="bb-campaign-float bb-campaign-float-two">🍅</span>
-            <span className="bb-campaign-float bb-campaign-float-three">🥚</span>
-            <span className="bb-campaign-visual-label">পরিবারের মাসিক বাজার</span>
+          <div className="bb-campaign-dots" role="group" aria-label="ব্যানার বেছে নিন">
+            {[0, 1, 2, 3].map((index) => (
+              <button
+                key={index}
+                type="button"
+                className={campaignSlide === index ? "is-active" : ""}
+                onClick={() => setCampaignSlide(index)}
+                aria-label={`ব্যানার ${index + 1} দেখুন`}
+                aria-current={campaignSlide === index ? "true" : undefined}
+              />
+            ))}
           </div>
         </section>
       ) : (
