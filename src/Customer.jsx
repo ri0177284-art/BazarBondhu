@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
 import "./Customer.css";
@@ -186,6 +186,9 @@ function Customer() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const searchBarRef = useRef(null);
+  const searchInputRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(1);
   const PRODUCTS_PER_PAGE = 20;
   const [cart, setCart] = useState([]);
@@ -1088,6 +1091,7 @@ const menuItems = [
 ];
 // Bottom Navigation Actions
 function handleMenuClick(menuId) {
+  setShowSearchBar(false);
   setActiveMenu(menuId);
   setShowRewards(menuId === "rewards");
   if (menuId === "rewards") loadRewards();
@@ -1144,6 +1148,17 @@ function handleMenuClick(menuId) {
   }
 }
 
+// Focus and reveal the search field only after the mobile SEARCH tab is tapped.
+useEffect(() => {
+  if (!showSearchBar) return;
+  searchBarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  searchInputRef.current?.focus();
+}, [showSearchBar]);
+
+function handleSearchToggle() {
+  setShowSearchBar((current) => !current);
+}
+
 // Sidebar layout wrapper for every logged-in screen
 const cartCount = cart.reduce((n, item) => n + (item.quantity || 1), 0);
 const activeNow = showRewards
@@ -1167,6 +1182,8 @@ const withSidebar = (content) => (
     notificationCount={myOrders.filter((order) => order.order_status === "pending").length}
     userName={customerName || user?.email || ""}
     onLogout={handleLogout}
+    onSearchClick={handleSearchToggle}
+    searchOpen={showSearchBar}
   >
     {content}
   </Sidebar>
@@ -2188,9 +2205,9 @@ const productPickerItems = products.filter((product) => {
   return withSidebar(
     <div className="bb-storefront-content">
 
-      <div className="bb-store-search">
+      <div ref={searchBarRef} className={"bb-store-search" + (!showSearchBar ? " bb-store-search-hidden-mobile" : "")}>
         <span className="bb-store-search-icon" aria-hidden="true">🔍</span>
-        <input
+        <input ref={searchInputRef}
           type="text"
           placeholder="পণ্য খুঁজুন..."
           value={search}
