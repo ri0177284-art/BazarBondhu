@@ -1209,3 +1209,36 @@
 @media (prefers-reduced-motion: reduce) {
   .bb-grocery-showcase-track { animation: none; }
 }
+
+
+/* Highlight the family shopping-list heading with a soft yellow accent */
+.bb-planner-heading .bb-shopping-planner-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 7px;
+  padding: 7px 12px;
+  border: 1px solid #f1df9c;
+  border-left: 4px solid #087f45;
+  border-radius: 10px;
+  background: linear-gradient(100deg, #fff4cc 0%, #fff9e8 72%, #e8f5ed 100%);
+  color: #14532d;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.35;
+  box-shadow: 0 3px 9px rgba(125, 99, 24, .08);
+}
+.bb-planner-heading .bb-shopping-planner-title::before {
+  content: "🛒";
+  font-size: 16px;
+}
+@media (max-width: 620px) {
+  .bb-planner-heading .bb-shopping-planner-title {
+    max-width: 100%;
+    padding: 6px 9px;
+    gap: 6px;
+    font-size: 14px;
+    border-radius: 9px;
+  }
+  .bb-planner-heading .bb-shopping-planner-title::before { font-size: 14px; }
+}
