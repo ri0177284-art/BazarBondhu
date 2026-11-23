@@ -2431,13 +2431,6 @@ const productPickerItems = products.filter((product) => {
                 </div>
               </div>
             </div>
-            <div className="bb-package-benefits-list" aria-label="মাসিক প্যাকেজের অন্যান্য সুবিধা">
-              <span>📝 নিজের পছন্দমতো বাজারের তালিকা</span>
-              <span>💰 পরিবারের সদস্য ও বাজেট অনুযায়ী পরিকল্পনা</span>
-              <span>🔁 আগের প্যাকেজের বাজারের তালিকা আবার ব্যবহার</span>
-              <span>🧺 ক্যাটালগে নেই এমন পণ্যও অনুরোধ করতে পারবেন</span>
-              <span>⭐ অর্ডার সম্পন্ন হলে Rewards পয়েন্ট অর্জন</span>
-            </div>
             <button
               type="button"
               className="bb-package-benefits-cta"
