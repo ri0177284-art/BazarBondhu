@@ -1839,6 +1839,12 @@ fontWeight: "bold"
           }}
         />
 
+        {pendingCustomItems.length > 0 ? (
+          <div style={{ marginTop: 18, padding: 14, borderRadius: 12, background: "#fff8e8", border: "1px solid #ead9ad", color: "#76551a", fontSize: 13, lineHeight: 1.7 }}>
+            <strong>নিজের পণ্যের অর্ডার অনুরোধ</strong><br />
+            এখনই কোনো টাকা পাঠাবেন না। Admin পণ্যের দাম ও প্রাপ্যতা নিশ্চিত করে চূড়ান্ত বিল পাঠাবেন। আপনি সম্মতি দেওয়ার পর পেমেন্ট পদ্ধতি নির্বাচন করবেন।
+          </div>
+        ) : <>
         <h3 style={{
           color: "#176b40",
           fontSize: 16,
@@ -1964,13 +1970,14 @@ fontWeight: "bold"
           </div>
         )}
 
-        <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
+        </>}
+        {pendingCustomItems.length === 0 && <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
           <strong style={{ display: "block", color: "#176b40", marginBottom: 8 }}>🎁 Reward পয়েন্ট ব্যবহার</strong>
           <p style={{ color: "#68786d", fontSize: 12, margin: "0 0 9px" }}>আপনার ব্যালেন্স: {Number(rewardSummary?.balance || 0).toLocaleString("bn-BD")} পয়েন্ট · সর্বোচ্চ ছাড় ৳{Math.floor(cartTotal * 0.1).toLocaleString("bn-BD")}</p>
           <input type="number" min="0" step="10" max={Number(rewardSummary?.balance || 0)} value={rewardPointsToUse || ""} onChange={(event) => setRewardPointsToUse(Math.max(0, Number(event.target.value) || 0))} placeholder="ব্যবহার করতে পয়েন্ট লিখুন (সর্বনিম্ন ১০০)" style={inputStyle} />
           <small style={{ display: "block", marginTop: 7, color: "#68786d" }}>১০ পয়েন্ট = ৳১ · Delivery ও Service Fee-তে পয়েন্ট ব্যবহার করা যাবে না।</small>
           {Number(rewardPointsToUse) > 0 && <strong style={{ display: "block", marginTop: 8, color: "#087f45" }}>সম্ভাব্য ছাড়: ৳{Math.min(Number(rewardPointsToUse) / 10, Math.floor(cartTotal * 0.1)).toLocaleString("bn-BD")}</strong>}
-        </div>
+        </div>}
         <div style={{
           background: "#f4faf5",
           padding: 16,
@@ -1985,7 +1992,7 @@ fontWeight: "bold"
           }}>
             🧾 অর্ডারের হিসাব
           </h3>
-          {getFamilyPackageMinimum(cartPackageId) > 0 && (
+          {pendingCustomItems.length === 0 && getFamilyPackageMinimum(cartPackageId) > 0 && (
             <p role="status" style={{
               color: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#087f45" : "#9a5b00",
               background: cartTotal >= getFamilyPackageMinimum(cartPackageId) ? "#e8f5ed" : "#fff6e5",
@@ -2009,7 +2016,7 @@ fontWeight: "bold"
             marginBottom: 12,
             color: "#555"
           }}>
-            <span>পণ্যের মূল্য</span>
+            <span>{pendingCustomItems.length ? "ক্যাটালগ পণ্যের মূল্য (নিজের পণ্যের দাম পরে যোগ হবে)" : "পণ্যের মূল্য"}</span>
             <strong>৳{cartTotal}</strong>
           </div>
 
@@ -2042,7 +2049,7 @@ fontWeight: "bold"
   fontSize: 17
 }}>
   <strong>সর্বমোট বিল</strong>
-  <strong>৳{cartTotal + checkoutServiceCharge + checkoutDeliveryFee - (Number(rewardPointsToUse) / 10)}</strong>
+  <strong>{pendingCustomItems.length ? "Admin-এর মূল্য নিশ্চিতের অপেক্ষায়" : `৳${cartTotal + checkoutServiceCharge + checkoutDeliveryFee - (Number(rewardPointsToUse) / 10)}`}</strong>
 </div>
 
 <p style={{
@@ -2083,7 +2090,7 @@ fontWeight: "bold"
         >
           {placingOrder
             ? "⏳ অর্ডার হচ্ছে..."
-            : "✓ অর্ডার নিশ্চিত করুন"}
+            : pendingCustomItems.length ? "✓ মূল্য নিশ্চিতের অনুরোধ পাঠান" : "✓ অর্ডার নিশ্চিত করুন"}
         </button>
 
         <button
