@@ -951,22 +951,23 @@
   white-space: nowrap;
 }
 @media (max-width: 640px) {
-  .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 5px; min-height: 0; margin-bottom: 14px; padding: 20px 17px 14px; border-radius: 19px; }
-  .bb-campaign-kicker { margin-bottom: 10px; padding: 6px 10px; font-size: 9px; }
-  .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(25px, 7.2vw, 34px); line-height: 1.22; }
-  .bb-campaign-copy > p { margin-top: 10px; font-size: 12px; line-height: 1.65; }
-  .bb-campaign-benefits { gap: 7px 11px; margin-top: 12px; }
-  .bb-campaign-benefits > span { font-size: 10px; }
-  .bb-campaign-copy > button { width: 100%; min-height: 45px; margin-top: 16px; }
-  .bb-campaign-visual { min-height: 112px; margin-top: 2px; }
-  .bb-campaign-orbit-one { width: 112px; height: 112px; }
-  .bb-campaign-orbit-two { width: 84px; height: 84px; }
-  .bb-campaign-basket { width: 75px; height: 75px; border-radius: 23px; font-size: 45px; }
-  .bb-campaign-float { width: 32px; height: 32px; border-radius: 11px; font-size: 18px; }
-  .bb-campaign-float-one { top: 5px; left: 23%; }
-  .bb-campaign-float-two { right: 23%; top: 7px; }
-  .bb-campaign-float-three { right: 25%; bottom: 0; }
-  .bb-campaign-visual-label { bottom: -2px; font-size: 9px; }
+  .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 2px; min-height: 0; margin-bottom: 10px; padding: 12px 14px 9px; border-radius: 16px; }
+  .bb-campaign-kicker { margin-bottom: 6px; padding: 4px 8px; font-size: 8px; }
+  .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(20px, 5.8vw, 26px); line-height: 1.16; letter-spacing: -.4px; }
+  .bb-campaign-copy > p { margin-top: 6px; font-size: 11px; line-height: 1.42; }
+  .bb-campaign-benefits { gap: 4px 9px; margin-top: 7px; }
+  .bb-campaign-benefits > span { font-size: 9px; }
+  .bb-campaign-benefits b { width: 14px; height: 14px; font-size: 9px; }
+  .bb-campaign-copy > button { width: 100%; min-height: 38px; margin-top: 9px; padding: 0 14px; font-size: 12px; }
+  .bb-campaign-visual { min-height: 70px; margin-top: 0; }
+  .bb-campaign-orbit-one { width: 70px; height: 70px; }
+  .bb-campaign-orbit-two { width: 52px; height: 52px; }
+  .bb-campaign-basket { width: 48px; height: 48px; border-radius: 15px; font-size: 30px; }
+  .bb-campaign-float { width: 25px; height: 25px; border-radius: 8px; font-size: 15px; }
+  .bb-campaign-float-one { top: 3px; left: 31%; }
+  .bb-campaign-float-two { right: 31%; top: 3px; }
+  .bb-campaign-float-three { right: 32%; bottom: 0; }
+  .bb-campaign-visual-label { bottom: -2px; padding: 4px 8px; font-size: 8px; }
   .bb-family-card-featured { padding: 14px 13px; border-radius: 17px; }
   .bb-family-primary-badge { padding: 6px 8px; font-size: 9px; }
 }
