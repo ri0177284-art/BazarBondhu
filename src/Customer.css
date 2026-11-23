@@ -1242,3 +1242,197 @@
   }
   .bb-planner-heading .bb-shopping-planner-title::before { font-size: 14px; }
 }
+
+
+/* Monthly Family Package benefits banner shown while My Market is open */
+.bb-package-benefits-banner {
+  grid-template-columns: minmax(0, 1.55fr) minmax(190px, .65fr);
+  gap: 18px;
+  min-height: 0;
+  padding: clamp(20px, 3vw, 30px);
+  background:
+    radial-gradient(circle at 84% 48%, rgba(255,244,204,.92), transparent 31%),
+    linear-gradient(120deg, #f4fbf5 0%, #e8f5ed 56%, #fff4cc 100%);
+  border-color: #b8dfc3;
+}
+.bb-package-benefits-copy { position: relative; z-index: 1; min-width: 0; }
+.bb-package-benefits-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 6px 11px;
+  border: 1px solid #d7e9bd;
+  border-radius: 999px;
+  background: #fff4cc;
+  color: #14532d;
+  font-size: 11px;
+  font-weight: 900;
+}
+.bb-package-benefits-copy h2 {
+  margin: 0;
+  color: #14532d;
+  font-size: clamp(25px, 3.4vw, 36px);
+  font-weight: 950;
+  line-height: 1.18;
+}
+.bb-package-benefits-copy h2 em { color: #087f45; font-style: normal; }
+.bb-package-benefits-copy > p {
+  margin: 8px 0 13px;
+  color: #46634e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.bb-package-highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.bb-package-highlight-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d5e9d8;
+  border-radius: 15px;
+  background: rgba(255,255,255,.88);
+  box-shadow: 0 5px 14px rgba(20,83,45,.07);
+}
+.bb-package-highlight-card.is-reward { border-color: #f0dfa6; background: rgba(255,250,230,.96); }
+.bb-package-highlight-emoji {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 13px;
+  background: #e8f5ed;
+  font-size: 25px;
+}
+.bb-package-highlight-card.is-reward .bb-package-highlight-emoji { background: #fff0bd; }
+.bb-package-highlight-card > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bb-package-highlight-card small { color: #607766; font-size: 9px; line-height: 1.35; }
+.bb-package-highlight-card strong { color: #087f45; font-size: clamp(14px, 1.6vw, 19px); font-weight: 950; line-height: 1.2; }
+.bb-package-highlight-card.is-reward strong { color: #14532d; }
+.bb-package-highlight-card em { color: #718276; font-size: 9px; font-style: normal; }
+.bb-package-benefits-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 13px;
+  margin-top: 13px;
+}
+.bb-package-benefits-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #315a3d;
+  font-size: 10px;
+  font-weight: 750;
+}
+.bb-package-benefits-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 37px;
+  margin-top: 14px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: #087f45;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(8,127,69,.16);
+}
+.bb-package-benefits-cta:hover { background: #14532d; }
+.bb-package-benefits-cta span { font-size: 16px; }
+.bb-package-benefits-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  isolation: isolate;
+}
+.bb-package-benefits-art-orbit {
+  position: absolute;
+  width: 205px;
+  height: 205px;
+  border: 2px dashed rgba(8,127,69,.17);
+  border-radius: 50%;
+}
+.bb-package-benefits-basket {
+  display: grid;
+  place-items: center;
+  width: 138px;
+  height: 138px;
+  border: 1px solid #fff;
+  border-radius: 40px;
+  background: linear-gradient(145deg, #fff 0%, #e8f5ed 100%);
+  font-size: 78px;
+  box-shadow: 0 12px 28px rgba(20,83,45,.13);
+  transform: rotate(-5deg);
+}
+.bb-package-benefits-float {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border: 1px solid #e2efdf;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 24px;
+  box-shadow: 0 6px 14px rgba(20,83,45,.12);
+}
+.bb-package-benefits-float.float-one { top: 18px; left: 8%; transform: rotate(-12deg); }
+.bb-package-benefits-float.float-two { top: 20px; right: 6%; transform: rotate(10deg); }
+.bb-package-benefits-float.float-three { bottom: 43px; right: 7%; transform: rotate(-8deg); }
+.bb-package-benefits-float.float-four { bottom: 42px; left: 7%; transform: rotate(8deg); }
+.bb-package-benefits-art-caption {
+  position: absolute;
+  bottom: 5px;
+  padding: 7px 12px;
+  border: 1px solid #d5e9d8;
+  border-radius: 999px;
+  background: rgba(255,255,255,.9);
+  color: #14532d;
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+@media (max-width: 800px) {
+  .bb-package-benefits-banner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 18px 14px 13px;
+  }
+  .bb-package-benefits-copy h2 { font-size: clamp(22px, 5.5vw, 29px); }
+  .bb-package-benefits-art { display: none; }
+}
+@media (max-width: 640px) {
+  .bb-package-benefits-banner {
+    margin-bottom: 10px;
+    padding: 39px 12px 13px;
+    border-radius: 15px;
+  }
+  .bb-package-benefits-kicker { margin-bottom: 7px; padding: 5px 8px; font-size: 9px; }
+  .bb-package-benefits-copy h2 { font-size: clamp(20px, 5.8vw, 25px); }
+  .bb-package-benefits-copy > p { margin: 6px 0 10px; font-size: 10px; }
+  .bb-package-highlight-grid { gap: 7px; }
+  .bb-package-highlight-card { gap: 7px; padding: 9px 7px; border-radius: 12px; }
+  .bb-package-highlight-emoji { width: 32px; height: 32px; border-radius: 10px; font-size: 19px; }
+  .bb-package-highlight-card small { font-size: 8px; }
+  .bb-package-highlight-card strong { font-size: clamp(12px, 3.6vw, 15px); }
+  .bb-package-highlight-card em { font-size: 8px; }
+  .bb-package-benefits-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin-top: 10px; }
+  .bb-package-benefits-list span { font-size: 9px; }
+  .bb-package-benefits-cta { min-height: 34px; margin-top: 10px; font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bb-package-benefits-banner *,
+  .bb-package-benefits-banner *::before,
+  .bb-package-benefits-banner *::after { scroll-behavior: auto; }
+}
