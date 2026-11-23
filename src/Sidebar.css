@@ -529,3 +529,54 @@
   outline: 2px solid #087f45;
   outline-offset: 2px;
 }
+
+
+/* Fixed mobile bottom navigation inspired by the supplied reference */
+.bb-bottom-nav { display: none; }
+@media (max-width: 800px) {
+  .bb-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: stretch;
+    min-height: 68px;
+    padding: 7px 5px calc(7px + env(safe-area-inset-bottom, 0px));
+    border-radius: 0 0 18px 18px;
+    background: #f58216;
+    box-shadow: 0 -4px 18px rgba(60, 48, 20, .18);
+  }
+  .bb-bottom-nav-item {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    padding: 2px 1px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bb-bottom-nav-item svg { width: 27px; height: 27px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .bb-bottom-nav-item > span:last-child { overflow: hidden; max-width: 100%; color: #fff; font-size: 10px; font-weight: 800; line-height: 1.1; letter-spacing: .35px; text-overflow: ellipsis; white-space: nowrap; }
+  .bb-bottom-nav-item.is-active { background: rgba(255,255,255,.16); }
+  .bb-bottom-nav-item:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+  .bb-bottom-nav-icon-wrap { position: relative; display: grid; place-items: center; }
+  .bb-bottom-nav-badge { position: absolute; top: -7px; right: -9px; display: grid; min-width: 18px; height: 18px; place-items: center; padding: 0 4px; border: 2px solid #f58216; border-radius: 99px; background: #172b20; color: #fff; font-size: 10px; font-weight: 900; }
+  .bb-storefront-content { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 380px) {
+  .bb-bottom-nav { min-height: 64px; padding-inline: 2px; }
+  .bb-bottom-nav-item { gap: 4px; }
+  .bb-bottom-nav-item svg { width: 24px; height: 24px; }
+  .bb-bottom-nav-item > span:last-child { font-size: 9px; }
+}
