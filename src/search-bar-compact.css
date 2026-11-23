@@ -1,0 +1,52 @@
+/* Keep the existing search-bar width; reduce only its height. */
+.bb-store-search {
+  min-height: 30px;
+  gap: 6px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.bb-store-search-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 16px;
+}
+
+.bb-store-search input {
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.bb-store-search-clear {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+}
+
+@media (max-width: 620px) {
+  .bb-store-search {
+    min-height: 28px;
+    gap: 5px;
+    padding: 1px 5px;
+  }
+
+  .bb-store-search-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 15px;
+  }
+
+  .bb-store-search input {
+    font-size: 11px;
+    line-height: 14px;
+  }
+
+  .bb-store-search-clear {
+    width: 20px;
+    height: 20px;
+    font-size: 15px;
+  }
+}
