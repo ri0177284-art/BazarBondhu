@@ -298,7 +298,9 @@ function Customer() {
   const [showRegister, setShowRegister] = useState(false);
   const [showRoseWelcome, setShowRoseWelcome] = useState(false);
   const [rosePetalCount, setRosePetalCount] = useState(0);
-  const [roseNeedsEmailVerification, setRoseNeedsEmailVerification] = useState(false);
+  const [showOtpVerification, setShowOtpVerification] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingPhone, setPendingPhone] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -356,14 +358,9 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     const timer = window.setTimeout(() => {
       setShowRoseWelcome(false);
       setRosePetalCount(0);
-      if (roseNeedsEmailVerification) {
-        alert("অ্যাকাউন্ট তৈরি হয়েছে। ইমেইলে পাঠানো লিংক দিয়ে যাচাই করে তারপর লগইন করুন।");
-        setShowRegister(false);
-        setRoseNeedsEmailVerification(false);
-      }
     }, 1350);
     return () => window.clearTimeout(timer);
-  }, [showRoseWelcome, rosePetalCount, roseNeedsEmailVerification]);
+  }, [showRoseWelcome, rosePetalCount]);
 
   useEffect(() => {
     if (!showRoseWelcome) return undefined;
@@ -1007,42 +1004,98 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
   }
 
   // Login and Registration
+  function normalizeBangladeshPhone(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits.startsWith("01")) return `+88${digits}`;
+    if (digits.length === 13 && digits.startsWith("8801")) return `+${digits}`;
+    if (digits.length === 10 && digits.startsWith("1")) return `+880${digits}`;
+    return "";
+  }
+
+  async function saveAuthenticatedCustomer(authUser, fallbackName = "", fallbackPhone = "") {
+    const metadata = authUser.user_metadata || {};
+    const { data: oldProfile } = await supabase
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({
+        id: authUser.id,
+        full_name: oldProfile?.full_name || metadata.full_name || fallbackName,
+        phone: oldProfile?.phone || metadata.phone || fallbackPhone
+      }, { onConflict: "id" });
+
+    if (profileError) {
+      alert("প্রোফাইল সেভ হয়নি: " + profileError.message);
+      console.log(profileError);
+    }
+    setUser(authUser);
+  }
+
   async function handleAuth(e) {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      alert("ইমেইল ও পাসওয়ার্ড দিন");
+    if (!password.trim()) {
+      alert("পাসওয়ার্ড দিন");
       return;
     }
-
-    if (showRegister && (!fullName.trim() || !phone.trim())) {
-      alert("আপনার নাম ও মোবাইল নম্বর দিন");
-      return;
-    }
-
-    setAuthLoading(true);
-
-    let result;
 
     if (showRegister) {
-      result = await supabase.auth.signUp({
-        email: email.trim(),
+      const normalizedPhone = normalizeBangladeshPhone(phone);
+      if (!fullName.trim() || !normalizedPhone || !/^\+8801[3-9]\d{8}$/.test(normalizedPhone)) {
+        alert("আপনার নাম ও সঠিক বাংলাদেশি মোবাইল নম্বর দিন (01XXXXXXXXX)");
+        return;
+      }
+
+      setAuthLoading(true);
+      const result = await supabase.auth.signUp({
+        phone: normalizedPhone,
         password,
         options: {
           data: {
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            phone: normalizedPhone,
             welcome_rose_completed: true
           }
         }
       });
-    } else {
-      result = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password
-      });
+      setAuthLoading(false);
+
+      if (result.error) {
+        alert(result.error.message);
+        return;
+      }
+
+      setPendingPhone(normalizedPhone);
+      setOtpCode("");
+      setShowOtpVerification(true);
+      alert("আপনার ফোনে ৬ সংখ্যার OTP পাঠানো হয়েছে। OTP দিয়ে নম্বর Verify করুন।");
+      return;
     }
 
+    const identifier = email.trim();
+    if (!identifier) {
+      alert("ইমেইল অথবা মোবাইল নম্বর দিন");
+      return;
+    }
+
+    setAuthLoading(true);
+    const isPhoneLogin = !identifier.includes("@");
+    const normalizedPhone = isPhoneLogin ? normalizeBangladeshPhone(identifier) : "";
+    if (isPhoneLogin && (!normalizedPhone || !/^\+8801[3-9]\d{8}$/.test(normalizedPhone))) {
+      setAuthLoading(false);
+      alert("সঠিক ইমেইল অথবা বাংলাদেশি মোবাইল নম্বর দিন");
+      return;
+    }
+
+    const result = await supabase.auth.signInWithPassword(
+      isPhoneLogin
+        ? { phone: normalizedPhone, password }
+        : { email: identifier, password }
+    );
     setAuthLoading(false);
 
     if (result.error) {
@@ -1050,44 +1103,48 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       return;
     }
 
-    if (showRegister && !result.data.session) {
-      setRoseNeedsEmailVerification(true);
-      setRosePetalCount(0);
-      setShowRoseWelcome(true);
+    await saveAuthenticatedCustomer(result.data.user, fullName.trim(), phone.trim());
+    alert("লগইন সফল হয়েছে!");
+  }
+
+  async function handleVerifyPhoneOtp(e) {
+    e.preventDefault();
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      alert("৬ সংখ্যার OTP সঠিকভাবে লিখুন");
       return;
     }
-const authUser = result.data.user;
-const metadata = authUser.user_metadata || {};
 
-const { data: oldProfile } = await supabase
-  .from("profiles")
-  .select("full_name, phone")
-  .eq("id", authUser.id)
-  .maybeSingle();
+    setAuthLoading(true);
+    const result = await supabase.auth.verifyOtp({
+      phone: pendingPhone,
+      token: otpCode.trim(),
+      type: "sms"
+    });
+    setAuthLoading(false);
 
-const { error: profileError } = await supabase
-  .from("profiles")
-  .upsert({
-    id: authUser.id,
-    full_name: oldProfile?.full_name || metadata.full_name || fullName.trim(),
-    phone: oldProfile?.phone || metadata.phone || phone.trim()
-  }, {
-    onConflict: "id"
-  });
-
-if (profileError) {
-  alert("প্রোফাইল সেভ হয়নি: " + profileError.message);
-  console.log(profileError);
-}
-    setUser(result.data.user);
-    if (showRegister) {
-      setShowRegister(false);
-      setRoseNeedsEmailVerification(false);
-      setRosePetalCount(0);
-      setShowRoseWelcome(true);
-    } else {
-      alert("লগইন সফল হয়েছে!");
+    if (result.error) {
+      alert("OTP Verify হয়নি: " + result.error.message);
+      return;
     }
+
+    await saveAuthenticatedCustomer(result.data.user, fullName.trim(), pendingPhone);
+    setShowOtpVerification(false);
+    setShowRegister(false);
+    setOtpCode("");
+    setRosePetalCount(0);
+    setShowRoseWelcome(true);
+  }
+
+  async function handleResendPhoneOtp() {
+    if (!pendingPhone) return;
+    setAuthLoading(true);
+    const result = await supabase.auth.resend({ type: "sms", phone: pendingPhone });
+    setAuthLoading(false);
+    if (result.error) {
+      alert("OTP আবার পাঠানো যায়নি: " + result.error.message);
+      return;
+    }
+    alert("নতুন OTP পাঠানো হয়েছে।");
   }
 // Place Order
 async function placeOrder() {
@@ -1496,71 +1553,102 @@ fontWeight: "bold"
             : "লগইন করুন"}
         </h2>
 
-        <form onSubmit={handleAuth}>
-          {showRegister && (
+        {showOtpVerification ? (
+          <form onSubmit={handleVerifyPhoneOtp}>
+            <p style={{ color: "#14532D", lineHeight: 1.6 }}>
+              <strong>{pendingPhone}</strong> নম্বরে ৬ সংখ্যার OTP পাঠানো হয়েছে।
+            </p>
             <input
-              placeholder="আপনার নাম"
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="৬ সংখ্যার OTP লিখুন"
+              value={otpCode}
+              onChange={e => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
               required
-              style={inputStyle}
+              style={{ ...inputStyle, textAlign: "center", letterSpacing: 8, fontSize: 20 }}
             />
-          )}
+            <button type="submit" disabled={authLoading} style={buttonStyle}>
+              {authLoading ? "Verify হচ্ছে..." : "OTP Verify করুন"}
+            </button>
+            <button type="button" disabled={authLoading} onClick={handleResendPhoneOtp} style={{ ...buttonStyle, background: "#14532D", marginTop: 8 }}>
+              OTP আবার পাঠান
+            </button>
+            <button type="button" onClick={() => { setShowOtpVerification(false); setOtpCode(""); }} style={{ ...buttonStyle, background: "#64748b", marginTop: 8 }}>
+              ফিরে যান
+            </button>
+          </form>
+        ) : (
+          <>
+            <form onSubmit={handleAuth}>
+              {showRegister && (
+                <>
+                  <input
+                    placeholder="আপনার নাম"
+                    value={fullName}
+                    onChange={e => setFullName(e.target.value)}
+                    required
+                    style={inputStyle}
+                  />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="মোবাইল নম্বর (01XXXXXXXXX)"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    required
+                    style={inputStyle}
+                  />
+                </>
+              )}
 
-          <input
-            type="email"
-            placeholder="ইমেইল ঠিকানা"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            style={inputStyle}
-          />
+              {!showRegister && (
+                <input
+                  type="text"
+                  autoComplete="username"
+                  placeholder="ইমেইল অথবা মোবাইল নম্বর"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              )}
 
-          {showRegister && (
-            <input
-              type="tel"
-              placeholder="মোবাইল নম্বর (01XXXXXXXXX)"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              required
-              style={inputStyle}
-            />
-          )}
+              <input
+                type="password"
+                autoComplete={showRegister ? "new-password" : "current-password"}
+                placeholder="পাসওয়ার্ড"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
 
-          <input
-            type="password"
-            placeholder="পাসওয়ার্ড"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            style={inputStyle}
-          />
+              <button type="submit" disabled={authLoading} style={buttonStyle}>
+                {authLoading
+                  ? "অপেক্ষা করুন..."
+                  : showRegister
+                    ? "রেজিস্ট্রেশন করুন"
+                    : "লগইন করুন"}
+              </button>
+            </form>
 
-          <button
-            type="submit"
-            disabled={authLoading}
-            style={buttonStyle}
-          >
-            {authLoading
-              ? "অপেক্ষা করুন..."
-              : showRegister
-                ? "রেজিস্ট্রেশন করুন"
-                : "লগইন করুন"}
-          </button>
-        </form>
-
-        <button
-          onClick={() => setShowRegister(!showRegister)}
-          style={{
-            ...buttonStyle,
-            background: "#555",
-            marginTop: 10
-          }}
-        >
-          {showRegister
-            ? "আগে অ্যাকাউন্ট আছে? লগইন করুন"
-            : "নতুন অ্যাকাউন্ট খুলুন"}
-        </button>
+            <button
+              onClick={() => setShowRegister(!showRegister)}
+              style={{
+                ...buttonStyle,
+                background: "#555",
+                marginTop: 10
+              }}
+            >
+              {showRegister
+                ? "আগে অ্যাকাউন্ট আছে? লগইন করুন"
+                : "নতুন অ্যাকাউন্ট খুলুন"}
+            </button>
+          </>
+        )}
       </div>
     );
   }
