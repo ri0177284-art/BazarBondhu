@@ -1546,6 +1546,27 @@ fontWeight: "bold"
 }}>
   📦 অর্ডার স্ট্যাটাস: {order.order_status}
 </p>
+              {order.custom_items_status === "pending" && (
+                <div style={{ marginTop: 12, padding: 13, borderRadius: 10, background: "#fff8e8", border: "1px solid #ead9ad", color: "#76551a", fontSize: 13, lineHeight: 1.6 }}>
+                  ⏳ আপনার নিজের লেখা পণ্যের দাম ও প্রাপ্যতা Admin যাচাই করছেন। এখনই কোনো টাকা পাঠাবেন না। মূল্য প্রস্তুত হলে এখানে দেখবেন।
+                </div>
+              )}
+              {order.custom_items_status === "quoted" && (
+                <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "#e8f5ed", border: "1px solid #cce8d5" }}>
+                  <strong style={{ color: "#14532D" }}>✓ আপনার অর্ডারের চূড়ান্ত মূল্য প্রস্তুত</strong>
+                  <p style={{ margin: "7px 0", color: "#31543d", fontSize: 13 }}>মোট বিল: <strong>৳{Number(order.total).toLocaleString("bn-BD")}</strong>। পণ্য ও মূল্য যাচাই করে সম্মতি দিলে অর্ডার কনফার্ম হবে।</p>
+                  <label style={{ display: "block", marginTop: 10, color: "#31543d", fontSize: 13, fontWeight: 700 }}>পেমেন্ট পদ্ধতি
+                    <select value={customQuotePaymentMethod} onChange={(event) => setCustomQuotePaymentMethod(event.target.value)} style={{ display: "block", width: "100%", padding: 10, marginTop: 5, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }}>
+                      <option value="cod">Cash on Delivery</option><option value="bkash">bKash</option><option value="nagad">Nagad</option>
+                    </select>
+                  </label>
+                  {customQuotePaymentMethod !== "cod" && <>
+                    <p style={{ fontSize: 12, color: "#52665a", margin: "8px 0" }}>নম্বর 01772845524-এ ৳{Number(order.total).toLocaleString("bn-BD")} Send Money করে TrxID লিখুন।</p>
+                    <input value={customQuoteTransactionId} onChange={(event) => setCustomQuoteTransactionId(event.target.value)} placeholder="Transaction ID (TrxID)" style={{ width: "100%", boxSizing: "border-box", padding: 10, border: "1px solid #cbd8cf", borderRadius: 8 }} />
+                  </>}
+                  <button type="button" onClick={() => void approveCustomQuote(order.id)} style={{ width: "100%", marginTop: 11, padding: 12, border: 0, borderRadius: 9, background: "#087F45", color: "#fff", fontWeight: 700 }}>চূড়ান্ত মূল্য মেনে অর্ডার কনফার্ম করুন</button>
+                </div>
+              )}
               {order.cancel_reason && (
   <p style={{
     background: "#fff1f1",
@@ -1588,7 +1609,8 @@ fontWeight: "bold"
   border: `1px solid ${order.payment_status === "paid" ? "#cce8d5" : order.payment_status === "rejected" ? "#f2cccc" : "#f0dfb7"}`
 }}>
   💳 পেমেন্ট স্ট্যাটাস: <strong>{order.payment_status === "paid" ? "পরিশোধিত ✓" : order.payment_status === "rejected" ? "পেমেন্ট গ্রহণ করা হয়নি" : order.payment_status === "refunded" ? "টাকা ফেরত দেওয়া হয়েছে" : "যাচাই অপেক্ষমাণ"}</strong>
-  {order.payment_method === "cod" && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পণ্য হাতে পেয়ে ডেলিভারির সময় নগদ টাকা দিন।</p>}
+  {order.custom_items_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>চূড়ান্ত মূল্য নিশ্চিত হওয়ার আগে পেমেন্ট করতে হবে না।</p>}
+  {order.custom_items_status !== "pending" && order.payment_method === "cod" && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পণ্য হাতে পেয়ে ডেলিভারির সময় নগদ টাকা দিন।</p>}
   {["bkash", "nagad"].includes(order.payment_method) && order.payment_status === "pending" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>আপনার পেমেন্টের তথ্য Admin যাচাই করছেন। যাচাই শেষ হলে এখানে আপডেট দেখবেন।</p>}
   {order.payment_status === "rejected" && <p style={{ margin: "6px 0 0", fontSize: 12 }}>পেমেন্ট বা Transaction ID মেলেনি। অনুগ্রহ করে BazarBondhu কর্তৃপক্ষের সঙ্গে যোগাযোগ করুন।</p>}
 </div>
@@ -1616,7 +1638,7 @@ fontWeight: "bold"
 }}>
   🛍️ {item.product_name}
   <br />
-  পরিমাণ: {item.quantity} টি × ৳{item.unit_price}
+  পরিমাণ: {item.quantity} টি × {item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : "৳" + item.unit_price}
 </p>
               ))}
 
