@@ -553,7 +553,7 @@ function App() {
                     </div>
                   )}
                   <label style={{ display: "block", marginTop: 12, fontSize: 13, fontWeight: 600, color: "#34483a" }}>পেমেন্ট স্ট্যাটাস
-                    <select style={{ display: "block", width: "100%", marginTop: 6, padding: 10, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }} value={order.payment_status || "pending"} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}>
+                    <select style={{ display: "block", width: "100%", marginTop: 6, padding: 10, border: "1px solid #cbd8cf", borderRadius: 8, background: "#fff" }} value={order.payment_status || "pending"} disabled={["pending", "quoted"].includes(order.custom_items_status)} onChange={(event) => void updateOrder(order.id, { payment_status: event.target.value })}>
                       <option value="pending">যাচাই অপেক্ষমাণ</option>
                       <option value="paid">টাকা পেয়েছি — Approve</option>
                       <option value="rejected">টাকা পাইনি / TrxID ভুল — Reject</option>
