@@ -22,6 +22,8 @@ export default function Sidebar({
   notificationCount = 0,
   userName = "",
   onLogout,
+  onSearchClick,
+  searchOpen = false,
   children,
 }) {
   const [collapsed, setCollapsed] = useState(() => {
@@ -184,6 +186,32 @@ export default function Sidebar({
         </div>
         {children}
       </div>
+
+      <nav className="bb-bottom-nav" aria-label="মোবাইল নেভিগেশন">
+        <button type="button" className="bb-bottom-nav-item" onClick={() => select("home")} aria-label="হোম">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z" /></svg>
+          <span>HOME</span>
+        </button>
+        <button type="button" className="bb-bottom-nav-item" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label="মেনু খুলুন">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>
+          <span>MENU</span>
+        </button>
+        <button type="button" className="bb-bottom-nav-item" onClick={() => select("cart")} aria-label={cartCount > 0 ? `কার্ট, ${cartCount}টি পণ্য` : "কার্ট"}>
+          <span className="bb-bottom-nav-icon-wrap">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.4 11h10.2L20 8H6M9 20h.01M17 20h.01" /></svg>
+            {cartCount > 0 && <span className="bb-bottom-nav-badge">{cartCount > 99 ? "99+" : cartCount}</span>}
+          </span>
+          <span>CART</span>
+        </button>
+        <button type="button" className={"bb-bottom-nav-item" + (searchOpen ? " is-active" : "")} onClick={onSearchClick} aria-pressed={searchOpen} aria-label="সার্চ খুলুন">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg>
+          <span>SEARCH</span>
+        </button>
+        <button type="button" className="bb-bottom-nav-item" onClick={() => select("profile")} aria-label="অ্যাকাউন্ট">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7.5" r="4" /><path d="M4 21c.5-4.2 3.5-6.5 8-6.5s7.5 2.3 8 6.5" /></svg>
+          <span>ACCOUNT</span>
+        </button>
+      </nav>
     </div>
   );
 }
