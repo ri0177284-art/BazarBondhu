@@ -2534,7 +2534,7 @@ const productPickerItems = products.filter((product) => {
         <div className="bb-shopping-planner" id="bb-family-shopping">
           <div className="bb-planner-heading">
             <div>
-              <h3>আপনার {packagePeriodLabel} বাজারের তালিকা</h3>
+              <h3 className="bb-shopping-planner-title">আপনার {packagePeriodLabel} বাজারের তালিকা</h3>
               <p>সহজে পণ্য যোগ বা বাদ দিন, পরিমাণ ঠিক করুন—মোট খরচ নিজে থেকেই হিসাব হবে।</p>
             </div>
             <button
