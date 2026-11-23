@@ -1064,3 +1064,61 @@
   .bb-product-name { font-size: 13px; }
   .bb-product-cart-icon { flex-basis: 35px; width: 35px; height: 35px; }
 }
+
+
+/* Final storefront search override: full width, slim height, below header. */
+.bb-storefront-content .bb-store-search {
+  width: 100%;
+  min-height: 30px;
+  margin: 0 0 14px;
+  padding: 1px 7px;
+  gap: 6px;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+.bb-storefront-content .bb-store-search-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 15px;
+}
+.bb-storefront-content .bb-store-search input {
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+.bb-storefront-content .bb-store-search-clear {
+  width: 22px;
+  height: 22px;
+  font-size: 16px;
+}
+@media (max-width: 800px) {
+  .bb-storefront-content .bb-store-search {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+  }
+}
+@media (max-width: 620px) {
+  .bb-storefront-content .bb-store-search {
+    width: calc(100% + 20px);
+    min-height: 28px;
+    margin-left: -10px;
+    margin-right: -10px;
+    gap: 5px;
+    padding: 1px 6px;
+  }
+  .bb-storefront-content .bb-store-search-icon {
+    width: 19px;
+    height: 19px;
+    font-size: 14px;
+  }
+  .bb-storefront-content .bb-store-search input {
+    font-size: 11px;
+    line-height: 14px;
+  }
+  .bb-storefront-content .bb-store-search-clear {
+    width: 20px;
+    height: 20px;
+    font-size: 15px;
+  }
+}
