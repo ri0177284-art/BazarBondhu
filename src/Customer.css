@@ -951,23 +951,13 @@
   white-space: nowrap;
 }
 @media (max-width: 640px) {
-  .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 2px; min-height: 0; margin-bottom: 10px; padding: 12px 14px 9px; border-radius: 16px; }
-  .bb-campaign-kicker { margin-bottom: 6px; padding: 4px 8px; font-size: 8px; }
-  .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(20px, 5.8vw, 26px); line-height: 1.16; letter-spacing: -.4px; }
-  .bb-campaign-copy > p { margin-top: 6px; font-size: 11px; line-height: 1.42; }
-  .bb-campaign-benefits { gap: 4px 9px; margin-top: 7px; }
-  .bb-campaign-benefits > span { font-size: 9px; }
-  .bb-campaign-benefits b { width: 14px; height: 14px; font-size: 9px; }
-  .bb-campaign-copy > button { width: 100%; min-height: 38px; margin-top: 9px; padding: 0 14px; font-size: 12px; }
-  .bb-campaign-visual { min-height: 70px; margin-top: 0; }
-  .bb-campaign-orbit-one { width: 70px; height: 70px; }
-  .bb-campaign-orbit-two { width: 52px; height: 52px; }
-  .bb-campaign-basket { width: 48px; height: 48px; border-radius: 15px; font-size: 30px; }
-  .bb-campaign-float { width: 25px; height: 25px; border-radius: 8px; font-size: 15px; }
-  .bb-campaign-float-one { top: 3px; left: 31%; }
-  .bb-campaign-float-two { right: 31%; top: 3px; }
-  .bb-campaign-float-three { right: 32%; bottom: 0; }
-  .bb-campaign-visual-label { bottom: -2px; padding: 4px 8px; font-size: 8px; }
+  .bb-campaign-banner { grid-template-columns: minmax(0, 1fr); gap: 0; min-height: 0; margin-bottom: 9px; padding: 10px 12px; border-radius: 14px; }
+  .bb-campaign-kicker,
+  .bb-campaign-copy > p,
+  .bb-campaign-benefits,
+  .bb-campaign-visual { display: none; }
+  .bb-campaign-copy h2 { max-width: 100%; font-size: clamp(18px, 5.1vw, 22px); line-height: 1.16; letter-spacing: -.35px; }
+  .bb-campaign-copy > button { width: fit-content; min-height: 34px; margin-top: 7px; padding: 0 12px; border-radius: 10px; font-size: 11px; box-shadow: 0 3px 9px rgba(0,0,0,.10); }
   .bb-family-card-featured { padding: 14px 13px; border-radius: 17px; }
   .bb-family-primary-badge { padding: 6px 8px; font-size: 9px; }
 }
