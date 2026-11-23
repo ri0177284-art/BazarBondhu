@@ -2192,7 +2192,7 @@ const productPickerItems = products.filter((product) => {
         <span className="bb-store-search-icon" aria-hidden="true">🔍</span>
         <input
           type="text"
-          placeholder="আপনার প্রয়োজনীয় পণ্য খুঁজুন..."
+          placeholder="পণ্য খুঁজুন..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           aria-label="পণ্য খুঁজুন"
