@@ -38,17 +38,6 @@ function getProductCategory(productName = "") {
   return CATEGORY_GROUPS.find((category) => category.id !== "other" && category.match.test(name))?.id || "other";
 }
 
-const ORDER_TRACKING_STEPS = [
-  { status: "pending", title: "অর্ডার গ্রহণ করা হয়েছে", description: "আপনার অর্ডারটি BazarBondhu পেয়েছে।" },
-  { status: "confirmed", title: "অর্ডার নিশ্চিত হয়েছে", description: "আপনার অর্ডারটি প্রস্তুতির জন্য নিশ্চিত করা হয়েছে।" },
-  { status: "processing", title: "বাজার প্রস্তুত হচ্ছে", description: "আপনার পণ্যগুলো সংগ্রহ ও প্রস্তুত করা হচ্ছে।" },
-  { status: "delivered", title: "ডেলিভারি সম্পন্ন", description: "আপনার বাজার পৌঁছে দেওয়া হয়েছে।" },
-];
-
-function getOrderStatusLabel(status) {
-  return ({ pending: "অর্ডার গ্রহণ করা হয়েছে", confirmed: "অর্ডার নিশ্চিত হয়েছে", processing: "বাজার প্রস্তুত হচ্ছে", delivered: "ডেলিভারি সম্পন্ন", cancelled: "অর্ডার বাতিল হয়েছে" })[String(status || "").toLowerCase()] || "স্ট্যাটাস আপডেট হচ্ছে";
-}
-
 function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
@@ -221,7 +210,6 @@ const [transactionId, setTransactionId] = useState("");
 const [placingOrder, setPlacingOrder] = useState(false);
 const [myOrders, setMyOrders] = useState([]);
 const [showMyOrders, setShowMyOrders] = useState(false);
-const [expandedTrackingOrderId, setExpandedTrackingOrderId] = useState(null);
 const [cancelOrderId, setCancelOrderId] = useState(null);
 const [cancelReason, setCancelReason] = useState("");
 const [cancellingOrder, setCancellingOrder] = useState(false);
@@ -1042,29 +1030,6 @@ async function loadMyOrders() {
 
   setMyOrders(data || []);
 }
-
-useEffect(() => {
-  if (!user?.id || !showMyOrders) return undefined;
-
-  const channel = supabase
-    .channel(`customer-order-tracking-${user.id}`)
-    .on("postgres_changes", {
-      event: "UPDATE",
-      schema: "public",
-      table: "orders",
-      filter: `user_id=eq.${user.id}`,
-    }, (payload) => {
-      setMyOrders((currentOrders) => currentOrders.map((order) => (
-        order.id === payload.new.id ? { ...order, ...payload.new } : order
-      )));
-    })
-    .subscribe();
-
-  return () => {
-    void supabase.removeChannel(channel);
-  };
-}, [user?.id, showMyOrders]);
-
 async function loadRewards() {
   if (!user) return;
   setLoadingRewards(true);
@@ -1234,57 +1199,6 @@ const withSidebar = (content) => (
     {content}
   </Sidebar>
 );
-
-function renderOrderTracking(order) {
-  const status = String(order.order_status || "pending").toLowerCase();
-  const currentStep = ORDER_TRACKING_STEPS.findIndex((step) => step.status === status);
-  const isCancelled = status === "cancelled" || status === "canceled";
-
-  return (
-    <div className="bb-order-tracking-wrap">
-      <button
-        type="button"
-        className="bb-order-track-toggle"
-        onClick={() => setExpandedTrackingOrderId((current) => current === order.id ? null : order.id)}
-        aria-expanded={expandedTrackingOrderId === order.id}
-      >
-        <span><span aria-hidden="true">◎</span> অর্ডার ট্র্যাক করুন</span>
-        <span>{expandedTrackingOrderId === order.id ? "বন্ধ করুন −" : "বিস্তারিত দেখুন +"}</span>
-      </button>
-
-      {expandedTrackingOrderId === order.id && (
-        <div className="bb-order-tracking-panel">
-          <div className="bb-order-tracking-heading">
-            <strong>আপনার অর্ডারের অগ্রগতি</strong>
-            <span>{getOrderStatusLabel(status)}</span>
-          </div>
-          {isCancelled ? (
-            <div className="bb-order-tracking-cancelled">এই অর্ডারটি বাতিল করা হয়েছে। {order.cancel_reason ? `কারণ: ${order.cancel_reason}` : ""}</div>
-          ) : (
-            <ol className="bb-order-tracking-steps">
-              {ORDER_TRACKING_STEPS.map((step, index) => {
-                const isComplete = currentStep >= 0 && index < currentStep;
-                const isCurrent = index === currentStep;
-                return (
-                  <li className={`bb-order-tracking-step${isComplete ? " is-complete" : ""}${isCurrent ? " is-current" : ""}`} key={step.status}>
-                    <span className="bb-order-tracking-marker" aria-hidden="true">{isComplete ? "✓" : index + 1}</span>
-                    <span className="bb-order-tracking-step-copy">
-                      <strong>{step.title}</strong>
-                      <small>{step.description}</small>
-                      {isCurrent && <em>বর্তমান অবস্থা</em>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-          <p className="bb-order-tracking-live-note">Admin অর্ডারের স্ট্যাটাস পরিবর্তন করলে এই তথ্য স্বয়ংক্রিয়ভাবে আপডেট হবে।</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
   // Logout
   async function handleLogout() {
     const { error } = await supabase.auth.signOut();
@@ -1548,9 +1462,8 @@ fontWeight: "bold"
   fontWeight: "bold",
   margin: "8px 0"
 }}>
-  📦 অর্ডার স্ট্যাটাস: {getOrderStatusLabel(order.order_status)}
+  📦 অর্ডার স্ট্যাটাস: {order.order_status}
 </p>
-              {renderOrderTracking(order)}
               {order.cancel_reason && (
   <p style={{
     background: "#fff1f1",
