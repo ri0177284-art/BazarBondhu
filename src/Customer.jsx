@@ -269,6 +269,10 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     return () => window.clearInterval(slideTimer);
   }, [showFamilyShopping]);
 
+  useEffect(() => {
+    if (!showMonthlyInsight) return;
+    document.getElementById("bb-monthly-insight")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [showMonthlyInsight]);
 
   useEffect(() => {
     if (cart.length === 0) setCartPackageId(null);
@@ -2552,6 +2556,66 @@ const productPickerItems = products.filter((product) => {
         </section>
       )}
 
+
+      {showMonthlyInsight && (
+      <section className="bb-monthly-insight" id="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
+        <div className="bb-monthly-progress-panel">
+          <div
+            className="bb-monthly-progress-ring"
+            role="progressbar"
+            aria-label="নির্বাচিত প্যাকেজ বাজেট ব্যবহারের অগ্রগতি"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={monthlySpendProgress}
+            style={{ "--bb-monthly-progress": `${monthlySpendProgress}%` }}
+          >
+            <div className="bb-monthly-progress-inner">
+              <span aria-hidden="true">🛒</span>
+              <strong>{monthlySpendProgress}%</strong>
+            </div>
+          </div>
+          <strong className="bb-monthly-progress-label">
+            {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
+          </strong>
+          <span className="bb-monthly-spend-caption">
+            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{packageBudgetLimit.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+
+        <div className="bb-monthly-estimate-panel">
+          <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
+          {packageCycleEndDate ? (
+            <>
+              <strong className="bb-monthly-estimate-date">
+                {packageCycleEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
+              </strong>
+              <span className="bb-monthly-estimate-countdown">
+                {daysUntilCycleEnds === 0 ? "প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}
+              </span>
+            </>
+          ) : (
+            <p className="bb-monthly-estimate-empty">
+              {isBudgetSmartPackage
+                ? "এটি নির্দিষ্ট মেয়াদের সাবস্ক্রিপশন নয়; নির্বাচিত দিনের জন্য বাজার পরিকল্পনা।"
+                : "আপনার এই প্যাকেজের অর্ডার কনফার্ম হলে মেয়াদের হিসাব শুরু হবে।"}
+            </p>
+          )}
+        </div>
+
+        <div className="bb-monthly-reminder-panel">
+          <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
+          <p>
+            {monthlySpendProgress >= 75
+              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : isBudgetSmartPackage ? "বাজেট স্মার্ট" : "মাসিক"} বাজারের বাজেট প্রায় শেষ। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
+              : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
+          </p>
+          <button type="button" onClick={() => setShowFamilyShopping(true)}>
+            এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </section>
+      )}
+
       <section className="bb-family-card bb-family-card-featured" id="bb-family-package" aria-labelledby="bb-family-title">
         <div className="bb-family-card-heading">
           <span className="bb-family-icon" aria-hidden="true">⌂</span>
@@ -2880,64 +2944,6 @@ const productPickerItems = products.filter((product) => {
         )}
       </section>
 
-      {showMonthlyInsight && (
-      <section className="bb-monthly-insight" id="bb-monthly-insight" aria-label={`${packagePeriodLabel} বাজারের অগ্রগতি ও রিমাইন্ডার`}>
-        <div className="bb-monthly-progress-panel">
-          <div
-            className="bb-monthly-progress-ring"
-            role="progressbar"
-            aria-label="নির্বাচিত প্যাকেজ বাজেট ব্যবহারের অগ্রগতি"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow={monthlySpendProgress}
-            style={{ "--bb-monthly-progress": `${monthlySpendProgress}%` }}
-          >
-            <div className="bb-monthly-progress-inner">
-              <span aria-hidden="true">🛒</span>
-              <strong>{monthlySpendProgress}%</strong>
-            </div>
-          </div>
-          <strong className="bb-monthly-progress-label">
-            {monthlySpendProgress >= 75 ? "বাজার প্রায় শেষ!" : monthlySpendProgress > 0 ? "বাজার চলছে" : "বাজার শুরু করুন"}
-          </strong>
-          <span className="bb-monthly-spend-caption">
-            ৳{monthlySpend.toLocaleString("bn-BD", { maximumFractionDigits: 0 })} / ৳{packageBudgetLimit.toLocaleString("bn-BD", { maximumFractionDigits: 0 })}
-          </span>
-        </div>
-
-        <div className="bb-monthly-estimate-panel">
-          <span className="bb-monthly-panel-kicker"><span aria-hidden="true">◷</span> আনুমানিক শেষ সময়</span>
-          {packageCycleEndDate ? (
-            <>
-              <strong className="bb-monthly-estimate-date">
-                {packageCycleEndDate.toLocaleDateString("bn-BD", { day: "numeric", month: "long", year: "numeric" })}
-              </strong>
-              <span className="bb-monthly-estimate-countdown">
-                {daysUntilCycleEnds === 0 ? "প্যাকেজের মেয়াদ শেষ" : `আর প্রায় ${daysUntilCycleEnds.toLocaleString("bn-BD")} দিন বাকি`}
-              </span>
-            </>
-          ) : (
-            <p className="bb-monthly-estimate-empty">
-              {isBudgetSmartPackage
-                ? "এটি নির্দিষ্ট মেয়াদের সাবস্ক্রিপশন নয়; নির্বাচিত দিনের জন্য বাজার পরিকল্পনা।"
-                : "আপনার এই প্যাকেজের অর্ডার কনফার্ম হলে মেয়াদের হিসাব শুরু হবে।"}
-            </p>
-          )}
-        </div>
-
-        <div className="bb-monthly-reminder-panel">
-          <span className="bb-monthly-reminder-kicker"><span aria-hidden="true">🔔</span> স্মার্ট রিমাইন্ডার</span>
-          <p>
-            {monthlySpendProgress >= 75
-              ? `আপনার ${isWeeklyPackage ? "সাপ্তাহিক" : isBudgetSmartPackage ? "বাজেট স্মার্ট" : "মাসিক"} বাজারের বাজেট প্রায় শেষ। ${nextPackagePeriodName} তালিকাটি কি দেখে নেবেন?`
-              : `আগে থেকেই ${nextPackagePeriodName} বাজারের তালিকা গুছিয়ে রাখুন।`}
-          </p>
-          <button type="button" onClick={() => setShowFamilyShopping(true)}>
-            এখনই তালিকা দেখুন <span aria-hidden="true">→</span>
-          </button>
-        </div>
-      </section>
-      )}
 
       <section className="bb-monthly-report-card" aria-labelledby="bb-monthly-report-title">
         <div className="bb-monthly-report-heading">
