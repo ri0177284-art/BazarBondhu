@@ -193,6 +193,93 @@ function getCategoryVisual(categoryName = "") {
   return { icon: "🧺", tone: "bb-category-default" };
 }
 
+
+function RoseWelcome({ petalCount, onTouch }) {
+  const petalPositions = [
+    { left: "48%", top: "34%", rotate: "-28deg" },
+    { left: "55%", top: "31%", rotate: "22deg" },
+    { left: "43%", top: "39%", rotate: "-48deg" },
+    { left: "59%", top: "39%", rotate: "42deg" },
+    { left: "38%", top: "48%", rotate: "-68deg" },
+    { left: "63%", top: "48%", rotate: "66deg" },
+    { left: "44%", top: "54%", rotate: "-18deg" },
+    { left: "57%", top: "54%", rotate: "28deg" },
+    { left: "50%", top: "26%", rotate: "4deg" },
+    { left: "51%", top: "45%", rotate: "88deg" },
+  ];
+
+  return (
+    <div className="bb-rose-welcome" onClick={onTouch} role="button" tabIndex={0} aria-label="গোলাপের পাপড়ি সরাতে স্ক্রিনে স্পর্শ করুন">
+      <div className="bb-rose-glow" />
+      <div className="bb-rose-scene">
+        <svg className="bb-rose-flower" viewBox="0 0 420 620" role="img" aria-label="বাস্তবের মতো লাল গোলাপ">
+          <defs>
+            <linearGradient id="bb-rose-stem" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#8ec56d" /><stop offset=".45" stopColor="#286b35" /><stop offset="1" stopColor="#123d25" />
+            </linearGradient>
+            <linearGradient id="bb-rose-leaf" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#9acb70" /><stop offset=".4" stopColor="#347a3e" /><stop offset="1" stopColor="#123b25" />
+            </linearGradient>
+            <radialGradient id="bb-rose-petal" cx="38%" cy="25%" r="80%">
+              <stop offset="0" stopColor="#ff7776" /><stop offset=".32" stopColor="#e51d2a" /><stop offset=".72" stopColor="#a90019" /><stop offset="1" stopColor="#4d0010" />
+            </radialGradient>
+            <linearGradient id="bb-rose-petal-light" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#ff9a8d" /><stop offset=".35" stopColor="#e72b39" /><stop offset="1" stopColor="#760015" />
+            </linearGradient>
+            <filter id="bb-rose-shadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="7" />
+            </filter>
+          </defs>
+          <ellipse cx="211" cy="573" rx="105" ry="17" fill="#000" opacity=".28" filter="url(#bb-rose-shadow)" />
+          <path d="M214 308 C224 388 213 470 235 585" fill="none" stroke="url(#bb-rose-stem)" strokeWidth="13" strokeLinecap="round" />
+          <path d="M224 420 C156 351 100 363 78 418 C134 463 187 454 224 420Z" fill="url(#bb-rose-leaf)" stroke="#6eaa5e" strokeWidth="2" />
+          <path d="M224 420 Q151 412 84 420 M143 405 Q154 430 178 444" fill="none" stroke="#b1d58b" strokeWidth="2" opacity=".65" />
+          <path d="M225 493 C278 420 335 420 362 469 C320 520 267 528 225 493Z" fill="url(#bb-rose-leaf)" stroke="#6eaa5e" strokeWidth="2" />
+          <path d="M230 493 Q294 472 355 470 M291 464 Q280 489 259 510" fill="none" stroke="#b1d58b" strokeWidth="2" opacity=".6" />
+          <path d="M218 367 C184 337 164 346 151 373 C178 386 201 383 218 367Z" fill="#286b35" />
+          <path d="M222 374 C248 338 274 343 285 370 C260 388 239 388 222 374Z" fill="#367c3e" />
+          <g>
+            <path d="M209 300 C137 319 71 276 81 207 C91 144 147 115 210 130 C278 103 343 146 346 211 C351 278 287 321 209 300Z" fill="#6f0014" />
+            <path d="M205 292 C119 306 65 250 96 183 C123 125 179 118 223 148 C278 114 333 151 334 212 C335 270 273 307 205 292Z" fill="url(#bb-rose-petal)" />
+            <path d="M111 225 C91 176 125 129 173 135 C203 139 221 168 221 205 C184 190 149 202 136 245Z" fill="url(#bb-rose-petal-light)" />
+            <path d="M220 206 C222 148 271 123 306 153 C337 180 321 229 286 253 C280 215 255 196 220 206Z" fill="url(#bb-rose-petal)" />
+            <path d="M116 244 C133 202 181 191 218 220 C252 192 302 208 316 249 C328 293 280 316 234 293 C189 317 127 296 116 244Z" fill="url(#bb-rose-petal-light)" />
+            <path d="M147 257 C152 217 192 205 220 231 C250 207 286 225 291 261 C296 291 257 308 222 286 C187 306 145 290 147 257Z" fill="url(#bb-rose-petal)" />
+            <path d="M177 250 C177 220 207 208 229 229 C251 212 276 231 269 258 C263 282 234 289 215 271 C195 283 174 270 177 250Z" fill="url(#bb-rose-petal-light)" />
+            <path d="M202 245 C200 224 220 215 235 230 C248 222 261 239 251 254 C242 270 216 268 207 255Z" fill="#a9001c" />
+            <path d="M214 241 C219 229 235 231 238 243 C239 253 224 260 216 252Z" fill="#5d0010" />
+            <path d="M100 205 C111 164 145 143 173 146 M272 145 C309 156 326 188 320 218 M137 276 C164 302 190 302 211 292" fill="none" stroke="#ffaaa0" strokeWidth="4" strokeLinecap="round" opacity=".42" />
+            <path d="M157 170 C173 150 196 153 208 167 M246 157 C269 146 290 160 296 177" fill="none" stroke="#ffd0c7" strokeWidth="3" strokeLinecap="round" opacity=".32" />
+          </g>
+          <g fill="#fff" opacity=".58">
+            <circle cx="145" cy="184" r="3" /><circle cx="285" cy="188" r="2.5" /><circle cx="177" cy="144" r="2" /><circle cx="309" cy="232" r="2.4" />
+          </g>
+        </svg>
+        {petalPositions.map((position, index) => (
+          index < petalCount ? (
+            <span
+              key={index}
+              className="bb-rose-falling-petal"
+              style={{
+                left: position.left,
+                top: position.top,
+                "--petal-rotate": position.rotate,
+                "--petal-delay": `${index * 35}ms`,
+              }}
+            />
+          ) : null
+        ))}
+      </div>
+      <div className="bb-rose-welcome-copy">
+        <span>🌹</span>
+        <strong>BazarBondhu-তে স্বাগতম</strong>
+        <small>ছুঁয়ে ছুঁয়ে পাপড়িগুলো সরিয়ে দিন</small>
+      </div>
+      <div className="bb-rose-bottom-glow" />
+    </div>
+  );
+}
+
 function Customer() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("সব");
@@ -208,7 +295,7 @@ function Customer() {
   const [deliveryFee, setDeliveryFee] = useState(0);
 
   const [user, setUser] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);\n  const [showRoseWelcome, setShowRoseWelcome] = useState(false);\n  const [rosePetalCount, setRosePetalCount] = useState(0);\n  const [roseNeedsEmailVerification, setRoseNeedsEmailVerification] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -939,10 +1026,9 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     }
 
     if (showRegister && !result.data.session) {
-      alert(
-        "অ্যাকাউন্ট তৈরি হয়েছে। ইমেইলে পাঠানো লিংক দিয়ে যাচাই করে তারপর লগইন করুন।"
-      );
-      setShowRegister(false);
+      setRoseNeedsEmailVerification(true);
+      setRosePetalCount(0);
+      setShowRoseWelcome(true);
       return;
     }
 const authUser = result.data.user;
@@ -969,7 +1055,13 @@ if (profileError) {
   console.log(profileError);
 }
     setUser(result.data.user);
-    alert(showRegister ? "অ্যাকাউন্ট তৈরি হয়েছে!" : "লগইন সফল হয়েছে!");
+    if (showRegister) {
+      setRoseNeedsEmailVerification(false);
+      setRosePetalCount(0);
+      setShowRoseWelcome(true);
+    } else {
+      alert("লগইন সফল হয়েছে!");
+    }
   }
 // Place Order
 async function placeOrder() {
@@ -1310,6 +1402,16 @@ const withSidebar = (content) => (
     setUser(null);
     setCart([]);
     alert("লগআউট সফল হয়েছে");
+  }
+
+  // First-registration rose welcome takes over the full screen.
+  if (showRoseWelcome) {
+    return (
+      <RoseWelcome
+        petalCount={rosePetalCount}
+        onTouch={() => setRosePetalCount((count) => Math.min(10, count + 1))}
+      />
+    );
   }
 
   // Login / Registration Page
