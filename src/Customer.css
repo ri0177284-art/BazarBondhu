@@ -1122,3 +1122,9 @@
     font-size: 13px;
   }
 }
+
+
+/* On mobile, reveal the storefront search only from the bottom SEARCH tab. */
+@media (max-width: 800px) {
+  .bb-store-search-hidden-mobile { display: none !important; }
+}
