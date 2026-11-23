@@ -264,7 +264,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
   useEffect(() => {
     if (showFamilyShopping) return undefined;
     const slideTimer = window.setInterval(() => {
-      setCampaignSlide((current) => (current + 1) % 4);
+      setCampaignSlide((current) => (current + 1) % 5);
     }, 4800);
     return () => window.clearInterval(slideTimer);
   }, [showFamilyShopping]);
@@ -2383,11 +2383,11 @@ const productPickerItems = products.filter((product) => {
               if (startX == null || endX == null) return;
               const distance = endX - startX;
               if (Math.abs(distance) < 45) return;
-              setCampaignSlide((current) => (current + (distance < 0 ? 1 : 3)) % 4);
+              setCampaignSlide((current) => (current + (distance < 0 ? 1 : 4)) % 5);
             }}
           >
-            <div className="bb-campaign-track" style={{ transform: `translateX(-${campaignSlide * 25}%)` }}>
-              <article className="bb-campaign-slide is-family" aria-roledescription="slide" aria-label="১ / ৪">
+            <div className="bb-campaign-track" style={{ transform: `translateX(-${campaignSlide * 20}%)` }}>
+              <article className="bb-campaign-slide is-family" aria-roledescription="slide" aria-label="১ / ৫">
                 <div className="bb-campaign-copy">
                   <span className="bb-campaign-kicker"><span aria-hidden="true">★</span> BAZARBONDHU</span>
                   <h2>পরিবারের পুরো মাসের বাজার <em>এখন এক জায়গায়!</em></h2>
@@ -2412,7 +2412,7 @@ const productPickerItems = products.filter((product) => {
                 </div>
               </article>
 
-              <article className="bb-campaign-slide is-budget" aria-roledescription="slide" aria-label="২ / ৪">
+              <article className="bb-campaign-slide is-budget" aria-roledescription="slide" aria-label="২ / ৫">
                 <div className="bb-campaign-copy">
                   <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> FAMILY PACKAGE</span>
                   <h2>বাজার হোক <em>পরিকল্পনা মাফিক!</em></h2>
@@ -2436,7 +2436,7 @@ const productPickerItems = products.filter((product) => {
                 </div>
               </article>
 
-              <article className="bb-campaign-slide is-choice" aria-roledescription="slide" aria-label="৩ / ৪">
+              <article className="bb-campaign-slide is-choice" aria-roledescription="slide" aria-label="৩ / ৫">
                 <div className="bb-campaign-copy">
                   <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> YOUR CHOICE</span>
                   <h2>আপনার পছন্দের পণ্য <em>আপনিই বেছে নিন!</em></h2>
@@ -2455,7 +2455,7 @@ const productPickerItems = products.filter((product) => {
                 </div>
               </article>
 
-              <article className="bb-campaign-slide is-fresh" aria-roledescription="slide" aria-label="৪ / ৪">
+              <article className="bb-campaign-slide is-fresh" aria-roledescription="slide" aria-label="৪ / ৫">
                 <div className="bb-campaign-copy">
                   <span className="bb-campaign-kicker"><span aria-hidden="true">✦</span> DAILY ESSENTIALS</span>
                   <h2>প্রতিদিনের প্রয়োজন <em>সব একসাথে!</em></h2>
@@ -2473,10 +2473,17 @@ const productPickerItems = products.filter((product) => {
                   <span className="bb-campaign-visual-label">টাটকা ও প্রয়োজনীয় পণ্য</span>
                 </div>
               </article>
+              <article className="bb-campaign-slide is-delivery" aria-roledescription="slide" aria-label="৫ / ৫">
+                <div className="bb-campaign-copy bb-campaign-delivery-copy">
+                  <span className="bb-campaign-kicker">🚚 মাসিক প্যাকেজে</span>
+                  <h2><em>ডেলিভারি চার্জ মাত্র ৳১১!</em></h2>
+                  <span className="bb-campaign-wow" role="img" aria-label="WOW">🤩</span>
+                </div>
+              </article>
             </div>
           </div>
           <div className="bb-campaign-dots" role="group" aria-label="ব্যানার বেছে নিন">
-            {[0, 1, 2, 3].map((index) => (
+            {[0, 1, 2, 3, 4].map((index) => (
               <button
                 key={index}
                 type="button"
