@@ -2660,7 +2660,7 @@ const productPickerItems = products.filter((product) => {
           </div>
           {getFamilyPackageMinimum(familyPreferences.packageId) > 0 && (
             <p style={{ color: "#52665a", fontSize: 12, margin: "10px 0 0", lineHeight: 1.6 }}>
-              {FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(familyPreferences.packageId).toLocaleString("en-IN")}। ডেলিভারি ও সার্ভিস চার্জ এই হিসাবের বাইরে।
+              {FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label} অর্ডারের ন্যূনতম পণ্যমূল্য ৳{getFamilyPackageMinimum(familyPreferences.packageId).toLocaleString("en-IN")}।
             </p>
           )}
 
