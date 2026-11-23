@@ -527,7 +527,7 @@ function App() {
                     <p style={{ margin: "9px 0 0", fontSize: 12, lineHeight: 1.5, color: "#805b16" }}>ব্যাংক/মোবাইল ফাইন্যান্সিয়াল সার্ভিস অ্যাপে টাকা ও Transaction ID মিলিয়ে তারপর Approve করুন। শুধু TrxID থাকলেই পেমেন্ট নিশ্চিত হয় না।</p>
                   )}
                 </div>
-                <div className="order-controls"><label>অর্ডারের অগ্রগতি (Customer Tracking)<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">১ · অর্ডার গ্রহণ করা হয়েছে</option><option value="confirmed">২ · অর্ডার নিশ্চিত হয়েছে</option><option value="processing">৩ · বাজার প্রস্তুত হচ্ছে</option><option value="delivered">৪ · ডেলিভারি সম্পন্ন</option><option value="cancelled">অর্ডার বাতিল</option></select></label></div></article>;
+                <div className="order-controls"><label>অর্ডার স্ট্যাটাস<select value={order.order_status || "pending"} onChange={(event) => void updateOrder(order.id, { order_status: event.target.value })}><option value="pending">অপেক্ষমাণ</option><option value="confirmed">কনফার্মড</option><option value="processing">প্রসেসিং</option><option value="delivered">ডেলিভারি সম্পন্ন</option><option value="cancelled">বাতিল</option></select></label></div></article>;
             })}</div>}
           </section>
         )}
