@@ -342,6 +342,7 @@ const [pendingCustomItems, setPendingCustomItems] = useState([]);
 const [customQuotePaymentMethod, setCustomQuotePaymentMethod] = useState("cod");
 const [customQuoteTransactionId, setCustomQuoteTransactionId] = useState("");
 const [productSearch, setProductSearch] = useState("");
+const [productPickerPage, setProductPickerPage] = useState(1);
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(false);
@@ -392,6 +393,10 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCategory, search]);
+
+  useEffect(() => {
+    setProductPickerPage(1);
+  }, [productSearch]);
 
   // Load products
   useEffect(() => {
@@ -2468,6 +2473,16 @@ const productPickerItems = products.filter((product) => {
     .includes(productSearch.trim().toLocaleLowerCase());
   return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
 });
+const totalProductPickerPages = Math.max(1, Math.ceil(productPickerItems.length / PRODUCTS_PER_PAGE));
+const safeProductPickerPage = Math.min(productPickerPage, totalProductPickerPages);
+const paginatedProductPickerItems = productPickerItems.slice(
+  (safeProductPickerPage - 1) * PRODUCTS_PER_PAGE,
+  safeProductPickerPage * PRODUCTS_PER_PAGE
+);
+const productPickerPageNumbers = Array.from(
+  { length: Math.min(5, totalProductPickerPages) },
+  (_, index) => Math.max(1, Math.min(totalProductPickerPages - 4, safeProductPickerPage - 2)) + index
+);
 
   return withSidebar(
     <div className="bb-storefront-content">
@@ -2994,8 +3009,9 @@ const productPickerItems = products.filter((product) => {
                 />
               </label>
               {productPickerItems.length > 0 ? (
+                <>
                 <div className="bb-product-picker-grid">
-                  {productPickerItems.map((product) => {
+                  {paginatedProductPickerItems.map((product) => {
                     const alreadyAdded = shoppingList.some((item) => item.productId === product.id);
                     return (
                       <article className="bb-picker-product" key={product.id}>
@@ -3010,6 +3026,44 @@ const productPickerItems = products.filter((product) => {
                     );
                   })}
                 </div>
+                {totalProductPickerPages > 1 && (
+                  <nav className="bb-product-pagination" aria-label="প্যাকেজের পণ্যের পৃষ্ঠা নির্বাচন">
+                    <button
+                      type="button"
+                      className="bb-pagination-arrow"
+                      onClick={() => setProductPickerPage((page) => Math.max(1, page - 1))}
+                      disabled={safeProductPickerPage === 1}
+                    >
+                      ← আগের
+                    </button>
+                    <div className="bb-pagination-pages">
+                      {productPickerPageNumbers.map((page) => (
+                        <button
+                          type="button"
+                          key={page}
+                          className={`bb-pagination-page ${safeProductPickerPage === page ? "is-active" : ""}`}
+                          onClick={() => setProductPickerPage(page)}
+                          aria-current={safeProductPickerPage === page ? "page" : undefined}
+                          aria-label={`পৃষ্ঠা ${page}`}
+                        >
+                          {page.toLocaleString("bn-BD")}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="bb-pagination-arrow"
+                      onClick={() => setProductPickerPage((page) => Math.min(totalProductPickerPages, page + 1))}
+                      disabled={safeProductPickerPage === totalProductPickerPages}
+                    >
+                      পরের →
+                    </button>
+                    <span className="bb-pagination-summary">
+                      পৃষ্ঠা {safeProductPickerPage.toLocaleString("bn-BD")} / {totalProductPickerPages.toLocaleString("bn-BD")} · মোট {productPickerItems.length.toLocaleString("bn-BD")}টি পণ্য
+                    </span>
+                  </nav>
+                )}
+                </>
               ) : (
                 <p className="bb-no-products">মিল থাকা স্টকে পণ্য পাওয়া যায়নি।</p>
               )}
