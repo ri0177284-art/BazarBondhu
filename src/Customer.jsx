@@ -282,6 +282,7 @@ function RoseWelcome({ petalCount, onTouch }) {
 
 function Customer() {
   const [products, setProducts] = useState([]);
+  const [productCardSelectionIds, setProductCardSelectionIds] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
@@ -2383,6 +2384,7 @@ if (showProfile) {
   );
 }
   const filteredProducts = products.filter(product => {
+  if (product.is_active === false) return false;
   const searchableProductText = [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLowerCase();
   const matchSearch = searchableProductText.includes(search.toLowerCase());
 
@@ -2392,8 +2394,17 @@ if (showProfile) {
 
   return matchSearch && matchCategory;
 });
-const totalProductPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
-const paginatedProducts = filteredProducts.slice(
+const productCardGroups = Array.from(
+  filteredProducts.reduce((groups, product) => {
+    const key = String(product.name || "").trim();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(product);
+    return groups;
+  }, new Map()),
+  ([name, variants]) => ({ name, variants })
+);
+const totalProductPages = Math.max(1, Math.ceil(productCardGroups.length / PRODUCTS_PER_PAGE));
+const paginatedProducts = productCardGroups.slice(
   (currentPage - 1) * PRODUCTS_PER_PAGE,
   currentPage * PRODUCTS_PER_PAGE
 );
@@ -3021,40 +3032,29 @@ const productPickerPageNumbers = Array.from(
                 <>
                 <div className="bb-product-picker-grid">
                   {paginatedProductPickerGroups.map(({ name: productName, variants }) => {
-                    const selectedProductId = productPickerSelectionIds[productName] || variants[0].id;
+                    const selectedProductId = productPickerSelectionIds[productName] || variants.find((item) => item.brand)?.id || variants[0].id;
                     const selectedProduct = variants.find((item) => item.id === selectedProductId) || variants[0];
-                    const brandOptions = Array.from(new Set(variants.map((item) => item.brand || "")));
+                    const brandOptions = Array.from(new Set(variants.map((item) => item.brand).filter(Boolean)));
                     const availableVariants = variants.filter((item) => (item.brand || "") === (selectedProduct.brand || ""));
                     const alreadyAdded = shoppingList.some((item) => item.productId === selectedProduct.id);
                     return (
                       <article className="bb-picker-product" key={productName}>
                         <div className="bb-picker-product-details">
                           <strong>{productName}</strong>
-                          {brandOptions.length > 1 && (
-                            <div className="bb-picker-choice">
-                              <span>পছন্দের ব্র্যান্ড বেছে নিন</span>
-                              <div className="bb-picker-brand-options" role="group" aria-label={`${productName} ব্র্যান্ড নির্বাচন`}>
-                                {brandOptions.map((brandName) => {
-                                  const brandProduct = variants.find((item) => (item.brand || "") === brandName);
-                                  const isBrandSelected = (selectedProduct.brand || "") === brandName;
-                                  const isBrandAdded = variants.some((item) => (item.brand || "") === brandName && shoppingList.some((entry) => entry.productId === item.id));
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={brandName || "__unbranded"}
-                                      className={`bb-picker-brand-option${isBrandSelected ? " is-active" : ""}${isBrandAdded ? " is-added" : ""}`}
-                                      aria-pressed={isBrandSelected}
-                                      onClick={() => {
-                                        if (brandProduct) setProductPickerSelectionIds((current) => ({ ...current, [productName]: brandProduct.id }));
-                                      }}
-                                    >
-                                      <span>{brandName || "সাধারণ"}</span>
-                                      {isBrandAdded && <small>✓ যোগ হয়েছে</small>}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
+                          {brandOptions.length > 0 && (
+                            <label className="bb-picker-choice">
+                              <span>পছন্দের ব্র্যান্ড নির্বাচন করুন</span>
+                              <select
+                                value={selectedProduct.brand || ""}
+                                aria-label={productName + " পছন্দের ব্র্যান্ড"}
+                                onChange={(event) => {
+                                  const nextBrandProduct = variants.find((item) => item.brand === event.target.value);
+                                  if (nextBrandProduct) setProductPickerSelectionIds((current) => ({ ...current, [productName]: nextBrandProduct.id }));
+                                }}
+                              >
+                                {brandOptions.map((brandName) => <option key={brandName} value={brandName}>{brandName}</option>)}
+                              </select>
+                            </label>
                           )}
                           {availableVariants.length > 1 && (
                             <label className="bb-picker-choice">
@@ -3491,9 +3491,14 @@ const productPickerPageNumbers = Array.from(
 gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
 gap: 12
     }}>
-      {paginatedProducts.map(product => (
+      {paginatedProducts.map(({ name: productName, variants }) => {
+        const selectedProductId = productCardSelectionIds[productName] || variants[0].id;
+        const product = variants.find((item) => item.id === selectedProductId) || variants[0];
+        const brandOptions = Array.from(new Set(variants.map((item) => item.brand).filter(Boolean)));
+        const brandVariants = variants.filter((item) => (item.brand || "") === (product.brand || ""));
+        return (
         <div
-          key={product.id}
+          key={productName}
           style={{
             background: "white",
             borderRadius: 16,
@@ -3619,10 +3624,37 @@ boxSizing: "border-box"
                 : "স্টক শেষ"}
             </div>
 
-
+            {brandOptions.length > 0 && (
+              <label className="bb-store-brand-selector">
+                <span>পছন্দের ব্র্যান্ড নির্বাচন করুন</span>
+                <select
+                  value={product.brand || ""}
+                  aria-label={productName + " পছন্দের ব্র্যান্ড নির্বাচন"}
+                  onChange={(event) => {
+                    const nextBrandProduct = variants.find((item) => item.brand === event.target.value);
+                    if (nextBrandProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextBrandProduct.id }));
+                  }}
+                >
+                  {brandOptions.map((brandName) => <option key={brandName} value={brandName}>{brandName}</option>)}
+                </select>
+              </label>
+            )}
+            {brandVariants.length > 1 && (
+              <label className="bb-store-brand-selector">
+                <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
+                <select
+                  value={product.id}
+                  aria-label={productName + " সাইজ নির্বাচন"}
+                  onChange={(event) => setProductCardSelectionIds((current) => ({ ...current, [productName]: event.target.value }))}
+                >
+                  {brandVariants.map((item) => <option key={item.id} value={item.id}>{item.variant || item.unit || "সাধারণ"}</option>)}
+                </select>
+              </label>
+            )}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
       {totalProductPages > 1 && (
         <nav className="bb-product-pagination" aria-label="পণ্যের পৃষ্ঠা নির্বাচন">
