@@ -1328,6 +1328,7 @@ const menuItems = [
   { id: "categories", label: "Categories", icon: "📦" },
   { id: "cart", label: "Cart", icon: "🛒" },
   { id: "orders", label: "My Orders", icon: "📋" },
+  { id: "family-assistant", label: "Family Assistant", icon: "👨‍👩‍👧‍👦" },
   { id: "rewards", label: "Rewards", icon: "🎁" },
   { id: "profile", label: "Profile", icon: "👤" }
 ];
@@ -1363,7 +1364,7 @@ function handleMenuClick(menuId) {
     setShowCheckout(false);
   }
 
-  if (menuId === "categories") {
+  if (menuId === "categories" || menuId === "family-assistant") {
     setShowMyOrders(false);
     setShowProfile(false);
     setShowCheckout(false);
@@ -1388,6 +1389,26 @@ function handleMenuClick(menuId) {
       }
     }, 60);
   }
+}
+
+function openFamilyPlanner() {
+  setEditingFamilyPreferences(false);
+  setShowFamilyShopping(true);
+  handleMenuClick("home");
+  window.setTimeout(() => {
+    document.getElementById("bb-family-shopping")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 180);
+}
+
+function openFamilySettings() {
+  setFamilyPreferencesDraft(familyPreferences);
+  setFamilyPreferencesMessage("");
+  setEditingFamilyPreferences(true);
+  setShowFamilyShopping(true);
+  handleMenuClick("home");
+  window.setTimeout(() => {
+    document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 180);
 }
 
 // Focus and reveal the search field only after the mobile SEARCH tab is tapped.
@@ -1422,6 +1443,8 @@ const activeNow = showRewards
   ? "orders"
   : showCheckout
   ? "cart"
+  : activeMenu === "family-assistant"
+  ? "family-assistant"
   : activeMenu === "categories" || activeMenu === "cart"
   ? activeMenu
   : "home";
@@ -1587,6 +1610,29 @@ fontWeight: "bold"
             : "নতুন অ্যাকাউন্ট খুলুন"}
         </button>
       </div>
+    );
+  }
+
+  // Dedicated Family Assistant page (separate from My Market).
+  if (activeMenu === "family-assistant") {
+    return withSidebar(
+      <main className="bb-fa-page">
+        <FamilyAssistantDashboard
+          familyMembers={familyPreferences.familyMembers}
+          packageLabel={FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "পরিবারের বাজার"}
+          budgetLimit={packageBudgetLimit}
+          monthlySpend={monthlySpend}
+          plannedTotal={shoppingListTotal}
+          shoppingListCount={shoppingList.length}
+          customItemCount={customShoppingItems.length}
+          suggestions={familyAssistantSuggestions}
+          loadingPrevious={loadingPreviousPackageList}
+          onOpenPlanner={openFamilyPlanner}
+          onLoadPrevious={loadPreviousPackageShoppingList}
+          onEditSettings={openFamilySettings}
+          onAddSuggestion={addProductToShoppingList}
+        />
+      </main>
     );
   }
 
@@ -2805,34 +2851,12 @@ const productPickerPageNumbers = Array.from(
       </section>
       )}
 
-      {showFamilyShopping && !editingFamilyPreferences && (
-        <FamilyAssistantDashboard
-          familyMembers={familyPreferences.familyMembers}
-          packageLabel={FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "পরিবারের বাজার"}
-          budgetLimit={packageBudgetLimit}
-          monthlySpend={monthlySpend}
-          plannedTotal={shoppingListTotal}
-          shoppingListCount={shoppingList.length}
-          customItemCount={customShoppingItems.length}
-          suggestions={familyAssistantSuggestions}
-          loadingPrevious={loadingPreviousPackageList}
-          onOpenPlanner={() => document.getElementById("bb-family-shopping")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          onLoadPrevious={loadPreviousPackageShoppingList}
-          onEditSettings={() => {
-            setFamilyPreferencesDraft(familyPreferences);
-            setFamilyPreferencesMessage("");
-            setEditingFamilyPreferences(true);
-          }}
-          onAddSuggestion={addProductToShoppingList}
-        />
-      )}
-
       <section className="bb-family-card bb-family-card-featured" id="bb-family-package" aria-labelledby="bb-family-title">
         <div className="bb-family-card-heading">
           <span className="bb-family-icon" aria-hidden="true">⌂</span>
           <div className="bb-family-heading-copy">
-            <h2 id="bb-family-title">BazarBondhu Family Assistant</h2>
-            <span>পরিবারের বাজার, বাজেট ও পছন্দের পণ্যের স্মার্ট সহকারী</span>
+            <h2 id="bb-family-title">মাসিক ফ্যামিলি প্যাকেজ</h2>
+            <span>পরিবারের পুরো মাসের বাজার পরিকল্পনা</span>
           </div>
           <span className="bb-family-primary-badge">★ মূল ফিচার</span>
           {!editingFamilyPreferences && (
@@ -2844,7 +2868,7 @@ const productPickerPageNumbers = Array.from(
               onClick={() => setShowFamilyShopping((visible) => !visible)}
             >
               <span aria-hidden="true">🛒</span>
-              {showFamilyShopping ? "Assistant বন্ধ করুন" : "Assistant খুলুন"}
+              {showFamilyShopping ? "বাজার বন্ধ করুন" : "আমার বাজার"}
             </button>
           )}
         </div>
