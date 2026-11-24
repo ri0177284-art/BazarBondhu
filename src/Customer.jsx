@@ -3616,21 +3616,6 @@ boxSizing: "border-box"
             </h2>
             <small style={{ color: "#718076", marginBottom: 9 }}>প্রতি {getProductUnit(product)}</small>
 
-            <div style={{
-              color: product.stock > 0 ? "#087f45" : "#dc3545",
-              background: product.stock > 0 ? "#e8f5ed" : "#fdecec",
-              padding: "6px 9px",
-              borderRadius: 20,
-              fontSize: 12,
-              fontWeight: "bold",
-              textAlign: "center",
-              marginBottom: 10
-            }}>
-              {product.stock > 0
-                ? `স্টক: ${product.stock} ${getProductUnit(product)}`
-                : "স্টক শেষ"}
-            </div>
-
             {brandOptions.length > 0 && (
               <label className="bb-store-brand-selector">
                 <span>পছন্দের ব্র্যান্ড নির্বাচন করুন</span>
