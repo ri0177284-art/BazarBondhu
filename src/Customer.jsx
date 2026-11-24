@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
 import "./Customer.css";
+import FamilyAssistantDashboard from "./FamilyAssistant";
 
 const FAMILY_PACKAGES = [
   { id: "family-monthly", label: "মাসিক পরিবার", detail: "মাসের বাজার একসাথে" },
@@ -1327,6 +1328,7 @@ const menuItems = [
   { id: "categories", label: "Categories", icon: "📦" },
   { id: "cart", label: "Cart", icon: "🛒" },
   { id: "orders", label: "My Orders", icon: "📋" },
+  { id: "family-assistant", label: "Family Shared Shopping", icon: "👨‍👩‍👧‍👦" },
   { id: "rewards", label: "Rewards", icon: "🎁" },
   { id: "profile", label: "Profile", icon: "👤" }
 ];
@@ -1362,7 +1364,7 @@ function handleMenuClick(menuId) {
     setShowCheckout(false);
   }
 
-  if (menuId === "categories") {
+  if (menuId === "categories" || menuId === "family-assistant") {
     setShowMyOrders(false);
     setShowProfile(false);
     setShowCheckout(false);
@@ -1389,6 +1391,26 @@ function handleMenuClick(menuId) {
   }
 }
 
+function openFamilyPlanner() {
+  setEditingFamilyPreferences(false);
+  setShowFamilyShopping(true);
+  handleMenuClick("home");
+  window.setTimeout(() => {
+    document.getElementById("bb-family-shopping")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 180);
+}
+
+function openFamilySettings() {
+  setFamilyPreferencesDraft(familyPreferences);
+  setFamilyPreferencesMessage("");
+  setEditingFamilyPreferences(true);
+  setShowFamilyShopping(true);
+  handleMenuClick("home");
+  window.setTimeout(() => {
+    document.getElementById("bb-family-package")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 180);
+}
+
 // Focus and reveal the search field only after the mobile SEARCH tab is tapped.
 useEffect(() => {
   if (!showSearchBar) return;
@@ -1398,7 +1420,7 @@ useEffect(() => {
 
 function handleSearchToggle() {
   // Search is part of the storefront, so first return from any other screen.
-  if (showRewards || showProfile || showMyOrders || showCheckout) {
+  if (showRewards || showProfile || showMyOrders || showCheckout || activeMenu === "family-assistant") {
     setShowRewards(false);
     setShowProfile(false);
     setShowMyOrders(false);
@@ -1421,6 +1443,8 @@ const activeNow = showRewards
   ? "orders"
   : showCheckout
   ? "cart"
+  : activeMenu === "family-assistant"
+  ? "family-assistant"
   : activeMenu === "categories" || activeMenu === "cart"
   ? activeMenu
   : "home";
@@ -2495,6 +2519,15 @@ const packageReportPeriodLabel = isWeeklyPackage
     ? `গত ${smartBudgetDays.toLocaleString("bn-BD")} দিনের`
     : "এই মাসের";
 const previousPeriodLabel = isWeeklyPackage ? "আগের সপ্তাহের তুলনায়" : isBudgetSmartPackage ? "আগের একই সময়ের তুলনায়" : "গত মাসের তুলনায়";
+const selectedFamilyCategoryIds = new Set(selectedShoppingProducts.map(({ product }) => getProductCategory(product.name)));
+const familyAssistantSuggestions = products
+  .filter((product) => product.is_active !== false && Number(product.stock) > 0)
+  .filter((product) => !shoppingList.some((item) => item.productId === product.id))
+  .filter((product) => {
+    const categoryId = getProductCategory(product.name);
+    return categoryId !== "other" && !selectedFamilyCategoryIds.has(categoryId);
+  })
+  .slice(0, 4);
 const productPickerItems = products.filter((product) => {
   const searchableProductText = normalizeBengaliSearchText([product.name, product.brand, product.variant].filter(Boolean).join(" "));
   const matchesSearch = !productSearch.trim() || searchableProductText.includes(normalizeBengaliSearchText(productSearch));
@@ -2519,6 +2552,15 @@ const productPickerPageNumbers = Array.from(
   { length: Math.min(5, totalProductPickerPages) },
   (_, index) => Math.max(1, Math.min(totalProductPickerPages - 4, safeProductPickerPage - 2)) + index
 );
+
+  // Dedicated Family Assistant page (separate from My Market).
+  if (activeMenu === "family-assistant") {
+    return withSidebar(
+      <main className="bb-fa-page">
+        <FamilyAssistantDashboard user={user} products={products} />
+      </main>
+    );
+  }
 
   return withSidebar(
     <div className="bb-storefront-content">
