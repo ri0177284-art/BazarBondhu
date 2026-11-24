@@ -42,6 +42,16 @@ function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
 
+function normalizeBengaliSearchText(value = "") {
+  return String(value)
+    .toLocaleLowerCase("bn-BD")
+    .normalize("NFC")
+    .replace(/য়/g, "য়")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getProductUnit(product = {}) {
   const unit = String(product.unit || "").trim().toLowerCase();
   if (unit === "kg" || unit === "কেজি") return "কেজি";
@@ -2391,8 +2401,8 @@ if (showProfile) {
 }
   const filteredProducts = products.filter(product => {
   if (product.is_active === false) return false;
-  const searchableProductText = [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLowerCase();
-  const matchSearch = searchableProductText.includes(search.toLowerCase());
+  const searchableProductText = normalizeBengaliSearchText([product.name, product.brand, product.variant].filter(Boolean).join(" "));
+  const matchSearch = searchableProductText.includes(normalizeBengaliSearchText(search));
 
   const matchCategory =
     selectedCategory === "সব" ||
@@ -2485,8 +2495,8 @@ const packageReportPeriodLabel = isWeeklyPackage
     : "এই মাসের";
 const previousPeriodLabel = isWeeklyPackage ? "আগের সপ্তাহের তুলনায়" : isBudgetSmartPackage ? "আগের একই সময়ের তুলনায়" : "গত মাসের তুলনায়";
 const productPickerItems = products.filter((product) => {
-  const searchableProductText = [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase();
-  const matchesSearch = !productSearch.trim() || searchableProductText.includes(productSearch.trim().toLocaleLowerCase());
+  const searchableProductText = normalizeBengaliSearchText([product.name, product.brand, product.variant].filter(Boolean).join(" "));
+  const matchesSearch = !productSearch.trim() || searchableProductText.includes(normalizeBengaliSearchText(productSearch));
   return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
 });
 const productPickerGroups = Array.from(
