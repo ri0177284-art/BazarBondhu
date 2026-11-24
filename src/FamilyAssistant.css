@@ -107,3 +107,154 @@
 @media(max-width:620px){.bb-fa-page{padding:16px 11px 28px}.bb-fa-dashboard{gap:14px}.bb-fa-heading{align-items:flex-start;flex-direction:column;gap:9px}.bb-fa-heading h1{font-size:27px}.bb-fa-heading p{font-size:11px}.bb-fa-hero{grid-template-columns:1fr;padding:18px 15px;border-radius:18px}.bb-fa-hero h2{font-size:25px}.bb-fa-invite{padding:12px}.bb-fa-invite strong{font-size:23px}.bb-fa-stat-grid{gap:8px}.bb-fa-stat-grid article{padding:12px}.bb-fa-stat-grid strong{font-size:19px}.bb-fa-section-title h2{font-size:15px}.bb-fa-panel{padding:13px;border-radius:14px}.bb-fa-add-row{grid-template-columns:1fr 75px}.bb-fa-add-row input:first-child{grid-column:1/-1}.bb-fa-add-row select{grid-column:1/-1}.bb-fa-add-row button{grid-column:1/-1}.bb-fa-shared-item{grid-template-columns:42px minmax(0,1fr) auto 25px;gap:7px;padding:8px}.bb-fa-item-image{width:42px;height:42px}.bb-fa-line-total{grid-column:2;grid-row:2;font-size:10px}.bb-fa-remove{grid-column:4;grid-row:1}.bb-fa-qty{grid-column:3;grid-row:1}.bb-fa-two-column,.bb-fa-onboard-grid{grid-template-columns:1fr}.bb-fa-form-grid{grid-template-columns:1fr}.bb-fa-form-grid .full{grid-column:auto}.bb-fa-budget-edit{grid-template-columns:1fr}.bb-fa-budget-edit button{grid-column:auto}.bb-fa-reminder-settings{align-items:flex-start;flex-direction:column}.bb-fa-member-list>div{gap:8px}.bb-fa-member-list button{max-width:85px}.bb-fa-order-actions{flex-direction:column-reverse}.bb-fa-order-actions button{width:100%}}
 
 .bb-fa-saved-preferences{display:grid;gap:7px;margin-top:12px}.bb-fa-saved-preferences>div{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #edf1eb;border-radius:9px;background:#fbfdf9}.bb-fa-saved-preferences strong{color:#385841;font-size:10px}.bb-fa-saved-preferences small{color:#829087;font-size:9px;text-align:right}
+
+
+/* Family Shared Shopping – customer-first visual refresh */
+.bb-fa-dashboard{gap:22px;color:#183b29}
+.bb-fa-heading{align-items:center;padding:3px 1px}
+.bb-fa-heading h1{font-size:clamp(27px,3.5vw,38px);letter-spacing:-.7px}
+.bb-fa-heading p{font-size:14px;max-width:680px}
+.bb-fa-kicker,.bb-fa-section-title>div>span,.bb-fa-panel-heading>div>span{font-size:11px;letter-spacing:1.35px}
+.bb-fa-hero{position:relative;overflow:hidden;grid-template-columns:minmax(0,1fr) 255px;padding:30px;min-height:150px;border:1px solid #1c7046;box-shadow:0 15px 35px #164c2b20}
+.bb-fa-hero:after{content:"";position:absolute;width:240px;height:240px;right:190px;top:-145px;border:1px solid #ffffff18;border-radius:50%;pointer-events:none}
+.bb-fa-hero-label{font-size:11px}
+.bb-fa-hero h2{font-size:clamp(25px,3vw,35px)}
+.bb-fa-hero p{max-width:610px;font-size:14px;line-height:1.75}
+.bb-fa-invite{position:relative;z-index:1;padding:18px;background:#ffffff18;backdrop-filter:blur(4px)}
+.bb-fa-invite small{font-size:10px}
+.bb-fa-invite strong{font-size:27px;letter-spacing:3.5px}
+.bb-fa-invite button{min-height:36px;padding:8px 15px;font-size:12px;transition:background .18s ease}
+.bb-fa-invite button:hover{background:#ffffff30}
+.bb-fa-howto{display:grid;grid-template-columns:1.1fr repeat(3,minmax(0,1fr));align-items:center;gap:10px;padding:15px;border:1px solid #dceadd;border-radius:17px;background:linear-gradient(135deg,#f7fbf5,#fff)}
+.bb-fa-howto-title{display:grid;gap:5px;padding:4px 10px}
+.bb-fa-howto-title span{color:#43815b;font-size:10px;font-weight:900;letter-spacing:1px}
+.bb-fa-howto-title strong{color:#23432e;font-size:15px;line-height:1.4}
+.bb-fa-howto article{display:flex;align-items:center;gap:10px;min-width:0;padding:11px;border:1px solid #e6eee4;border-radius:12px;background:#fff}
+.bb-fa-howto article>b{display:grid;place-items:center;width:31px;height:31px;flex:none;border-radius:10px;background:#e8f5e8;color:#247344;font-size:14px}
+.bb-fa-howto article div{display:grid;gap:4px;min-width:0}
+.bb-fa-howto article strong{color:#294633;font-size:12px}
+.bb-fa-howto article small{color:#829087;font-size:10px;line-height:1.45}
+.bb-fa-stat-grid{gap:12px}
+.bb-fa-stat-grid article{padding:18px;border-radius:16px;box-shadow:0 5px 18px #20402707;transition:transform .18s ease,box-shadow .18s ease}
+.bb-fa-stat-grid article:hover{transform:translateY(-2px);box-shadow:0 9px 22px #20402712}
+.bb-fa-stat-grid small,.bb-fa-stat-grid span{font-size:11px}
+.bb-fa-stat-grid strong{font-size:25px}
+.bb-fa-section-title h2{font-size:21px}
+.bb-fa-section-title>div>p{margin:5px 0 0;color:#829087;font-size:12px;line-height:1.5}
+.bb-fa-live{padding:8px 12px;font-size:11px}
+.bb-fa-panel{padding:22px;border-radius:18px;box-shadow:0 7px 24px #2040270a}
+.bb-fa-helper{font-size:13px;line-height:1.75}
+.bb-fa-add-row{grid-template-columns:minmax(150px,1fr) minmax(210px,1.5fr) 86px auto;gap:10px}
+.bb-fa-add-row input,.bb-fa-add-row select{min-height:45px;padding:11px 13px;border-radius:11px;font-size:13px}
+.bb-fa-primary,.bb-fa-secondary{min-height:44px;padding:0 17px;border-radius:11px;font-size:13px;transition:transform .15s ease,filter .15s ease}
+.bb-fa-primary:hover,.bb-fa-secondary:hover,.bb-fa-order-button:hover{filter:brightness(1.04);transform:translateY(-1px)}
+.bb-fa-shared-list{gap:9px;margin-top:18px}
+.bb-fa-shared-item{grid-template-columns:56px minmax(0,1fr) auto auto 34px;gap:13px;padding:12px;border-radius:14px;transition:border-color .15s ease,background .15s ease}
+.bb-fa-shared-item:hover{border-color:#d5e7d5;background:#fafff8}
+.bb-fa-item-image{width:56px;height:56px;border-radius:12px}
+.bb-fa-item-copy{gap:5px}
+.bb-fa-item-copy strong{font-size:13px}
+.bb-fa-item-copy small,.bb-fa-item-copy span{font-size:11px}
+.bb-fa-qty{gap:9px}
+.bb-fa-qty button,.bb-fa-remove{width:32px;height:32px;border-radius:10px;font-size:18px}
+.bb-fa-qty b{font-size:13px}
+.bb-fa-line-total{font-size:13px}
+.bb-fa-remove{font-size:20px}
+.bb-fa-list-footer{margin-top:18px;padding-top:16px;font-size:13px}
+.bb-fa-list-footer span small{display:block;margin-top:4px;color:#929d94;font-size:10px}
+.bb-fa-list-footer strong{font-size:22px}
+.bb-fa-order-button{min-height:50px;margin-top:16px;border-radius:13px;font-size:14px;box-shadow:0 7px 17px #176b4020;transition:transform .15s ease,filter .15s ease}
+.bb-fa-owner-notice{display:flex;align-items:center;gap:10px;margin-top:16px;padding:15px;border-radius:12px;font-size:13px;line-height:1.7}
+.bb-fa-empty-list{min-height:155px;gap:9px;font-size:28px}
+.bb-fa-empty-list strong{font-size:14px}
+.bb-fa-empty-list span{font-size:12px}
+.bb-fa-order-form{padding:19px;border-radius:15px}
+.bb-fa-order-form h3{font-size:17px}
+.bb-fa-order-form p{font-size:12px;line-height:1.6}
+.bb-fa-form-grid label,.bb-fa-budget-edit label,.bb-fa-field{font-size:12px}
+.bb-fa-form-grid input,.bb-fa-form-grid select,.bb-fa-form-grid textarea{min-height:43px;padding:10px 12px;border-radius:10px;font-size:13px}
+.bb-fa-two-column{gap:15px}
+.bb-fa-panel-heading h2{font-size:17px}
+.bb-fa-panel-heading>span{width:40px;height:40px}
+.bb-fa-budget-values small{font-size:11px}
+.bb-fa-budget-values strong{font-size:22px}
+.bb-fa-muted{font-size:11px}
+.bb-fa-member-list>div{padding:12px;border-radius:13px}
+.bb-fa-member-list strong{font-size:13px}
+.bb-fa-member-list small{font-size:11px}
+.bb-fa-avatar{width:42px;height:42px}
+.bb-fa-member-list button,.bb-fa-text-button{font-size:11px}
+.bb-fa-onboard-grid{gap:18px}
+.bb-fa-onboard-grid .bb-fa-panel{padding:24px;gap:13px}
+.bb-fa-onboard-grid h2{font-size:19px}
+.bb-fa-onboard-grid p{font-size:13px;line-height:1.75}
+.bb-fa-onboard-grid label{font-size:12px}
+.bb-fa-onboard-grid input,.bb-fa-onboard-grid select{min-height:45px;padding:11px 13px;font-size:13px}
+.bb-fa-alert{font-size:13px}
+.bb-fa-empty-state h2{font-size:20px}
+.bb-fa-empty-state p{font-size:13px;line-height:1.65}
+.bb-fa-dashboard button:focus-visible,.bb-fa-dashboard input:focus-visible,.bb-fa-dashboard select:focus-visible,.bb-fa-dashboard textarea:focus-visible{outline:3px solid #8bc99a;outline-offset:2px}
+@media(max-width:850px){
+ .bb-fa-howto{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .bb-fa-howto-title{grid-column:1/-1;padding:2px 4px 5px}
+ .bb-fa-add-row{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 76px}
+ .bb-fa-add-row button{grid-column:1/-1}
+}
+@media(max-width:620px){
+ .bb-fa-page{padding:15px 10px 28px}
+ .bb-fa-dashboard{gap:15px}
+ .bb-fa-heading h1{font-size:26px;letter-spacing:-.4px}
+ .bb-fa-heading p{font-size:12px;line-height:1.65}
+ .bb-fa-hero{grid-template-columns:1fr;gap:15px;padding:20px 16px}
+ .bb-fa-hero h2{font-size:25px}
+ .bb-fa-hero p{font-size:12px}
+ .bb-fa-invite{padding:13px}
+ .bb-fa-howto{grid-template-columns:1fr;gap:8px;padding:12px}
+ .bb-fa-howto-title{grid-column:auto;padding:2px 3px 5px}
+ .bb-fa-howto-title strong{font-size:14px}
+ .bb-fa-howto article{padding:10px}
+ .bb-fa-howto article strong{font-size:12px}
+ .bb-fa-howto article small{font-size:10px}
+ .bb-fa-stat-grid{gap:8px}
+ .bb-fa-stat-grid article{padding:13px;border-radius:13px}
+ .bb-fa-stat-grid small,.bb-fa-stat-grid span{font-size:10px;line-height:1.4}
+ .bb-fa-stat-grid strong{font-size:20px}
+ .bb-fa-section-title{align-items:flex-start}
+ .bb-fa-section-title h2{font-size:16px;line-height:1.4}
+ .bb-fa-section-title>div>p{font-size:10px}
+ .bb-fa-live{font-size:9px;padding:6px 8px}
+ .bb-fa-panel{padding:14px;border-radius:15px}
+ .bb-fa-helper{font-size:12px}
+ .bb-fa-add-row{grid-template-columns:minmax(0,1fr) 76px;gap:8px}
+ .bb-fa-add-row input:first-child,.bb-fa-add-row select,.bb-fa-add-row button{grid-column:1/-1}
+ .bb-fa-add-row input,.bb-fa-add-row select{min-height:44px;font-size:12px}
+ .bb-fa-primary,.bb-fa-secondary{min-height:43px;font-size:12px}
+ .bb-fa-shared-item{grid-template-columns:44px minmax(0,1fr) auto 28px;gap:7px;padding:9px}
+ .bb-fa-item-image{width:44px;height:44px}
+ .bb-fa-item-copy strong{font-size:12px}
+ .bb-fa-item-copy small,.bb-fa-item-copy span{font-size:10px}
+ .bb-fa-qty{gap:5px}
+ .bb-fa-qty button,.bb-fa-remove{width:27px;height:27px}
+ .bb-fa-qty b{font-size:11px}
+ .bb-fa-line-total{grid-column:2;grid-row:2;font-size:11px}
+ .bb-fa-remove{grid-column:4;grid-row:1}
+ .bb-fa-list-footer{font-size:11px;align-items:flex-start}
+ .bb-fa-list-footer strong{font-size:19px;white-space:nowrap}
+ .bb-fa-owner-notice{padding:12px;font-size:11px}
+ .bb-fa-order-button{min-height:47px;font-size:13px}
+ .bb-fa-two-column,.bb-fa-onboard-grid{grid-template-columns:1fr}
+ .bb-fa-panel-heading h2{font-size:15px}
+ .bb-fa-budget-values strong{font-size:19px}
+ .bb-fa-form-grid{grid-template-columns:1fr}
+ .bb-fa-form-grid .full{grid-column:auto}
+ .bb-fa-budget-edit{grid-template-columns:1fr}
+ .bb-fa-budget-edit button{grid-column:auto}
+ .bb-fa-reminder-settings{align-items:flex-start;flex-direction:column}
+ .bb-fa-member-list>div{gap:8px}
+ .bb-fa-member-list strong{font-size:12px}
+ .bb-fa-member-list small{font-size:10px;line-height:1.5}
+ .bb-fa-member-list button{max-width:85px}
+ .bb-fa-order-actions{flex-direction:column-reverse}
+ .bb-fa-order-actions button{width:100%}
+ .bb-fa-onboard-grid .bb-fa-panel{padding:19px}
+}
