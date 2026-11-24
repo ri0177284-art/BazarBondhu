@@ -1328,7 +1328,7 @@ const menuItems = [
   { id: "categories", label: "Categories", icon: "📦" },
   { id: "cart", label: "Cart", icon: "🛒" },
   { id: "orders", label: "My Orders", icon: "📋" },
-  { id: "family-assistant", label: "Family Assistant", icon: "👨‍👩‍👧‍👦" },
+  { id: "family-assistant", label: "Family Shared Shopping", icon: "👨‍👩‍👧‍👦" },
   { id: "rewards", label: "Rewards", icon: "🎁" },
   { id: "profile", label: "Profile", icon: "👤" }
 ];
