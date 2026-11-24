@@ -2992,11 +2992,12 @@ const productPickerPageNumbers = Array.from(
                 <article className="bb-shopping-item" key={product.id}>
                   <div className="bb-shopping-item-name">
                     <strong>{product.name}</strong>
-                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                    {(product.brand || product.variant) && <small className="bb-shopping-item-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
+                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.variant || product.unit || "টি"}</span>
                   </div>
                   <div className="bb-shopping-quantity" aria-label={`${product.name} এর পরিমাণ`}>
                     <button type="button" aria-label={`${product.name} এক কমান`} onClick={() => changeShoppingQuantity(product, -1)}>−</button>
-                    <strong><span>{item.quantity}</span><small>{product.unit || "টি"}</small></strong>
+                    <strong><span>{item.quantity}</span><small>{product.variant || product.unit || "টি"}</small></strong>
                     <button type="button" aria-label={`${product.name} এক বাড়ান`} disabled={Number(item.quantity) >= Number(product.stock)} onClick={() => changeShoppingQuantity(product, 1)}>+</button>
                   </div>
                   <strong className="bb-shopping-subtotal">৳{(Number(product.price || 0) * Number(item.quantity)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
