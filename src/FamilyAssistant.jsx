@@ -423,7 +423,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
     return (
       <section className="bb-fa-dashboard">
         <header className="bb-fa-heading">
-          <div><span className="bb-fa-kicker">BAZARBONDHU · SMART FAMILY</span><h1>Family Assistant</h1><p>পরিবারের সবাই মিলে বাজারের তালিকা তৈরি করুন। চূড়ান্ত অর্ডার করবেন একজন Owner।</p></div>
+          <div><span className="bb-fa-kicker">BAZARBONDHU · FAMILY ASSISTANT</span><h1>Family Shared Shopping</h1><p>পরিবারের সবাই মিলে বাজারের তালিকা তৈরি করুন। চূড়ান্ত অর্ডার করবেন শুধু Family Owner।</p></div>
           <span className="bb-fa-status"><i /> Family Shared Shopping</span>
         </header>
         <div className="bb-fa-onboard-grid">
@@ -451,25 +451,32 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
   return (
     <section className="bb-fa-dashboard">
       <header className="bb-fa-heading">
-        <div><span className="bb-fa-kicker">BAZARBONDHU · SMART FAMILY</span><h1>Family Assistant</h1><p>পরিবারের সবাই মিলে বাজার সাজান, বাজেট দেখুন, আর Owner চূড়ান্ত অর্ডার করবেন।</p></div>
+        <div><span className="bb-fa-kicker">BAZARBONDHU · FAMILY ASSISTANT</span><h1>Family Shared Shopping</h1><p>একটি তালিকায় সবার প্রয়োজন যোগ করুন, বাজেট দেখুন—অর্ডার কনফার্ম করবেন শুধু Owner।</p></div>
         <span className={isOwner ? "bb-fa-role is-owner" : "bb-fa-role"}>{isOwner ? "★ FAMILY OWNER" : "● FAMILY MEMBER"}</span>
       </header>
 
       <div className="bb-fa-hero">
-        <div><span className="bb-fa-hero-label">আপনাদের পরিবারের বাজার কেন্দ্র</span><h2>{family.name}</h2><p>সদস্যরা তালিকায় পণ্য যোগ করতে পারবেন। অর্ডার কনফার্ম করার ক্ষমতা শুধু Owner-এর।</p></div>
-        <div className="bb-fa-invite"><small>FAMILY INVITE CODE</small><strong>{family.invite_code}</strong><button type="button" onClick={copyInviteCode}>কোড কপি করুন</button></div>
-      </div>
+         <div><span className="bb-fa-hero-label">আপনাদের পরিবারের বাজার কেন্দ্র</span><h2>{family.name}</h2><p>সবাই মিলে প্রয়োজনীয় পণ্য যোগ করুন। তালিকা প্রস্তুত হলে Family Owner অর্ডার কনফার্ম করবেন।</p></div>
+         <div className="bb-fa-invite"><small>FAMILY INVITE CODE</small><strong>{family.invite_code}</strong><button type="button" onClick={copyInviteCode}>কোড কপি করুন</button></div>
+       </div>
 
-      <div className="bb-fa-stat-grid">
+       <div className="bb-fa-howto" aria-label="কীভাবে Family Shared Shopping ব্যবহার করবেন">
+         <div className="bb-fa-howto-title"><span>সহজ ৩টি ধাপ</span><strong>পরিবারের বাজার হবে একসাথে</strong></div>
+         <article><b>১</b><div><strong>সবাই পণ্য যোগ করুন</strong><small>যার যা প্রয়োজন, একই তালিকায় দিন</small></div></article>
+         <article><b>২</b><div><strong>তালিকা মিলিয়ে নিন</strong><small>সবাই পণ্য ও পরিমাণ দেখতে পারবেন</small></div></article>
+         <article><b>৩</b><div><strong>Owner অর্ডার করবেন</strong><small>চূড়ান্ত অর্ডার দেবেন শুধু Family Owner</small></div></article>
+       </div>
+
+       <div className="bb-fa-stat-grid">
         <article><small>মাসিক বাজেট</small><strong>৳{money(family.monthly_budget)}</strong><span>{PACKAGE_OPTIONS.find((item) => item.id === family.package_id)?.label}</span></article>
         <article><small>এই মাসে বাজার</small><strong>৳{money(monthlySpend)}</strong><span>{orderCount.toLocaleString("bn-BD")}টি অর্ডার</span></article>
         <article><small>তালিকার সম্ভাব্য খরচ</small><strong>৳{money(plannedTotal)}</strong><span>{items.length.toLocaleString("bn-BD")}টি আইটেম</span></article>
         <article><small>পরিবারের সদস্য</small><strong>{members.length.toLocaleString("bn-BD")} জন</strong><span>{isOwner ? "আপনি Owner" : "Owner-এর অধীনে সদস্য"}</span></article>
       </div>
 
-      <div className="bb-fa-section-title"><div><span>SHARED SHOPPING</span><h2>পরিবারের সবার বাজারের তালিকা</h2></div><span className="bb-fa-live">● Live Sync</span></div>
+      <div className="bb-fa-section-title"><div><span>FAMILY SHARED SHOPPING</span><h2>একসাথে বাজারের তালিকা তৈরি করুন</h2><p>যে কেউ পণ্য যোগ করলে সবার তালিকায় আপডেট হবে</p></div><span className="bb-fa-live">● লাইভ আপডেট</span></div>
       <div className="bb-fa-panel">
-        <p className="bb-fa-helper">যে কেউ পণ্য যোগ বা পরিমাণ পরিবর্তন করলে পরিবারের অন্য সদস্যদের স্ক্রিনেও তালিকা আপডেট হবে।</p>
+        <p className="bb-fa-helper">পণ্য খুঁজুন, ব্র্যান্ড ও সাইজ বেছে নিন, তারপর পরিমাণ দিয়ে তালিকায় যোগ করুন। পরিবারের সবাই এই তালিকা দেখতে ও পরিবর্তন করতে পারবেন।</p>
         <div className="bb-fa-add-row">
           <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="পণ্য, ব্র্যান্ড বা সাইজ খুঁজুন…" aria-label="পণ্য খুঁজুন" />
           <select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} aria-label="পণ্য নির্বাচন করুন">
@@ -493,7 +500,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
             })}
           </div>
         ) : <div className="bb-fa-empty-list">🧺<strong>এখনো কোনো পণ্য যোগ হয়নি</strong><span>উপরের সার্চ থেকে পরিবারের প্রয়োজনীয় পণ্য যোগ করুন।</span></div>}
-        <div className="bb-fa-list-footer"><span>সম্ভাব্য পণ্যমূল্য</span><strong>৳{money(plannedTotal)}</strong></div>
+        <div className="bb-fa-list-footer"><span>তালিকার মোট সম্ভাব্য পণ্যমূল্য <small>· ডেলিভারি ও সার্ভিস চার্জ ছাড়া</small></span><strong>৳{money(plannedTotal)}</strong></div>
         {isOwner ? <button type="button" className="bb-fa-order-button" onClick={() => setShowOrderForm((value) => !value)} disabled={!items.some((item) => item.product_id)}>✓ পরিবারের অর্ডার করুন</button>
           : <div className="bb-fa-owner-notice">🔒 শুধু Family Owner চূড়ান্ত অর্ডার করতে পারবেন। তালিকা প্রস্তুত হলে Owner-কে জানিয়ে দিন।</div>}
         {showOrderForm && isOwner && (
