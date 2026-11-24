@@ -76,6 +76,13 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
 
   async function loadFamily() {
     if (!user?.id) {
+      setFamily(null);
+      setMembership(null);
+      setMembers([]);
+      setItems([]);
+      setPreferences([]);
+      setMonthlySpend(0);
+      setOrderCount(0);
       setLoading(false);
       return;
     }
@@ -430,8 +437,8 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
           </form>
           <form className="bb-fa-panel" onSubmit={joinFamily}>
             <span className="bb-fa-panel-icon">🔗</span><h2>ইনভাইট কোড দিয়ে যোগ দিন</h2>
-            <p>পরিবারের Owner-এর কাছ থেকে পাওয়া ৮ অক্ষরের কোড লিখুন।</p>
-            <label>ইনভাইট কোড<input value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} maxLength={8} minLength={8} placeholder="যেমন A1B2C3D4" required /></label>
+            <p>পরিবারের Owner-এর কাছ থেকে পাওয়া ১২ অক্ষরের কোড লিখুন।</p>
+            <label>ইনভাইট কোড<input value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} maxLength={12} minLength={12} placeholder="যেমন A1B2C3D4E5F6" required /></label>
             <button className="bb-fa-secondary" disabled={busy}>{busy ? "যোগ হচ্ছে…" : "পরিবারে যোগ দিন"}</button>
           </form>
         </div>
@@ -478,7 +485,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
               const product = productById.get(String(item.product_id));
               return <article key={item.id} className="bb-fa-shared-item">
                 <div className="bb-fa-item-image">{product?.image_url ? <img src={product.image_url} alt="" /> : "🛒"}</div>
-                <div className="bb-fa-item-copy"><strong>{product?.name || item.custom_name || "পণ্য"}</strong><small>{[product?.brand, product?.variant].filter(Boolean).join(" · ") || "পরিবারের বাজার"}</small><span>৳{money(product?.price)} / {product?.unit || "টি"}</span></div>
+                <div className="bb-fa-item-copy"><strong>{product?.name || item.custom_name || "পণ্য"}</strong><small>{[product?.brand, product?.variant].filter(Boolean).join(" · ") || "পরিবারের বাজার"}</small><span>৳{money(product?.price)} / {product?.unit || "টি"}</span><small>যোগ করেছেন: {members.find((member) => member.user_id === item.added_by)?.display_name || (item.added_by === user.id ? "আপনি" : "পরিবারের সদস্য")}</small></div>
                 <div className="bb-fa-qty"><button type="button" aria-label="এক কমান" onClick={() => updateQuantity(item, Number(item.quantity) - 1)}>−</button><b>{Number(item.quantity).toLocaleString("bn-BD")}</b><button type="button" aria-label="এক বাড়ান" onClick={() => updateQuantity(item, Number(item.quantity) + 1)}>+</button></div>
                 <strong className="bb-fa-line-total">৳{money((product?.price || 0) * item.quantity)}</strong>
                 <button type="button" className="bb-fa-remove" onClick={() => removeItem(item.id)} aria-label="তালিকা থেকে সরান">×</button>
@@ -531,6 +538,11 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
             <label className="bb-fa-field">পছন্দের সাইজ / ভ্যারিয়েন্ট<select value={preferenceVariant} onChange={(event) => setPreferenceVariant(event.target.value)}><option value="">নির্দিষ্ট নয়</option>{[...new Set(variantOptions)].map((variant) => <option key={variant} value={variant}>{variant}</option>)}</select></label>
             <div className="bb-fa-reminder-settings"><label>রিমাইন্ডারের স্টক সীমা<input type="number" min="0" value={stockThreshold} onChange={(event) => setStockThreshold(Math.max(0, Number(event.target.value) || 0))} /></label><label className="bb-fa-switch"><input type="checkbox" checked={reminderEnabled} onChange={(event) => setReminderEnabled(event.target.checked)} /> স্টক রিমাইন্ডার চালু</label></div>
             <button type="button" className="bb-fa-secondary" onClick={savePreference} disabled={busy}>পছন্দ সেভ করুন</button>
+            {preferences.length > 0 && <div className="bb-fa-saved-preferences">{preferences.map((preference) => {
+              const savedProduct = productById.get(String(preference.product_id));
+              if (!savedProduct) return null;
+              return <div key={preference.product_id}><strong>{savedProduct.name}</strong><small>{[preference.preferred_brand, preference.preferred_variant].filter(Boolean).join(" · ") || "নির্দিষ্ট পছন্দ নেই"}</small></div>;
+            })}</div>}
           </>}
         </section>
 
