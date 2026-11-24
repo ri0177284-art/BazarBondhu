@@ -2557,21 +2557,7 @@ const productPickerPageNumbers = Array.from(
   if (activeMenu === "family-assistant") {
     return withSidebar(
       <main className="bb-fa-page">
-        <FamilyAssistantDashboard
-          familyMembers={familyPreferences.familyMembers}
-          packageLabel={FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "পরিবারের বাজার"}
-          budgetLimit={packageBudgetLimit}
-          monthlySpend={monthlySpend}
-          plannedTotal={shoppingListTotal}
-          shoppingListCount={shoppingList.length}
-          customItemCount={customShoppingItems.length}
-          suggestions={familyAssistantSuggestions}
-          loadingPrevious={loadingPreviousPackageList}
-          onOpenPlanner={openFamilyPlanner}
-          onLoadPrevious={loadPreviousPackageShoppingList}
-          onEditSettings={openFamilySettings}
-          onAddSuggestion={addProductToShoppingList}
-        />
+        <FamilyAssistantDashboard user={user} products={products} />
       </main>
     );
   }
