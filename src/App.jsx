@@ -18,6 +18,17 @@ const navigation = [
 const money = (amount) =>
   `৳${new Intl.NumberFormat("bn-BD", { maximumFractionDigits: 0 }).format(Number(amount) || 0)}`;
 
+function normalizeBengaliSearchText(value = "") {
+  return String(value)
+    .normalize("NFKC")
+    .toLocaleLowerCase("bn-BD")
+    .replace(/[\u200B-\u200F\uFEFF]/g, "")
+    .replace(/\u09DF/g, "\u09AF\u09BC")
+    .normalize("NFC")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function App() {
   const currentPath = window.location.pathname.replace(/\/+$/, "").toLowerCase();
   const isAdminRoute = currentPath === "/admin" || currentPath.startsWith("/admin/");
@@ -374,8 +385,13 @@ function App() {
   }
 
   const searchFilteredProducts = useMemo(() => {
-    const query = productQuery.trim().toLocaleLowerCase();
-    return products.filter((product) => !query || [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase().includes(query));
+    const query = normalizeBengaliSearchText(productQuery);
+    return products.filter((product) => {
+      const searchableText = normalizeBengaliSearchText(
+        [product.name, product.brand, product.variant].filter(Boolean).join(" "),
+      );
+      return !query || searchableText.includes(query);
+    });
   }, [products, productQuery]);
 
   const filteredProducts = useMemo(() => searchFilteredProducts.filter((product) =>
