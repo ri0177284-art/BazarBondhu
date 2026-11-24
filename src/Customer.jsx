@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import Sidebar from "./Sidebar";
 import "./Customer.css";
+import FamilyAssistantDashboard from "./FamilyAssistant";
 
 const FAMILY_PACKAGES = [
   { id: "family-monthly", label: "মাসিক পরিবার", detail: "মাসের বাজার একসাথে" },
@@ -2495,6 +2496,15 @@ const packageReportPeriodLabel = isWeeklyPackage
     ? `গত ${smartBudgetDays.toLocaleString("bn-BD")} দিনের`
     : "এই মাসের";
 const previousPeriodLabel = isWeeklyPackage ? "আগের সপ্তাহের তুলনায়" : isBudgetSmartPackage ? "আগের একই সময়ের তুলনায়" : "গত মাসের তুলনায়";
+const selectedFamilyCategoryIds = new Set(selectedShoppingProducts.map(({ product }) => getProductCategory(product.name)));
+const familyAssistantSuggestions = products
+  .filter((product) => product.is_active !== false && Number(product.stock) > 0)
+  .filter((product) => !shoppingList.some((item) => item.productId === product.id))
+  .filter((product) => {
+    const categoryId = getProductCategory(product.name);
+    return categoryId !== "other" && !selectedFamilyCategoryIds.has(categoryId);
+  })
+  .slice(0, 4);
 const productPickerItems = products.filter((product) => {
   const searchableProductText = normalizeBengaliSearchText([product.name, product.brand, product.variant].filter(Boolean).join(" "));
   const matchesSearch = !productSearch.trim() || searchableProductText.includes(normalizeBengaliSearchText(productSearch));
@@ -2795,12 +2805,34 @@ const productPickerPageNumbers = Array.from(
       </section>
       )}
 
+      {showFamilyShopping && !editingFamilyPreferences && (
+        <FamilyAssistantDashboard
+          familyMembers={familyPreferences.familyMembers}
+          packageLabel={FAMILY_PACKAGES.find((item) => item.id === familyPreferences.packageId)?.label || "পরিবারের বাজার"}
+          budgetLimit={packageBudgetLimit}
+          monthlySpend={monthlySpend}
+          plannedTotal={shoppingListTotal}
+          shoppingListCount={shoppingList.length}
+          customItemCount={customShoppingItems.length}
+          suggestions={familyAssistantSuggestions}
+          loadingPrevious={loadingPreviousPackageList}
+          onOpenPlanner={() => document.getElementById("bb-family-shopping")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onLoadPrevious={loadPreviousPackageShoppingList}
+          onEditSettings={() => {
+            setFamilyPreferencesDraft(familyPreferences);
+            setFamilyPreferencesMessage("");
+            setEditingFamilyPreferences(true);
+          }}
+          onAddSuggestion={addProductToShoppingList}
+        />
+      )}
+
       <section className="bb-family-card bb-family-card-featured" id="bb-family-package" aria-labelledby="bb-family-title">
         <div className="bb-family-card-heading">
           <span className="bb-family-icon" aria-hidden="true">⌂</span>
           <div className="bb-family-heading-copy">
-            <h2 id="bb-family-title">মাসিক ফ্যামিলি প্যাকেজ</h2>
-            <span>পরিবারের পুরো মাসের বাজার পরিকল্পনা</span>
+            <h2 id="bb-family-title">BazarBondhu Family Assistant</h2>
+            <span>পরিবারের বাজার, বাজেট ও পছন্দের পণ্যের স্মার্ট সহকারী</span>
           </div>
           <span className="bb-family-primary-badge">★ মূল ফিচার</span>
           {!editingFamilyPreferences && (
@@ -2812,7 +2844,7 @@ const productPickerPageNumbers = Array.from(
               onClick={() => setShowFamilyShopping((visible) => !visible)}
             >
               <span aria-hidden="true">🛒</span>
-              {showFamilyShopping ? "বাজার বন্ধ করুন" : "আমার বাজার"}
+              {showFamilyShopping ? "Assistant বন্ধ করুন" : "Assistant খুলুন"}
             </button>
           )}
         </div>
