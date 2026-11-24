@@ -353,7 +353,7 @@ function App() {
     setName(product.name || "");
     setBrand(product.brand || "");
     setVariant(product.variant || "");
-    setUnit(product.unit || "টি");
+    setUnit(product.unit === "kg" ? "কেজি" : product.unit || "টি");
     setPrice(String(product.price ?? ""));
     setMarketPrice(String(product.market_price ?? ""));
     setStock(String(product.stock ?? ""));
