@@ -3318,6 +3318,7 @@ const productPickerPageNumbers = Array.from(
             }}>
               {item.name}
             </strong>
+            {(item.brand || item.variant) && <small style={{ display: "block", marginTop: 4, color: "#087f45", fontSize: 11, fontWeight: 700 }}>{[item.brand, item.variant].filter(Boolean).join(" · ")}</small>}
 
             <p style={{
               color: "#888",
