@@ -203,3 +203,8 @@
   .admin-nav-item { padding: 0 7px; }.admin-nav-item>span:nth-child(2) { font-size: 9px; }.welcome-illustration { display: none; }.market-grid { grid-template-columns: 1fr; }.form-two-col,.settings-fields { grid-template-columns: 1fr; gap: 0; }
 }
 
+
+
+/* Admin guidance for managing shared product brands */
+.bb-brand-management-note { display:grid; gap:5px; margin:0 0 18px; padding:12px 13px; border:1px solid #d8ebdd; border-radius:12px; color:#45614e; background:#f2faf4; font-size:11px; line-height:1.55; }
+.bb-brand-management-note strong { color:#087f45; font-size:12px; }
