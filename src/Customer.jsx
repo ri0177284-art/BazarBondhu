@@ -343,6 +343,7 @@ const [customQuotePaymentMethod, setCustomQuotePaymentMethod] = useState("cod");
 const [customQuoteTransactionId, setCustomQuoteTransactionId] = useState("");
 const [productSearch, setProductSearch] = useState("");
 const [productPickerPage, setProductPickerPage] = useState(1);
+const [productPickerSelectionIds, setProductPickerSelectionIds] = useState({});
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(false);
@@ -837,11 +838,15 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     const current = shoppingList.find((item) => item.productId === product.id);
     if (current) {
       setShoppingList((items) => items.filter((item) => item.productId !== product.id));
-      setShoppingListMessage(`${product.name} তালিকা থেকে সরানো হয়েছে।`);
+      setShoppingListMessage(product.name + " তালিকা থেকে সরানো হয়েছে।");
       return;
     }
-    setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
-    setShoppingListMessage(`${product.name} তালিকায় যোগ হয়েছে। পরিমাণ +/− দিয়ে বদলান।`);
+    setShoppingList((items) => {
+      const sameProductIds = new Set(products.filter((entry) => entry.name === product.name).map((entry) => entry.id));
+      const withoutOtherBrands = items.filter((item) => !sameProductIds.has(item.productId));
+      return [...withoutOtherBrands, { productId: product.id, quantity: 1 }];
+    });
+    setShoppingListMessage(product.name + (product.brand ? " — " + product.brand : "") + (product.variant ? " " + product.variant : "") + " তালিকায় যোগ হয়েছে।");
   }
 
   function autoFillShoppingBudget(selectedProducts, currentTotal) {
@@ -2473,9 +2478,18 @@ const productPickerItems = products.filter((product) => {
     .includes(productSearch.trim().toLocaleLowerCase());
   return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
 });
-const totalProductPickerPages = Math.max(1, Math.ceil(productPickerItems.length / PRODUCTS_PER_PAGE));
+const productPickerGroups = Array.from(
+  productPickerItems.reduce((groups, product) => {
+    const key = String(product.name || "").trim();
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(product);
+    return groups;
+  }, new Map()),
+  ([name, variants]) => ({ name, variants })
+);
+const totalProductPickerPages = Math.max(1, Math.ceil(productPickerGroups.length / PRODUCTS_PER_PAGE));
 const safeProductPickerPage = Math.min(productPickerPage, totalProductPickerPages);
-const paginatedProductPickerItems = productPickerItems.slice(
+const paginatedProductPickerGroups = productPickerGroups.slice(
   (safeProductPickerPage - 1) * PRODUCTS_PER_PAGE,
   safeProductPickerPage * PRODUCTS_PER_PAGE
 );
@@ -3011,15 +3025,39 @@ const productPickerPageNumbers = Array.from(
               {productPickerItems.length > 0 ? (
                 <>
                 <div className="bb-product-picker-grid">
-                  {paginatedProductPickerItems.map((product) => {
-                    const alreadyAdded = shoppingList.some((item) => item.productId === product.id);
+                  {paginatedProductPickerGroups.map(({ name: productName, variants }) => {
+                    const selectedProductId = productPickerSelectionIds[productName] || variants[0].id;
+                    const selectedProduct = variants.find((item) => item.id === selectedProductId) || variants[0];
+                    const brandOptions = Array.from(new Set(variants.map((item) => item.brand || "")));
+                    const availableVariants = variants.filter((item) => (item.brand || "") === (selectedProduct.brand || ""));
+                    const alreadyAdded = shoppingList.some((item) => item.productId === selectedProduct.id);
                     return (
-                      <article className="bb-picker-product" key={product.id}>
-                        <div>
-                          <strong>{product.name}</strong>
-                          <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.unit || "টি"}</span>
+                      <article className="bb-picker-product" key={productName}>
+                        <div className="bb-picker-product-details">
+                          <strong>{productName}</strong>
+                          {brandOptions.length > 1 && (
+                            <label className="bb-picker-choice">
+                              <span>ব্র্যান্ড</span>
+                              <select value={selectedProduct.brand || ""} onChange={(event) => {
+                                const nextProduct = variants.find((item) => (item.brand || "") === event.target.value);
+                                if (nextProduct) setProductPickerSelectionIds((current) => ({ ...current, [productName]: nextProduct.id }));
+                              }}>
+                                {brandOptions.map((brandName) => <option key={brandName || "__unbranded"} value={brandName}>{brandName || "সাধারণ / ব্র্যান্ড নেই"}</option>)}
+                              </select>
+                            </label>
+                          )}
+                          {availableVariants.length > 1 && (
+                            <label className="bb-picker-choice">
+                              <span>সাইজ / ভ্যারিয়েন্ট</span>
+                              <select value={selectedProduct.id} onChange={(event) => setProductPickerSelectionIds((current) => ({ ...current, [productName]: event.target.value }))}>
+                                {availableVariants.map((item) => <option key={item.id} value={item.id}>{item.variant || item.unit || "সাধারণ"}</option>)}
+                              </select>
+                            </label>
+                          )}
+                          {(selectedProduct.brand || selectedProduct.variant) && <span className="bb-picker-selected-variant">{[selectedProduct.brand, selectedProduct.variant].filter(Boolean).join(" · ")}</span>}
+                          <span>৳{Number(selectedProduct.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {selectedProduct.variant || selectedProduct.unit || "টি"}</span>
                         </div>
-                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(product)}>
+                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(selectedProduct)}>
                           {alreadyAdded ? "✓ যোগ হয়েছে · বাদ দিন" : "+ তালিকায় যোগ"}
                         </button>
                       </article>
@@ -3059,7 +3097,7 @@ const productPickerPageNumbers = Array.from(
                       পরের →
                     </button>
                     <span className="bb-pagination-summary">
-                      পৃষ্ঠা {safeProductPickerPage.toLocaleString("bn-BD")} / {totalProductPickerPages.toLocaleString("bn-BD")} · মোট {productPickerItems.length.toLocaleString("bn-BD")}টি পণ্য
+                      পৃষ্ঠা {safeProductPickerPage.toLocaleString("bn-BD")} / {totalProductPickerPages.toLocaleString("bn-BD")} · মোট {productPickerGroups.length.toLocaleString("bn-BD")}টি পণ্য
                     </span>
                   </nav>
                 )}
@@ -3495,6 +3533,7 @@ boxSizing: "border-box"
           }}>
             <div className="bb-product-name-row">
               <h3 className="bb-product-name">{product.name}</h3>
+              {(product.brand || product.variant) && <small className="bb-store-product-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
               <button
                 type="button"
                 className="bb-product-cart-icon"
