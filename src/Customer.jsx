@@ -841,11 +841,7 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
       setShoppingListMessage(product.name + " তালিকা থেকে সরানো হয়েছে।");
       return;
     }
-    setShoppingList((items) => {
-      const sameProductIds = new Set(products.filter((entry) => entry.name === product.name).map((entry) => entry.id));
-      const withoutOtherBrands = items.filter((item) => !sameProductIds.has(item.productId));
-      return [...withoutOtherBrands, { productId: product.id, quantity: 1 }];
-    });
+    setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
     setShoppingListMessage(product.name + (product.brand ? " — " + product.brand : "") + (product.variant ? " " + product.variant : "") + " তালিকায় যোগ হয়েছে।");
   }
 
@@ -3035,15 +3031,30 @@ const productPickerPageNumbers = Array.from(
                         <div className="bb-picker-product-details">
                           <strong>{productName}</strong>
                           {brandOptions.length > 1 && (
-                            <label className="bb-picker-choice">
-                              <span>ব্র্যান্ড</span>
-                              <select value={selectedProduct.brand || ""} onChange={(event) => {
-                                const nextProduct = variants.find((item) => (item.brand || "") === event.target.value);
-                                if (nextProduct) setProductPickerSelectionIds((current) => ({ ...current, [productName]: nextProduct.id }));
-                              }}>
-                                {brandOptions.map((brandName) => <option key={brandName || "__unbranded"} value={brandName}>{brandName || "সাধারণ / ব্র্যান্ড নেই"}</option>)}
-                              </select>
-                            </label>
+                            <div className="bb-picker-choice">
+                              <span>পছন্দের ব্র্যান্ড বেছে নিন</span>
+                              <div className="bb-picker-brand-options" role="group" aria-label={`${productName} ব্র্যান্ড নির্বাচন`}>
+                                {brandOptions.map((brandName) => {
+                                  const brandProduct = variants.find((item) => (item.brand || "") === brandName);
+                                  const isBrandSelected = (selectedProduct.brand || "") === brandName;
+                                  const isBrandAdded = variants.some((item) => (item.brand || "") === brandName && shoppingList.some((entry) => entry.productId === item.id));
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={brandName || "__unbranded"}
+                                      className={`bb-picker-brand-option${isBrandSelected ? " is-active" : ""}${isBrandAdded ? " is-added" : ""}`}
+                                      aria-pressed={isBrandSelected}
+                                      onClick={() => {
+                                        if (brandProduct) setProductPickerSelectionIds((current) => ({ ...current, [productName]: brandProduct.id }));
+                                      }}
+                                    >
+                                      <span>{brandName || "সাধারণ"}</span>
+                                      {isBrandAdded && <small>✓ যোগ হয়েছে</small>}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           )}
                           {availableVariants.length > 1 && (
                             <label className="bb-picker-choice">
