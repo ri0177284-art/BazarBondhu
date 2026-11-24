@@ -315,11 +315,11 @@ function App() {
       notify("দাম ও স্টক শূন্যের কম হতে পারবে না", "error");
       return;
     }
-    setSaving(true);
     if (isActive && (productPrice <= 0 || quantity <= 0)) {
       notify("সক্রিয় করতে বিক্রয় মূল্য ও স্টক শূন্যের বেশি হতে হবে।", "error");
       return;
     }
+    setSaving(true);
     const product = { name: name.trim(), brand: brand.trim() || null, variant: variant.trim() || null, price: productPrice, market_price: wholesale, stock: quantity, image_url: imageUrl.trim() || null, is_active: isActive };
     const result = editingId
       ? await supabase.from("products").update(product).eq("id", editingId)
@@ -370,14 +370,14 @@ function App() {
     await loadProducts();
   }
 
-  const filteredProducts = useMemo(() => {
+  const searchFilteredProducts = useMemo(() => {
     const query = productQuery.trim().toLocaleLowerCase();
-    return products.filter((product) => {
-      const matchesStatus = productStatusFilter === "all" || (productStatusFilter === "draft" ? product.is_active === false : product.is_active !== false);
-      const matchesQuery = !query || [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase().includes(query);
-      return matchesStatus && matchesQuery;
-    });
-  }, [products, productQuery, productStatusFilter]);
+    return products.filter((product) => !query || [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase().includes(query));
+  }, [products, productQuery]);
+
+  const filteredProducts = useMemo(() => searchFilteredProducts.filter((product) =>
+    productStatusFilter === "all" || (productStatusFilter === "draft" ? product.is_active === false : product.is_active !== false)
+  ), [searchFilteredProducts, productStatusFilter]);
 
   const filteredOrders = useMemo(() => {
     const query = orderQuery.trim().toLocaleLowerCase();
@@ -535,8 +535,8 @@ function App() {
         )}
 
         {active === "Market Prices" && (
-          <section className="admin-content"><div className="page-intro"><div><h2>বাজারদর</h2><p>বর্তমান বাজারদর ও আপনার বিক্রয়মূল্য তুলনা করুন।</p></div><span className="page-total">{filteredProducts.length}টি পণ্য</span></div><label className="search-box search-box-wide"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="পণ্যের নাম খুঁজুন" /></label>
-            {filteredProducts.length === 0 ? <div className="panel empty-state"><strong>দেখানোর মতো পণ্য নেই</strong><p>পণ্য যোগ করলে বাজারদর এখানে দেখা যাবে।</p></div> : <div className="market-grid">{filteredProducts.map((product) => <article className="panel market-card" key={product.id}><span className="market-icon">৳</span><h3>{product.name}</h3><p>একক: {product.unit || "টি"}</p><div className="market-prices"><div><small>বাজারদর</small><strong>{money(product.market_price)}</strong></div><div><small>আপনার দাম</small><strong>{money(product.price)}</strong></div></div></article>)}</div>}
+          <section className="admin-content"><div className="page-intro"><div><h2>বাজারদর</h2><p>বর্তমান বাজারদর ও আপনার বিক্রয়মূল্য তুলনা করুন।</p></div><span className="page-total">{searchFilteredProducts.length}টি পণ্য</span></div><label className="search-box search-box-wide"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="পণ্যের নাম খুঁজুন" /></label>
+            {searchFilteredProducts.length === 0 ? <div className="panel empty-state"><strong>দেখানোর মতো পণ্য নেই</strong><p>পণ্য যোগ করলে বাজারদর এখানে দেখা যাবে।</p></div> : <div className="market-grid">{searchFilteredProducts.map((product) => <article className="panel market-card" key={product.id}><span className="market-icon">৳</span><h3>{product.name}</h3><p>একক: {product.unit || "টি"}</p><div className="market-prices"><div><small>বাজারদর</small><strong>{money(product.market_price)}</strong></div><div><small>আপনার দাম</small><strong>{money(product.price)}</strong></div></div></article>)}</div>}
           </section>
         )}
 
