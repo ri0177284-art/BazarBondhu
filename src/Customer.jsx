@@ -2387,9 +2387,8 @@ if (showProfile) {
   );
 }
   const filteredProducts = products.filter(product => {
-  const matchSearch = (product.name || "")
-    .toLowerCase()
-    .includes(search.toLowerCase());
+  const searchableProductText = [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLowerCase();
+  const matchSearch = searchableProductText.includes(search.toLowerCase());
 
   const matchCategory =
     selectedCategory === "সব" ||
@@ -2473,9 +2472,8 @@ const packageReportPeriodLabel = isWeeklyPackage
     : "এই মাসের";
 const previousPeriodLabel = isWeeklyPackage ? "আগের সপ্তাহের তুলনায়" : isBudgetSmartPackage ? "আগের একই সময়ের তুলনায়" : "গত মাসের তুলনায়";
 const productPickerItems = products.filter((product) => {
-  const matchesSearch = !productSearch.trim() || String(product.name || "")
-    .toLocaleLowerCase()
-    .includes(productSearch.trim().toLocaleLowerCase());
+  const searchableProductText = [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase();
+  const matchesSearch = !productSearch.trim() || searchableProductText.includes(productSearch.trim().toLocaleLowerCase());
   return product.is_active !== false && Number(product.stock) > 0 && matchesSearch;
 });
 const productPickerGroups = Array.from(
