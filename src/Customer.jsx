@@ -42,6 +42,12 @@ function getFamilyPackageMinimum(packageId) {
   return FAMILY_PACKAGE_MINIMUMS[packageId] || 0;
 }
 
+function getProductUnit(product = {}) {
+  const unit = String(product.unit || "").trim().toLowerCase();
+  if (unit === "kg" || unit === "কেজি") return "কেজি";
+  return String(product.unit || "").trim() || "টি";
+}
+
 const DEFAULT_FAMILY_PREFERENCES = {
   familyMembers: 4,
   monthlyBudget: 5000,
@@ -1243,7 +1249,7 @@ if (orderError) throw orderError;
 async function loadMyOrders() {
   const { data, error } = await supabase
     .from("orders")
-    .select("*, order_items(*)")
+    .select("*, order_items(*, products(unit))")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -1790,7 +1796,7 @@ fontWeight: "bold"
 }}>
   🛍️ {item.product_name}
   <br />
-  পরিমাণ: {item.quantity} টি × {item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : "৳" + item.unit_price}
+  পরিমাণ: {item.quantity} {item.products?.unit || "টি"} × {item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : "৳" + item.unit_price}
 </p>
               ))}
 
@@ -2998,11 +3004,11 @@ const productPickerPageNumbers = Array.from(
                   <div className="bb-shopping-item-name">
                     <strong>{product.name}</strong>
                     {(product.brand || product.variant) && <small className="bb-shopping-item-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
-                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {product.variant || product.unit || "টি"}</span>
+                    <span>৳{Number(product.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {getProductUnit(product)}</span>
                   </div>
                   <div className="bb-shopping-quantity" aria-label={`${product.name} এর পরিমাণ`}>
                     <button type="button" aria-label={`${product.name} এক কমান`} onClick={() => changeShoppingQuantity(product, -1)}>−</button>
-                    <strong><span>{item.quantity}</span><small>{product.variant || product.unit || "টি"}</small></strong>
+                    <strong><span>{item.quantity}</span><small>{getProductUnit(product)}</small></strong>
                     <button type="button" aria-label={`${product.name} এক বাড়ান`} disabled={Number(item.quantity) >= Number(product.stock)} onClick={() => changeShoppingQuantity(product, 1)}>+</button>
                   </div>
                   <strong className="bb-shopping-subtotal">৳{(Number(product.price || 0) * Number(item.quantity)).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</strong>
@@ -3301,7 +3307,7 @@ const productPickerPageNumbers = Array.from(
         borderRadius: 12,
         fontWeight: "bold"
       }}>
-        {cart.reduce((sum, item) => sum + (item.quantity || 1), 0)} টি
+        {cart.length} ধরনের পণ্য
       </div>
     </div>
 
@@ -3336,7 +3342,7 @@ const productPickerPageNumbers = Array.from(
               fontSize: 13,
               margin: "7px 0"
             }}>
-              ৳{item.price} × {item.quantity || 1} টি
+              ৳{item.price} × {item.quantity || 1} {getProductUnit(item)}
             </p>
 
             <strong style={{
@@ -3400,8 +3406,8 @@ const productPickerPageNumbers = Array.from(
               −
             </button>
 
-            <strong style={{ fontSize: 16 }}>
-              {item.quantity || 1}
+            <strong style={{ fontSize: 16, textAlign: "center" }}>
+              {item.quantity || 1}<small style={{ display: "block", color: "#718076", fontSize: 10 }}>{getProductUnit(item)}</small>
             </strong>
 
             <button
@@ -3604,10 +3610,11 @@ boxSizing: "border-box"
               color: "#087f45",
               fontSize: 18,
               fontWeight: "bold",
-              margin: "0 0 9px"
+              margin: "0 0 3px"
             }}>
               ৳{product.price}
             </h2>
+            <small style={{ color: "#718076", marginBottom: 9 }}>প্রতি {getProductUnit(product)}</small>
 
             <div style={{
               color: product.stock > 0 ? "#087f45" : "#dc3545",
@@ -3620,7 +3627,7 @@ boxSizing: "border-box"
               marginBottom: 10
             }}>
               {product.stock > 0
-                ? `স্টক: ${product.stock} টি`
+                ? `স্টক: ${product.stock} ${getProductUnit(product)}`
                 : "স্টক শেষ"}
             </div>
 
