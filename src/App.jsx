@@ -41,6 +41,7 @@ function App() {
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [variant, setVariant] = useState("");
+  const [unit, setUnit] = useState("টি");
   const [price, setPrice] = useState("");
   const [marketPrice, setMarketPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -320,7 +321,7 @@ function App() {
       return;
     }
     setSaving(true);
-    const product = { name: name.trim(), brand: brand.trim() || null, variant: variant.trim() || null, price: productPrice, market_price: wholesale, stock: quantity, image_url: imageUrl.trim() || null, is_active: isActive };
+    const product = { name: name.trim(), brand: brand.trim() || null, variant: variant.trim() || null, unit, price: productPrice, market_price: wholesale, stock: quantity, image_url: imageUrl.trim() || null, is_active: isActive };
     const result = editingId
       ? await supabase.from("products").update(product).eq("id", editingId)
       : await supabase.from("products").insert([product]);
@@ -339,6 +340,7 @@ function App() {
     setName("");
     setBrand("");
     setVariant("");
+    setUnit("টি");
     setPrice("");
     setMarketPrice("");
     setStock("");
@@ -351,6 +353,7 @@ function App() {
     setName(product.name || "");
     setBrand(product.brand || "");
     setVariant(product.variant || "");
+    setUnit(product.unit || "টি");
     setPrice(String(product.price ?? ""));
     setMarketPrice(String(product.market_price ?? ""));
     setStock(String(product.stock ?? ""));
@@ -521,14 +524,14 @@ function App() {
                 <label className="bb-field">পণ্যের নাম<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="যেমন: সাবান" /></label>
                 <div className="form-two-col"><label className="bb-field">ব্র্যান্ডের নাম<input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="যেমন: Lux, Dove, Dettol" /></label><label className="bb-field">সাইজ / ভ্যারিয়েন্ট<input value={variant} onChange={(event) => setVariant(event.target.value)} placeholder="যেমন: 100g, 125g" /></label></div>
                 <div className="form-two-col"><label className="bb-field">বিক্রয় মূল্য<input required type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="৳ ০" /></label><label className="bb-field">বাজারদর<input required type="number" min="0" step="0.01" value={marketPrice} onChange={(event) => setMarketPrice(event.target.value)} placeholder="৳ ০" /></label></div>
-                <label className="bb-field">স্টক (ইউনিট)<input required type="number" min="0" step="1" value={stock} onChange={(event) => setStock(event.target.value)} placeholder="০" /></label>
+                <div className="form-two-col"><label className="bb-field">বিক্রির একক<select value={unit} onChange={(event) => setUnit(event.target.value)}><option value="কেজি">কেজি</option><option value="গ্রাম">গ্রাম</option><option value="লিটার">লিটার</option><option value="মিলিলিটার">মিলিলিটার</option><option value="টি">টি</option><option value="পিস">পিস</option><option value="প্যাকেট">প্যাকেট</option><option value="বোতল">বোতল</option><option value="টিউব">টিউব</option><option value="জার">জার</option><option value="বক্স">বক্স</option><option value="বাক্স">বাক্স</option><option value="রোল">রোল</option><option value="জোড়া">জোড়া</option><option value="আঁটি">আঁটি</option><option value="লোফ">লোফ</option></select></label><label className="bb-field">স্টক ({unit})<input required type="number" min="0" step="0.01" value={stock} onChange={(event) => setStock(event.target.value)} placeholder="০" /></label></div>
                 <label className="bb-field">পণ্যের ছবির URL (ঐচ্ছিক)<input type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." /></label>
                 <label className="bb-field" style={{ display: "flex", alignItems: "center", gap: 10, flexDirection: "row" }}><input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} style={{ width: 18, height: 18 }} />ক্রেতাদের কাছে পণ্যটি সক্রিয়/প্রকাশ করুন</label>
                 {!isActive && <p className="bb-brand-management-note">ড্রাফট অবস্থায় পণ্য ক্রেতাদের কাছে দেখা যাবে না। দাম ও স্টক পরে পূরণ করে সক্রিয় করতে পারবেন।</p>}
                 <div className="form-actions"><button className="bb-button bb-button-primary" type="submit" disabled={saving}>{saving ? "সেভ হচ্ছে…" : editingId ? "পরিবর্তন সেভ" : "পণ্য যোগ করুন"}</button>{editingId && <button className="bb-button bb-button-secondary" type="button" onClick={resetProductForm}>বাতিল</button>}</div>
               </form>
               <section className="panel product-list-panel"><div className="panel-heading"><div><h2>পণ্যের তালিকা</h2><p>নাম লিখে পণ্য খুঁজুন এবং ড্রাফট যাচাই করুন</p></div></div><div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}><button type="button" className={`small-action${productStatusFilter === "all" ? " is-selected" : ""}`} onClick={() => setProductStatusFilter("all")}>সব ({products.length})</button><button type="button" className={`small-action${productStatusFilter === "draft" ? " is-selected" : ""}`} onClick={() => setProductStatusFilter("draft")}>ড্রাফট ({products.filter((p) => p.is_active === false).length})</button><button type="button" className={`small-action${productStatusFilter === "active" ? " is-selected" : ""}`} onClick={() => setProductStatusFilter("active")}>সক্রিয় ({products.filter((p) => p.is_active !== false).length})</button></div><label className="search-box"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="পণ্যের নাম খুঁজুন" /></label>
-                {loading ? <div className="empty-state"><span className="bb-spinner" />পণ্য লোড হচ্ছে…</div> : filteredProducts.length === 0 ? <div className="empty-state"><span>▦</span><strong>{productQuery ? "পণ্য মেলেনি" : "এখনো পণ্য যোগ করা হয়নি"}</strong><p>{productQuery ? "অন্য নামে খুঁজে দেখুন।" : "বাম পাশের ফর্ম থেকে প্রথম পণ্যটি যোগ করুন।"}</p></div> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>পণ্য</th><th>বিক্রয় মূল্য</th><th>বাজারদর</th><th>স্টক</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><strong>{product.name}</strong>{(product.brand || product.variant) && <small style={{ display: "block", marginTop: 3, color: "#718076" }}>{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}</td><td>{money(product.price)}</td><td>{money(product.market_price)}</td><td><span className={`stock-pill${Number(product.stock) <= 5 ? " is-low" : ""}`}>{product.stock} {product.variant || product.unit || "টি"}</span></td><td><span className={`stock-pill${product.is_active === false ? " is-low" : ""}`}>{product.is_active === false ? "ড্রাফট" : "সক্রিয়"}</span></td><td className="row-actions"><button className="small-action" onClick={() => editProduct(product)}>এডিট</button><button className="small-action is-danger" onClick={() => void deleteProduct(product.id)}>মুছুন</button></td></tr>)}</tbody></table></div>}
+                {loading ? <div className="empty-state"><span className="bb-spinner" />পণ্য লোড হচ্ছে…</div> : filteredProducts.length === 0 ? <div className="empty-state"><span>▦</span><strong>{productQuery ? "পণ্য মেলেনি" : "এখনো পণ্য যোগ করা হয়নি"}</strong><p>{productQuery ? "অন্য নামে খুঁজে দেখুন।" : "বাম পাশের ফর্ম থেকে প্রথম পণ্যটি যোগ করুন।"}</p></div> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>পণ্য</th><th>বিক্রয় মূল্য</th><th>বাজারদর</th><th>স্টক</th><th>অবস্থা</th><th>অ্যাকশন</th></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><strong>{product.name}</strong>{(product.brand || product.variant) && <small style={{ display: "block", marginTop: 3, color: "#718076" }}>{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}</td><td>{money(product.price)}</td><td>{money(product.market_price)}</td><td><span className={`stock-pill${Number(product.stock) <= 5 ? " is-low" : ""}`}>{product.stock} {product.unit || "টি"}</span></td><td><span className={`stock-pill${product.is_active === false ? " is-low" : ""}`}>{product.is_active === false ? "ড্রাফট" : "সক্রিয়"}</span></td><td className="row-actions"><button className="small-action" onClick={() => editProduct(product)}>এডিট</button><button className="small-action is-danger" onClick={() => void deleteProduct(product.id)}>মুছুন</button></td></tr>)}</tbody></table></div>}
               </section>
             </div>
           </section>
@@ -546,7 +549,7 @@ function App() {
             {filteredOrders.length === 0 ? <div className="panel empty-state"><span>▤</span><strong>{orderQuery || orderStatusFilter !== "all" ? "কোনো অর্ডার মেলেনি" : "এখনো অর্ডার আসেনি"}</strong><p>ফিল্টার বদলে আবার দেখুন।</p></div> : <div className="orders-list">{filteredOrders.map((order) => {
               const itemsForOrder = orderItems.filter((item) => item.order_id === order.id);
               return <article className="panel order-card" key={order.id}><div className="order-card-top"><div><span className="order-id">অর্ডার #{String(order.id).slice(-6)}</span><p>{new Date(order.created_at).toLocaleString("bn-BD")}</p></div><strong className="order-total">{money(order.total)}</strong></div><div className="order-customer"><div className="customer-avatar">{(order.customer_name || "?").slice(0, 1)}</div><div><strong>{order.customer_name || "—"}</strong><p>{order.phone || "ফোন দেওয়া হয়নি"}</p><p>{order.delivery_address || "ঠিকানা দেওয়া হয়নি"}</p></div></div>
-                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item.product_name || "পণ্য"} × {item.quantity}{item.product_id == null && <small style={{ display: "block", color: "#9a6700" }}>কাস্টম পণ্য</small>}</span><span>{item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : money(item.line_total ?? Number(item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
+                <div className="order-items">{itemsForOrder.map((item) => <div className="order-line" key={item.id}><span>{item.product_name || "পণ্য"} × {item.quantity} {item.product_id ? (products.find((product) => product.id === item.product_id)?.unit || "টি") : "টি"}{item.product_id == null && <small style={{ display: "block", color: "#9a6700" }}>কাস্টম পণ্য</small>}</span><span>{item.product_id == null && order.custom_items_status === "pending" ? "দাম নির্ধারণ বাকি" : money(item.line_total ?? Number(item.unit_price) * Number(item.quantity))}</span></div>)}<div className="order-line order-fee"><span>সার্ভিস + ডেলিভারি</span><span>{money(Number(order.service_charge || 0) + Number(order.delivery_fee || 0))}</span></div></div>
                 {order.custom_items_status === "pending" && (
                   <div style={{ marginTop: 12, padding: 14, borderRadius: 12, border: "1px solid #ead9ad", background: "#fffaf0" }}>
                     <strong style={{ color: "#76551a" }}>কাস্টম পণ্যের দাম ও প্রাপ্যতা নিশ্চিত করুন</strong>
