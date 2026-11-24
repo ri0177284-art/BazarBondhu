@@ -1180,7 +1180,7 @@ if (
       if (availableStock < requestedQuantity) {
         alert(
           item.name + " এর পর্যাপ্ত স্টক নেই। বর্তমানে স্টক: " +
-          availableStock + " টি"
+          availableStock + " " + getProductUnit(item)
         );
         return;
       }
@@ -3071,7 +3071,7 @@ const productPickerPageNumbers = Array.from(
                             </label>
                           )}
                           {(selectedProduct.brand || selectedProduct.variant) && <span className="bb-picker-selected-variant">{[selectedProduct.brand, selectedProduct.variant].filter(Boolean).join(" · ")}</span>}
-                          <span>৳{Number(selectedProduct.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {selectedProduct.variant || selectedProduct.unit || "টি"}</span>
+                          <span>৳{Number(selectedProduct.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {getProductUnit(selectedProduct)}</span>
                         </div>
                         <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(selectedProduct)}>
                           {alreadyAdded ? "✓ যোগ হয়েছে · বাদ দিন" : "+ তালিকায় যোগ"}
