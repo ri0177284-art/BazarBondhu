@@ -1011,15 +1011,24 @@
   min-height: 42px;
   margin: 0 0 8px;
 }
+.bb-product-title-group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
 .bb-product-name {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   margin: 0;
   color: #263d30;
   font-size: 15px;
   font-weight: 800;
   line-height: 1.4;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .bb-product-cart-icon {
   display: grid;
@@ -1712,7 +1721,7 @@
 .bb-picker-selected-variant { align-self: flex-start; padding: 3px 7px; border-radius: 20px; background: #e8f5ed; color: #087f45 !important; font-size: 9px !important; font-weight: 700; }
 .bb-picker-product > button { align-self: flex-start; }
 .bb-shopping-item-variant { color: #087f45; font-size: 10px; font-weight: 700; }
-.bb-store-product-variant { display: block; margin: -2px 0 6px; color: #087f45; font-size: 11px; font-weight: 700; }
+.bb-store-product-variant { display: block; max-width: 100%; margin: 0; color: #087f45; font-size: 11px; font-weight: 700; line-height: 1.35; overflow-wrap: break-word; }
 
 
 /* Clear, tappable brand choices in the family package product picker */
