@@ -3554,8 +3554,10 @@ boxSizing: "border-box"
             flex: 1
           }}>
             <div className="bb-product-name-row">
-              <h3 className="bb-product-name">{product.name}</h3>
-              {(product.brand || product.variant) && <small className="bb-store-product-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
+              <div className="bb-product-title-group">
+                <h3 className="bb-product-name">{product.name}</h3>
+                {(product.brand || product.variant) && <small className="bb-store-product-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
+              </div>
               <button
                 type="button"
                 className="bb-product-cart-icon"
