@@ -1420,7 +1420,7 @@ useEffect(() => {
 
 function handleSearchToggle() {
   // Search is part of the storefront, so first return from any other screen.
-  if (showRewards || showProfile || showMyOrders || showCheckout) {
+  if (showRewards || showProfile || showMyOrders || showCheckout || activeMenu === "family-assistant") {
     setShowRewards(false);
     setShowProfile(false);
     setShowMyOrders(false);
