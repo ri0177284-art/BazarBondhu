@@ -44,10 +44,11 @@ function getFamilyPackageMinimum(packageId) {
 
 function normalizeBengaliSearchText(value = "") {
   return String(value)
+    .normalize("NFKC")
     .toLocaleLowerCase("bn-BD")
+    .replace(/[\u200B-\u200F\uFEFF]/g, "")
+    .replace(/\u09DF/g, "\u09AF\u09BC")
     .normalize("NFC")
-    .replace(/য়/g, "য়")
-    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
