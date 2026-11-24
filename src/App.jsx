@@ -39,6 +39,8 @@ function App() {
   const [serviceCharge, setServiceCharge] = useState(0);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [variant, setVariant] = useState("");
   const [price, setPrice] = useState("");
   const [marketPrice, setMarketPrice] = useState("");
   const [stock, setStock] = useState("");
@@ -311,7 +313,7 @@ function App() {
       return;
     }
     setSaving(true);
-    const product = { name: name.trim(), price: productPrice, market_price: wholesale, stock: quantity };
+    const product = { name: name.trim(), brand: brand.trim() || null, variant: variant.trim() || null, price: productPrice, market_price: wholesale, stock: quantity };
     const result = editingId
       ? await supabase.from("products").update(product).eq("id", editingId)
       : await supabase.from("products").insert([product]);
@@ -328,6 +330,8 @@ function App() {
   function resetProductForm() {
     setEditingId(null);
     setName("");
+    setBrand("");
+    setVariant("");
     setPrice("");
     setMarketPrice("");
     setStock("");
@@ -336,6 +340,8 @@ function App() {
   function editProduct(product) {
     setEditingId(product.id);
     setName(product.name || "");
+    setBrand(product.brand || "");
+    setVariant(product.variant || "");
     setPrice(String(product.price ?? ""));
     setMarketPrice(String(product.market_price ?? ""));
     setStock(String(product.stock ?? ""));
@@ -355,7 +361,7 @@ function App() {
 
   const filteredProducts = useMemo(() => {
     const query = productQuery.trim().toLocaleLowerCase();
-    return products.filter((product) => !query || product.name?.toLocaleLowerCase().includes(query));
+    return products.filter((product) => !query || [product.name, product.brand, product.variant].filter(Boolean).join(" ").toLocaleLowerCase().includes(query));
   }, [products, productQuery]);
 
   const filteredOrders = useMemo(() => {
@@ -496,13 +502,14 @@ function App() {
             <div className="page-intro"><div><h2>পণ্য ব্যবস্থাপনা</h2><p>পণ্যের দাম ও স্টক এক জায়গা থেকে আপডেট করুন।</p></div><span className="page-total">{products.length}টি পণ্য</span></div>
             <div className="product-layout">
               <form className="panel product-form" onSubmit={addProduct}><div className="panel-heading"><div><h2>{editingId ? "পণ্য আপডেট" : "নতুন পণ্য"}</h2><p>পণ্যের তথ্য লিখুন</p></div><span className="form-plus">＋</span></div>
-                <label className="bb-field">পণ্যের নাম<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="যেমন: মিনিকেট চাল" /></label>
+                <label className="bb-field">পণ্যের নাম<input required value={name} onChange={(event) => setName(event.target.value)} placeholder="যেমন: সাবান" /></label>
+                <div className="form-two-col"><label className="bb-field">ব্র্যান্ড (ঐচ্ছিক)<input value={brand} onChange={(event) => setBrand(event.target.value)} placeholder="যেমন: Lux" /></label><label className="bb-field">সাইজ / ভ্যারিয়েন্ট (ঐচ্ছিক)<input value={variant} onChange={(event) => setVariant(event.target.value)} placeholder="যেমন: 100g" /></label></div>
                 <div className="form-two-col"><label className="bb-field">বিক্রয় মূল্য<input required type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="৳ ০" /></label><label className="bb-field">বাজারদর<input required type="number" min="0" step="0.01" value={marketPrice} onChange={(event) => setMarketPrice(event.target.value)} placeholder="৳ ০" /></label></div>
                 <label className="bb-field">স্টক (ইউনিট)<input required type="number" min="0" step="1" value={stock} onChange={(event) => setStock(event.target.value)} placeholder="০" /></label>
                 <div className="form-actions"><button className="bb-button bb-button-primary" type="submit" disabled={saving}>{saving ? "সেভ হচ্ছে…" : editingId ? "পরিবর্তন সেভ" : "পণ্য যোগ করুন"}</button>{editingId && <button className="bb-button bb-button-secondary" type="button" onClick={resetProductForm}>বাতিল</button>}</div>
               </form>
               <section className="panel product-list-panel"><div className="panel-heading"><div><h2>পণ্যের তালিকা</h2><p>নাম লিখে পণ্য খুঁজুন</p></div></div><label className="search-box"><span>⌕</span><input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="পণ্যের নাম খুঁজুন" /></label>
-                {loading ? <div className="empty-state"><span className="bb-spinner" />পণ্য লোড হচ্ছে…</div> : filteredProducts.length === 0 ? <div className="empty-state"><span>▦</span><strong>{productQuery ? "পণ্য মেলেনি" : "এখনো পণ্য যোগ করা হয়নি"}</strong><p>{productQuery ? "অন্য নামে খুঁজে দেখুন।" : "বাম পাশের ফর্ম থেকে প্রথম পণ্যটি যোগ করুন।"}</p></div> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>পণ্য</th><th>বিক্রয় মূল্য</th><th>বাজারদর</th><th>স্টক</th><th>অ্যাকশন</th></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><strong>{product.name}</strong></td><td>{money(product.price)}</td><td>{money(product.market_price)}</td><td><span className={`stock-pill${Number(product.stock) <= 5 ? " is-low" : ""}`}>{product.stock} {product.unit || "টি"}</span></td><td className="row-actions"><button className="small-action" onClick={() => editProduct(product)}>এডিট</button><button className="small-action is-danger" onClick={() => void deleteProduct(product.id)}>মুছুন</button></td></tr>)}</tbody></table></div>}
+                {loading ? <div className="empty-state"><span className="bb-spinner" />পণ্য লোড হচ্ছে…</div> : filteredProducts.length === 0 ? <div className="empty-state"><span>▦</span><strong>{productQuery ? "পণ্য মেলেনি" : "এখনো পণ্য যোগ করা হয়নি"}</strong><p>{productQuery ? "অন্য নামে খুঁজে দেখুন।" : "বাম পাশের ফর্ম থেকে প্রথম পণ্যটি যোগ করুন।"}</p></div> : <div className="table-scroll"><table className="admin-table"><thead><tr><th>পণ্য</th><th>বিক্রয় মূল্য</th><th>বাজারদর</th><th>স্টক</th><th>অ্যাকশন</th></tr></thead><tbody>{filteredProducts.map((product) => <tr key={product.id}><td><strong>{product.name}</strong>{(product.brand || product.variant) && <small style={{ display: "block", marginTop: 3, color: "#718076" }}>{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}</td><td>{money(product.price)}</td><td>{money(product.market_price)}</td><td><span className={`stock-pill${Number(product.stock) <= 5 ? " is-low" : ""}`}>{product.stock} {product.variant || product.unit || "টি"}</span></td><td className="row-actions"><button className="small-action" onClick={() => editProduct(product)}>এডিট</button><button className="small-action is-danger" onClick={() => void deleteProduct(product.id)}>মুছুন</button></td></tr>)}</tbody></table></div>}
               </section>
             </div>
           </section>

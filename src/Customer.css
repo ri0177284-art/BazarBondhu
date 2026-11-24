@@ -1702,3 +1702,14 @@
 @media (prefers-reduced-motion: reduce) {
   .bb-rose-welcome, .bb-rose-flower, .bb-rose-falling-petal { animation-duration: .01ms !important; }
 }
+
+
+/* Brand and variant selection */
+.bb-picker-product { align-items: stretch; flex-direction: column; }
+.bb-picker-product-details { display: flex; flex: 1; flex-direction: column; gap: 7px; min-width: 0; }
+.bb-picker-choice { display: flex; flex-direction: column; gap: 4px; color: #65766a; font-size: 10px; font-weight: 700; }
+.bb-picker-choice select { width: 100%; min-height: 34px; padding: 6px 9px; border: 1px solid #d8e6db; border-radius: 8px; background: #fbfefb; color: #294333; font: inherit; font-size: 11px; }
+.bb-picker-selected-variant { align-self: flex-start; padding: 3px 7px; border-radius: 20px; background: #e8f5ed; color: #087f45 !important; font-size: 9px !important; font-weight: 700; }
+.bb-picker-product > button { align-self: flex-start; }
+.bb-shopping-item-variant { color: #087f45; font-size: 10px; font-weight: 700; }
+.bb-store-product-variant { display: block; margin: -2px 0 6px; color: #087f45; font-size: 11px; font-weight: 700; }
