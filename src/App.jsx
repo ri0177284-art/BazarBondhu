@@ -271,6 +271,37 @@ function App() {
     const currentOrder = orders.find((order) => order.id === orderId);
     if (!currentOrder) return;
 
+    if (patch.order_status === "cancelled") {
+      if (currentOrder.order_status === "cancelled") return;
+      const reason = window.prompt("অর্ডার বাতিলের কারণ লিখুন:");
+      if (reason === null) return;
+      if (!reason.trim()) {
+        notify("অর্ডার বাতিলের কারণ লিখতে হবে।", "error");
+        return;
+      }
+      if (!window.confirm("অর্ডার বাতিল করলে অর্ডারের পণ্যগুলোর স্টক একবার ফেরত যোগ হবে। Paid অর্ডার হলে আগে প্রকৃত Refund সম্পন্ন করে Payment Status 'refunded' করুন। চালিয়ে যাবেন?")) return;
+
+      const { error } = await supabase.rpc("cancel_order_atomic", {
+        p_order_id: orderId,
+        p_cancel_reason: reason.trim(),
+      });
+      if (error) {
+        notify(`অর্ডার বাতিল হয়নি: ${error.message}`, "error");
+        return;
+      }
+      notify("অর্ডার বাতিল হয়েছে এবং পণ্যের স্টক ফেরত যোগ হয়েছে।");
+      await Promise.all([loadOrders(), loadProducts()]);
+      return;
+    }
+
+    if (patch.payment_status === "refunded") {
+      if (currentOrder.payment_status !== "paid") {
+        notify("শুধু Paid অর্ডারের প্রকৃত টাকা ফেরত দেওয়ার পর Refunded করা যাবে।", "error");
+        return;
+      }
+      if (!window.confirm("আপনি কি গ্রাহককে বাস্তবে টাকা ফেরত দিয়েছেন? Refund সম্পন্ন না হলে Confirm করবেন না।")) return;
+    }
+
     if (patch.payment_status === "paid" && ["bkash", "nagad"].includes(currentOrder.payment_method) && !currentOrder.transaction_id?.trim()) {
       notify("Transaction ID না থাকায় পেমেন্ট অনুমোদন করা যাচ্ছে না।", "error");
       return;
@@ -288,7 +319,7 @@ function App() {
       notify(`অর্ডার আপডেট হয়নি: ${error.message}`, "error");
       return;
     }
-    notify(patch.payment_status === "paid" ? "পেমেন্ট যাচাই করে অনুমোদন করা হয়েছে" : patch.payment_status === "rejected" ? "পেমেন্ট Reject করা হয়েছে" : "অর্ডার আপডেট হয়েছে");
+    notify(patch.payment_status === "paid" ? "পেমেন্ট যাচাই করে অনুমোদন করা হয়েছে" : patch.payment_status === "rejected" ? "পেমেন্ট Reject করা হয়েছে" : patch.payment_status === "refunded" ? "Refund Status আপডেট হয়েছে" : "অর্ডার আপডেট হয়েছে");
     await loadOrders();
   }
 
