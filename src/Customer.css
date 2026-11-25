@@ -1871,3 +1871,21 @@
 .bb-picker-choice .bb-custom-dropdown-trigger { min-height:38px; font-size:13px; }
 .bb-picker-choice .bb-custom-dropdown-option { font-size:13px; }
 .bb-store-brand-selector .bb-custom-dropdown-trigger { min-height:40px; }
+
+
+/* Dropdown options expand in the document flow so they never cover the size selector */
+.bb-custom-dropdown { position:relative; z-index:6; }
+.bb-custom-dropdown-menu {
+  position:static !important;
+  inset:auto !important;
+  width:100%;
+  max-height:190px;
+  margin-top:6px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  box-sizing:border-box;
+  box-shadow:0 5px 16px rgba(20,65,37,.12);
+}
+.bb-custom-dropdown-menu[role="listbox"] { display:flex; flex-direction:column; gap:3px; }
+.bb-custom-dropdown-option { flex:0 0 auto; }
+.bb-custom-dropdown-option + .bb-custom-dropdown-option { margin-top:0; }
