@@ -3623,7 +3623,7 @@ boxSizing: "border-box"
                   const existing = cart.find(item => item.id === product.id);
                   const currentQuantity = existing?.quantity || 0;
 
-                  const addQuantity = productName === "চাল" ? (Number(riceQuantities[product.id]) || 10) : 1;
+                  const addQuantity = productName === "চাল" ? (Number(riceQuantities[product.id]) || 25) : 1;
                   if (currentQuantity + addQuantity > currentStock) {
                     alert("দুঃখিত! এই পরিমাণ স্টকে নেই।");
                     return;
@@ -3704,14 +3704,14 @@ boxSizing: "border-box"
               <div className="bb-store-brand-selector">
                 <span>কত কেজি চাল নিবেন?</span>
                 <div className="bb-rice-quantity-row">
-                  <button type="button" aria-label="এক কেজি কমান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.max(1, (Number(current[product.id]) || 10) - 1) }))}>−</button>
+                  <button type="button" aria-label="এক কেজি কমান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.max(1, (Number(current[product.id]) || 25) - 1) }))}>−</button>
                   <input
                     className="bb-rice-quantity-input"
                     type="number"
                     min="1"
                     max={Number(product.stock) || 100}
                     step="1"
-                    value={riceQuantities[product.id] ?? 10}
+                    value={riceQuantities[product.id] ?? 25}
                     aria-label="চালের পরিমাণ কেজিতে"
                     onChange={(event) => {
                       const value = event.target.value;
@@ -3723,10 +3723,9 @@ boxSizing: "border-box"
                       setRiceQuantities((current) => ({ ...current, [product.id]: quantity }));
                     }}
                   />
-                  <span>কেজি</span>
-                  <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.min(Number(product.stock) || 100, (Number(current[product.id]) || 10) + 1) }))}>+</button>
+                  <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.min(Number(product.stock) || 100, (Number(current[product.id]) || 25) + 1) }))}>+</button>
                 </div>
-                <small>মোট দাম: ৳{(Number(product.price) * (Number(riceQuantities[product.id]) || 10)).toLocaleString("en-IN")}</small>
+                <small>মোট দাম: ৳{(Number(product.price) * (Number(riceQuantities[product.id]) || 25)).toLocaleString("en-IN")}</small>
               </div>
             )}
           </div>
