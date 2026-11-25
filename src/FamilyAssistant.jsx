@@ -172,14 +172,15 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
   }
 
   async function refreshItems() {
-    if (!family?.id) return;
+    if (!family?.id) return false;
     const { data, error: itemsError } = await supabase
       .from("family_shopping_items").select("*").eq("family_id", family.id).order("created_at");
     if (itemsError) {
-      setError(itemsError.message);
-      return;
+      setError(itemsError.message || "তালিকা আপডেট করা যায়নি।");
+      return false;
     }
     setItems(data || []);
+    return true;
   }
 
   useEffect(() => {
@@ -252,26 +253,36 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
   }
 
   async function addProduct(productId = selectedProductId) {
-    if (!family?.id || !productId) {
-      setError("আগে একটি পণ্য বেছে নিন।");
+    const productIdToAdd = String(productId || "").trim();
+    if (!family?.id) {
+      setError("আপনার Family Group পাওয়া যাচ্ছে না। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।");
+      return;
+    }
+    if (!productIdToAdd) {
+      setError("আগে একটি পণ্য ও তার ভ্যারিয়েন্ট নির্বাচন করুন।");
       return;
     }
     setBusy(true);
     setError("");
     setMessage("");
-    const { error: addError } = await supabase.rpc("family_add_shopping_item", {
-      p_family_id: family.id,
-      p_product_id: productId,
-      p_quantity: Number(quantity) || 1,
-    });
-    setBusy(false);
-    if (addError) {
-      setError(addError.message);
-      return;
+    try {
+      const { data: addedItemId, error: addError } = await supabase.rpc("family_add_shopping_item", {
+        p_family_id: family.id,
+        p_product_id: productIdToAdd,
+        p_quantity: Number(quantity) || 1,
+      });
+      if (addError) throw addError;
+      if (!addedItemId) throw new Error("পণ্য যোগের নিশ্চিতকরণ পাওয়া যায়নি। আবার চেষ্টা করুন।");
+      const refreshed = await refreshItems();
+      if (!refreshed) throw new Error("পণ্য যোগ হয়েছে, কিন্তু তালিকা আপডেট হয়নি। পেজ রিফ্রেশ করে দেখুন।");
+      setMessage("পণ্যটি পরিবারের বাজারের তালিকায় যোগ হয়েছে।");
+      setQuantity(1);
+    } catch (addError) {
+      console.error("Family Shared Shopping add product error:", addError);
+      setError(addError?.message || "পণ্য যোগ করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setBusy(false);
     }
-    setMessage("পণ্যটি পরিবারের বাজারের তালিকায় যোগ হয়েছে।");
-    setQuantity(1);
-    await refreshItems();
   }
 
   async function updateQuantity(item, nextQuantity) {
@@ -513,6 +524,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
           <input type="number" min="1" max="10000" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} aria-label="পরিমাণ" />
           <button type="button" className="bb-fa-primary" onClick={addProduct} disabled={busy || !selectedProductId}>+ তালিকায় যোগ</button>
         </div>
+        {(error || message) && <div className={"bb-fa-alert" + (error ? " is-error" : "")} role={error ? "alert" : "status"}>{error || message}</div>}
         <div className="bb-fa-product-picker" aria-label="ছবিসহ পণ্য নির্বাচন">
           {filteredProductGroups.slice(0, 24).map(({ name, variants }) => {
             const brandOptions = [...new Set(variants.map((product) => product.brand).filter(Boolean))];
