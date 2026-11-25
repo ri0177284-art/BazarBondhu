@@ -3201,9 +3201,12 @@ const productPickerPageNumbers = Array.from(
                           {availableVariants.length > 1 && (
                             <label className="bb-picker-choice">
                               <span>সাইজ / ভ্যারিয়েন্ট</span>
-                              <select value={selectedProduct.id} onChange={(event) => setProductPickerSelectionIds((current) => ({ ...current, [productName]: event.target.value }))}>
-                                {availableVariants.map((item) => <option key={item.id} value={item.id}>{item.variant || item.unit || "সাধারণ"}</option>)}
-                              </select>
+                              <BrandDropdown
+                                value={selectedProduct.id}
+                                ariaLabel={productName + " সাইজ / ভ্যারিয়েন্ট"}
+                                options={availableVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
+                                onChange={(variantId) => setProductPickerSelectionIds((current) => ({ ...current, [productName]: variantId }))}
+                              />
                             </label>
                           )}
                           {(selectedProduct.brand || selectedProduct.variant) && <span className="bb-picker-selected-variant">{[selectedProduct.brand, selectedProduct.variant].filter(Boolean).join(" · ")}</span>}
@@ -3814,13 +3817,12 @@ boxSizing: "border-box"
             {brandVariants.length > 1 && (
               <label className="bb-store-brand-selector">
                 <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
-                <select
+                <BrandDropdown
                   value={product.id}
-                  aria-label={productName + " সাইজ নির্বাচন"}
-                  onChange={(event) => setProductCardSelectionIds((current) => ({ ...current, [productName]: event.target.value }))}
-                >
-                  {brandVariants.map((item) => <option key={item.id} value={item.id}>{item.variant || item.unit || "সাধারণ"}</option>)}
-                </select>
+                  ariaLabel={productName + " সাইজ নির্বাচন"}
+                  options={brandVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
+                  onChange={(variantId) => setProductCardSelectionIds((current) => ({ ...current, [productName]: variantId }))}
+                />
               </label>
             )}
             {productName === "চাল" && (
