@@ -79,7 +79,7 @@ BEGIN
   UPDATE public.products AS p
   SET stock = p.stock + items.total_quantity
   FROM (
-    SELECT product_id, SUM(quantity) AS total_quantity
+    SELECT product_id, SUM(quantity)::INTEGER AS total_quantity
     FROM public.order_items
     WHERE order_id = p_order_id
       AND product_id IS NOT NULL
