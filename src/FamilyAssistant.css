@@ -356,3 +356,25 @@
   .bb-fa-product-choice-image { width: 50px; height: 50px; }
   .bb-fa-product-choice-copy strong { font-size: 11px; }
 }
+
+
+/* Family Shared Shopping: one card per product, with brand and variant selectors */
+.bb-fa-product-picker { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:11px; margin-top:13px; }
+.bb-fa-product-choice-card { display:flex; flex-direction:column; gap:9px; min-width:0; padding:11px; border:1px solid #e2ebe3; border-radius:14px; background:#fff; }
+.bb-fa-product-choice-card.is-selected { border-color:#16834a; background:linear-gradient(145deg,#f1faf3,#fff); box-shadow:0 0 0 2px #16834a18; }
+.bb-fa-product-choice-top { display:flex; align-items:center; gap:10px; min-width:0; }
+.bb-fa-product-choice-top .bb-fa-product-choice-image { flex:0 0 58px; width:58px; height:58px; }
+.bb-fa-product-choice-copy strong { white-space:normal; overflow-wrap:anywhere; font-size:13px; }
+.bb-fa-product-choice-copy b { color:#087f45; font-size:12px; }
+.bb-fa-choice-select { display:grid; gap:4px; min-width:0; }
+.bb-fa-choice-select > span { color:#687a6d; font-size:10px; font-weight:750; }
+.bb-fa-choice-select-control { position:relative; min-width:0; }
+.bb-fa-choice-select-trigger { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:37px; padding:7px 9px; border:1px solid #cfe1d2; border-radius:9px; background:#f8fcf8; color:#244a31; font:inherit; font-size:12px; text-align:left; }
+.bb-fa-choice-select-trigger span { min-width:0; overflow-wrap:anywhere; }
+.bb-fa-choice-select-trigger b { flex:none; color:#087f45; }
+.bb-fa-choice-select-options { display:grid; gap:3px; max-height:150px; overflow:auto; padding:5px; border:1px solid #d7e7da; border-radius:10px; background:#fff; box-shadow:0 4px 12px #153d2518; }
+.bb-fa-choice-select-options button { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:34px; padding:7px 9px; border:0; border-radius:7px; background:#fff; color:#294633; font:inherit; font-size:12px; text-align:left; }
+.bb-fa-choice-select-options button.is-selected { background:#e9f6ec; color:#087f45; font-weight:800; }
+.bb-fa-product-choice-select { min-height:36px; padding:7px 10px; border:1px solid #d4e7d8; border-radius:9px; background:#f1f8f2; color:#176b40; font:inherit; font-size:11px; font-weight:800; }
+.bb-fa-product-choice-select.is-selected { border-color:#16834a; background:#16834a; color:#fff; }
+@media(max-width:620px) { .bb-fa-product-picker { grid-template-columns:1fr; gap:9px; } .bb-fa-product-choice-card { padding:10px; } }
