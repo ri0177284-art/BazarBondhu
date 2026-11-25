@@ -251,16 +251,17 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
     await loadFamily();
   }
 
-  async function addProduct() {
-    if (!family?.id || !selectedProductId) {
+  async function addProduct(productId = selectedProductId) {
+    if (!family?.id || !productId) {
       setError("আগে একটি পণ্য বেছে নিন।");
       return;
     }
     setBusy(true);
     setError("");
+    setMessage("");
     const { error: addError } = await supabase.rpc("family_add_shopping_item", {
       p_family_id: family.id,
-      p_product_id: selectedProductId,
+      p_product_id: productId,
       p_quantity: Number(quantity) || 1,
     });
     setBusy(false);
@@ -533,8 +534,8 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
                 if (next) setProductVariantSelections((current) => ({ ...current, [name]: String(next.id) }));
               }} />}
               {variantOptions.length > 1 && <FamilyChoiceDropdown label="সাইজ / ভ্যারিয়েন্ট" value={String(currentProduct.id)} options={variantOptions} onChange={(id) => setProductVariantSelections((current) => ({ ...current, [name]: id }))} />}
-              <button type="button" className={"bb-fa-product-choice-select" + (String(selectedProductId) === String(currentProduct.id) ? " is-selected" : "")} onClick={() => setSelectedProductId(String(currentProduct.id))}>
-                {String(selectedProductId) === String(currentProduct.id) ? "✓ নির্বাচিত" : "এই পণ্যটি বাছুন"}
+              <button type="button" className="bb-fa-product-choice-select" onClick={() => addProduct(String(currentProduct.id))} disabled={busy}>
+                {busy ? "যোগ হচ্ছে…" : "+ তালিকায় যোগ করুন"}
               </button>
             </article>;
           })}
