@@ -378,3 +378,15 @@
 .bb-fa-product-choice-select { min-height:36px; padding:7px 10px; border:1px solid #d4e7d8; border-radius:9px; background:#f1f8f2; color:#176b40; font:inherit; font-size:11px; font-weight:800; }
 .bb-fa-product-choice-select.is-selected { border-color:#16834a; background:#16834a; color:#fff; }
 @media(max-width:620px) { .bb-fa-product-picker { grid-template-columns:1fr; gap:9px; } .bb-fa-product-choice-card { padding:10px; } }
+
+
+.bb-fa-shared-list-panel { margin:14px 0 16px; padding:14px; border:1px solid #e2ece2; border-radius:16px; background:linear-gradient(160deg,#fbfefb,#fff); box-shadow:0 5px 18px rgba(28,82,43,.05); }
+.bb-fa-shared-list-panel .bb-fa-panel-heading { margin-bottom:8px; }
+.bb-fa-shared-list-panel .bb-fa-panel-heading h2 { font-size:16px; }
+.bb-fa-shared-list-panel .bb-fa-order-button { font-size:14px; min-height:48px; }
+@media(max-width:520px) {
+  .bb-fa-shared-list-panel { padding:11px; }
+  .bb-fa-shared-item { grid-template-columns:42px minmax(0,1fr) auto 24px; gap:7px; }
+  .bb-fa-item-image { width:42px; height:42px; }
+  .bb-fa-line-total { grid-column:2; }
+}
