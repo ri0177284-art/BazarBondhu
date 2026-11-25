@@ -364,6 +364,7 @@ const [customQuoteTransactionId, setCustomQuoteTransactionId] = useState("");
 const [productSearch, setProductSearch] = useState("");
 const [productPickerPage, setProductPickerPage] = useState(1);
 const [productPickerSelectionIds, setProductPickerSelectionIds] = useState({});
+const [shoppingRiceQuantities, setShoppingRiceQuantities] = useState({});
 const [showProductPicker, setShowProductPicker] = useState(false);
 const [savingShoppingList, setSavingShoppingList] = useState(false);
 const [loadingPreviousPackageList, setLoadingPreviousPackageList] = useState(false);
@@ -854,14 +855,15 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     setShoppingListMessage("");
   }
 
-  function addProductToShoppingList(product) {
+  function addProductToShoppingList(product, requestedQuantity = 1) {
     const current = shoppingList.find((item) => item.productId === product.id);
     if (current) {
       setShoppingList((items) => items.filter((item) => item.productId !== product.id));
       setShoppingListMessage(product.name + " তালিকা থেকে সরানো হয়েছে।");
       return;
     }
-    setShoppingList((items) => [...items, { productId: product.id, quantity: 1 }]);
+    const quantity = Math.max(1, Math.min(Number(product.stock) || 1, Math.floor(Number(requestedQuantity) || 1)));
+    setShoppingList((items) => [...items, { productId: product.id, quantity }]);
     setShoppingListMessage(product.name + (product.brand ? " — " + product.brand : "") + (product.variant ? " " + product.variant : "") + " তালিকায় যোগ হয়েছে।");
   }
 
@@ -3145,7 +3147,36 @@ const productPickerPageNumbers = Array.from(
                           {(selectedProduct.brand || selectedProduct.variant) && <span className="bb-picker-selected-variant">{[selectedProduct.brand, selectedProduct.variant].filter(Boolean).join(" · ")}</span>}
                           <span>৳{Number(selectedProduct.price || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })} / {getProductUnit(selectedProduct)}</span>
                         </div>
-                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(selectedProduct)}>
+                        {productName === "চাল" && !alreadyAdded && (
+                          <div className="bb-picker-choice" style={{ marginTop: 10 }}>
+                            <span>কত কেজি চাল নিবেন?</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                              <button type="button" aria-label="এক কেজি কমান" onClick={() => setShoppingRiceQuantities((current) => ({ ...current, [productName]: Math.max(1, (Number(current[productName]) || 25) - 1) }))}>−</button>
+                              <input
+                                type="number"
+                                min="1"
+                                max={Number(selectedProduct.stock) || 100}
+                                step="1"
+                                value={shoppingRiceQuantities[productName] ?? 25}
+                                aria-label="বাজারের তালিকায় চালের পরিমাণ কেজিতে"
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  if (value === "") {
+                                    setShoppingRiceQuantities((current) => ({ ...current, [productName]: "" }));
+                                    return;
+                                  }
+                                  const quantity = Math.max(1, Math.min(Number(selectedProduct.stock) || 100, Math.floor(Number(value) || 1)));
+                                  setShoppingRiceQuantities((current) => ({ ...current, [productName]: quantity }));
+                                }}
+                                onBlur={() => setShoppingRiceQuantities((current) => ({ ...current, [productName]: Number(current[productName]) || 1 }))}
+                                style={{ width: 78, height: 36, textAlign: "center", border: "1px solid #cfe4d4", borderRadius: 9, fontSize: 15, fontWeight: 700 }}
+                              />
+                              <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setShoppingRiceQuantities((current) => ({ ...current, [productName]: Math.min(Number(selectedProduct.stock) || 100, (Number(current[productName]) || 25) + 1) }))}>+</button>
+                            </div>
+                            <small style={{ display: "block", marginTop: 5 }}>মোট দাম: ৳{(Number(selectedProduct.price || 0) * (Number(shoppingRiceQuantities[productName]) || 25)).toLocaleString("en-IN")}</small>
+                          </div>
+                        )}
+                        <button type="button" className={alreadyAdded ? "is-selected" : ""} onClick={() => addProductToShoppingList(selectedProduct, productName === "চাল" ? (Number(shoppingRiceQuantities[productName]) || 25) : 1)}>
                           {alreadyAdded ? "✓ যোগ হয়েছে · বাদ দিন" : "+ তালিকায় যোগ"}
                         </button>
                       </article>
