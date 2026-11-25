@@ -383,6 +383,7 @@ function Customer() {
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
+const [familyCheckoutFamilyId, setFamilyCheckoutFamilyId] = useState(null);
 const [deliveryAddress, setDeliveryAddress] = useState("");
 const [paymentMethod, setPaymentMethod] = useState("cod");
 const [transactionId, setTransactionId] = useState("");
@@ -1092,6 +1093,47 @@ const [showMonthlyInsight, setShowMonthlyInsight] = useState(false);
     setShowCheckout(true);
   }
 
+  function checkoutFromFamilyAssistant(sharedItems, packageId, familyId) {
+    const selectedProducts = (sharedItems || []).filter((item) => item.product_id).map((item) => ({
+      item,
+      product: products.find((product) => String(product.id) === String(item.product_id))
+    }));
+    if (!selectedProducts.length) {
+      alert("Checkout করার আগে পরিবারের তালিকায় পণ্য যোগ করুন।");
+      return;
+    }
+    const missingProduct = selectedProducts.find(({ product }) => !product || product.is_active === false);
+    if (missingProduct) {
+      alert("তালিকার একটি পণ্য এখন পাওয়া যাচ্ছে না। তালিকা থেকে সেটি সরিয়ে আবার চেষ্টা করুন।");
+      return;
+    }
+    const unavailable = selectedProducts.find(({ product, item }) =>
+      Number(product.stock) < Number(item.quantity) || Number(product.stock) <= 0
+    );
+    if (unavailable) {
+      alert(unavailable.product.name + " পণ্যের পর্যাপ্ত স্টক নেই। পরিমাণ কমিয়ে আবার চেষ্টা করুন।");
+      return;
+    }
+    setCart((current) => {
+      const next = [...current];
+      selectedProducts.forEach(({ product, item }) => {
+        const index = next.findIndex((cartItem) => String(cartItem.id) === String(product.id));
+        if (index >= 0) next[index] = { ...next[index], quantity: Math.min(Number(product.stock), Number(next[index].quantity || 0) + Number(item.quantity)) };
+        else next.push({ ...product, quantity: Number(item.quantity) });
+      });
+      return next;
+    });
+    setCartPackageId(packageId || "family-monthly");
+    setPendingCustomItems([]);
+    setFamilyCheckoutFamilyId(familyId || null);
+    setShowMyOrders(false);
+    setShowProfile(false);
+    setShowRewards(false);
+    setActiveMenu("cart");
+    setShowCheckout(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   // Login and Registration
   async function handleAuth(e) {
     e.preventDefault();
@@ -1294,6 +1336,11 @@ if (orderError) throw orderError;
       ? "আপনার নিজের পণ্যের অর্ডার অনুরোধ পাঠানো হয়েছে। Admin দাম ও প্রাপ্যতা নিশ্চিত করলে My Orders-এ চূড়ান্ত বিল দেখতে পাবেন।"
       : "আপনার অর্ডার সফলভাবে গ্রহণ করা হয়েছে!");
 
+    if (familyCheckoutFamilyId) {
+      const { error: clearFamilyListError } = await supabase.from("family_shopping_items").delete().eq("family_id", familyCheckoutFamilyId);
+      if (clearFamilyListError) console.error("Family list cleanup after order failed:", clearFamilyListError.message);
+    }
+    setFamilyCheckoutFamilyId(null);
     setCart([]);
     setCartPackageId(null);
     setShowCheckout(false);
@@ -2636,7 +2683,7 @@ const productPickerPageNumbers = Array.from(
   if (activeMenu === "family-assistant") {
     return withSidebar(
       <main className="bb-fa-page">
-        <FamilyAssistantDashboard user={user} products={products} />
+        <FamilyAssistantDashboard user={user} products={products} onCheckout={checkoutFromFamilyAssistant} />
       </main>
     );
   }
