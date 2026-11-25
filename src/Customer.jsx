@@ -301,6 +301,7 @@ function RoseWelcome({ petalCount, onTouch }) {
 function Customer() {
   const [products, setProducts] = useState([]);
   const [productCardSelectionIds, setProductCardSelectionIds] = useState({});
+  const [riceQuantities, setRiceQuantities] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
@@ -3622,8 +3623,9 @@ boxSizing: "border-box"
                   const existing = cart.find(item => item.id === product.id);
                   const currentQuantity = existing?.quantity || 0;
 
-                  if (currentQuantity >= currentStock) {
-                    alert("দুঃখিত! এই পণ্যের পর্যাপ্ত স্টক নেই।");
+                  const addQuantity = productName === "চাল" ? (Number(riceQuantities[product.id]) || 10) : 1;
+                  if (currentQuantity + addQuantity > currentStock) {
+                    alert("দুঃখিত! এই পরিমাণ স্টকে নেই।");
                     return;
                   }
 
@@ -3633,15 +3635,15 @@ boxSizing: "border-box"
                     if (existingItem) {
                       return prevCart.map(item =>
                         item.id === product.id
-                          ? { ...item, quantity: (item.quantity || 1) + 1 }
+                          ? { ...item, quantity: (item.quantity || 1) + addQuantity }
                           : item
                       );
                     }
 
-                    return [...prevCart, { ...product, quantity: 1 }];
+                    return [...prevCart, { ...product, quantity: addQuantity }];
                   });
 
-                  alert(product.name + " কার্টে যোগ হয়েছে!");
+                  alert(product.name + (productName === "চাল" ? " · " + addQuantity + " কেজি" : "") + " কার্টে যোগ হয়েছে!");
                 }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -3697,6 +3699,22 @@ boxSizing: "border-box"
                   {brandVariants.map((item) => <option key={item.id} value={item.id}>{item.variant || item.unit || "সাধারণ"}</option>)}
                 </select>
               </label>
+            )}
+            {productName === "চাল" && (
+              <div className="bb-store-brand-selector">
+                <span>কত কেজি চাল নিবেন?</span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0" }}>
+                  {[10, 15, 20].map((qty) => (
+                    <button key={qty} type="button" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: qty }))} style={{ padding: "6px 9px", borderRadius: 8, border: (Number(riceQuantities[product.id]) || 10) === qty ? "2px solid #087f45" : "1px solid #d5dfd8", background: (Number(riceQuantities[product.id]) || 10) === qty ? "#e8f5ec" : "white" }}>{qty} কেজি</button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button type="button" aria-label="এক কেজি কমান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.max(1, (Number(current[product.id]) || 10) - 1) }))}>−</button>
+                  <strong>{Number(riceQuantities[product.id]) || 10} কেজি</strong>
+                  <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.min(Number(product.stock) || 100, (Number(current[product.id]) || 10) + 1) }))}>+</button>
+                </div>
+                <small>মোট দাম: ৳{(Number(product.price) * (Number(riceQuantities[product.id]) || 10)).toLocaleString("en-IN")}</small>
+              </div>
             )}
           </div>
         </div>
