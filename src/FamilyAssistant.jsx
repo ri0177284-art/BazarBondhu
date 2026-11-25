@@ -12,6 +12,26 @@ const money = (value) => Number(value || 0).toLocaleString("bn-BD", {
   maximumFractionDigits: 0,
 });
 
+function FamilyChoiceDropdown({ value, options, onChange, label }) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => String(option.value) === String(value));
+  return (
+    <div className="bb-fa-choice-select">
+      <span>{label}</span>
+      <div className="bb-fa-choice-select-control">
+        <button type="button" className="bb-fa-choice-select-trigger" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <span>{selected?.label || "নির্বাচন করুন"}</span><b>{open ? "⌃" : "⌄"}</b>
+        </button>
+        {open && <div className="bb-fa-choice-select-options">
+          {options.map((option) => <button type="button" key={option.value} className={String(option.value) === String(value) ? "is-selected" : ""} onClick={() => { onChange(option.value); setOpen(false); }}>
+            <span>{option.label}</span>{String(option.value) === String(value) && <b>✓</b>}
+          </button>)}
+        </div>}
+      </div>
+    </div>
+  );
+}
+
 export default function FamilyAssistantDashboard({ user, products = [] }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -30,6 +50,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
   const [packageDraft, setPackageDraft] = useState("family-monthly");
   const [productSearch, setProductSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
+  const [productVariantSelections, setProductVariantSelections] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [preferenceProductId, setPreferenceProductId] = useState("");
   const [preferenceBrand, setPreferenceBrand] = useState("");
@@ -48,13 +69,22 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
     () => new Map(products.map((product) => [String(product.id), product])),
     [products]
   );
-  const filteredProducts = useMemo(() => {
+  const productGroups = useMemo(() => {
+    const groups = new Map();
+    products.filter((product) => product.is_active !== false && Number(product.stock) > 0).forEach((product) => {
+      const key = String(product.name || "").trim();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(product);
+    });
+    return [...groups.entries()].map(([name, variants]) => ({ name, variants }));
+  }, [products]);
+  const filteredProductGroups = useMemo(() => {
     const query = productSearch.trim().toLocaleLowerCase();
-    return products.filter((product) => product.is_active !== false && Number(product.stock) > 0)
-      .filter((product) => !query || [product.name, product.brand, product.variant]
-        .filter(Boolean).join(" ").toLocaleLowerCase().includes(query))
-      .slice(0, 80);
-  }, [products, productSearch]);
+    return productGroups.filter(({ name, variants }) =>
+      !query || [name, ...variants.flatMap((product) => [product.brand, product.variant, product.unit])]
+        .filter(Boolean).join(" ").toLocaleLowerCase().includes(query)
+    ).slice(0, 80);
+  }, [productGroups, productSearch]);
   const selectedProduct = productById.get(String(preferenceProductId));
   const preferenceVariants = selectedProduct
     ? products.filter((product) => product.is_active !== false && product.name === selectedProduct.name)
@@ -483,27 +513,33 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
           <button type="button" className="bb-fa-primary" onClick={addProduct} disabled={busy || !selectedProductId}>+ তালিকায় যোগ</button>
         </div>
         <div className="bb-fa-product-picker" aria-label="ছবিসহ পণ্য নির্বাচন">
-          {filteredProducts.slice(0, 24).map((product) => (
-            <button
-              type="button"
-              key={product.id}
-              className={"bb-fa-product-choice" + (String(selectedProductId) === String(product.id) ? " is-selected" : "")}
-              onClick={() => setSelectedProductId(String(product.id))}
-              aria-pressed={String(selectedProductId) === String(product.id)}
-            >
-              <span className="bb-fa-product-choice-image">
-                {product.image_url ? <img src={product.image_url} alt="" loading="lazy" /> : <span aria-hidden="true">🛒</span>}
-              </span>
-              <span className="bb-fa-product-choice-copy">
-                <strong>{product.name}</strong>
-                <small>{[product.brand, product.variant].filter(Boolean).join(" · ") || product.unit || "সাধারণ"}</small>
-                <b>৳{money(product.price)}</b>
-              </span>
-              <span className="bb-fa-product-choice-check" aria-hidden="true">{String(selectedProductId) === String(product.id) ? "✓" : "+"}</span>
-            </button>
-          ))}
-          {!filteredProducts.length && <div className="bb-fa-empty-list compact">কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।</div>}
-          {filteredProducts.length > 24 && <small className="bb-fa-muted">আরও পণ্য দেখতে সার্চে নাম লিখুন। প্রথম ২৪টি ফলাফল দেখানো হচ্ছে।</small>}
+          {filteredProductGroups.slice(0, 24).map(({ name, variants }) => {
+            const brandOptions = [...new Set(variants.map((product) => product.brand).filter(Boolean))];
+            const firstBrand = brandOptions[0] || "";
+            const savedId = productVariantSelections[name];
+            const initialProduct = variants.find((product) => String(product.id) === String(savedId))
+              || variants.find((product) => (product.brand || "") === firstBrand) || variants[0];
+            const currentBrand = initialProduct.brand || "";
+            const brandProducts = variants.filter((product) => (product.brand || "") === currentBrand);
+            const currentProduct = brandProducts.find((product) => String(product.id) === String(savedId)) || initialProduct;
+            const variantOptions = brandProducts.map((product) => ({ value: String(product.id), label: product.variant || product.unit || "সাধারণ" }));
+            return <article className={"bb-fa-product-choice-card" + (String(selectedProductId) === String(currentProduct.id) ? " is-selected" : "")} key={name}>
+              <div className="bb-fa-product-choice-top">
+                <span className="bb-fa-product-choice-image">{currentProduct.image_url ? <img src={currentProduct.image_url} alt="" loading="lazy" /> : <span aria-hidden="true">🛒</span>}</span>
+                <span className="bb-fa-product-choice-copy"><strong>{name}</strong><b>৳{money(currentProduct.price)} / {currentProduct.unit || "টি"}</b></span>
+              </div>
+              {brandOptions.length > 0 && <FamilyChoiceDropdown label="ব্র্যান্ড" value={currentBrand} options={brandOptions.map((brand) => ({ value: brand, label: brand }))} onChange={(brand) => {
+                const next = variants.find((product) => (product.brand || "") === brand);
+                if (next) setProductVariantSelections((current) => ({ ...current, [name]: String(next.id) }));
+              }} />}
+              {variantOptions.length > 1 && <FamilyChoiceDropdown label="সাইজ / ভ্যারিয়েন্ট" value={String(currentProduct.id)} options={variantOptions} onChange={(id) => setProductVariantSelections((current) => ({ ...current, [name]: id }))} />}
+              <button type="button" className={"bb-fa-product-choice-select" + (String(selectedProductId) === String(currentProduct.id) ? " is-selected" : "")} onClick={() => setSelectedProductId(String(currentProduct.id))}>
+                {String(selectedProductId) === String(currentProduct.id) ? "✓ নির্বাচিত" : "এই পণ্যটি বাছুন"}
+              </button>
+            </article>;
+          })}
+          {!filteredProductGroups.length && <div className="bb-fa-empty-list compact">কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।</div>}
+          {filteredProductGroups.length > 24 && <small className="bb-fa-muted">আরও পণ্য দেখতে সার্চে নাম লিখুন। প্রথম ২৪টি পণ্য দেখানো হচ্ছে।</small>}
         </div>
         {items.length ? (
           <div className="bb-fa-shared-list">
