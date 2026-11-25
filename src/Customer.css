@@ -1786,3 +1786,11 @@
 .bb-store-brand-selector select { width:100%; min-height:38px; padding:8px 30px 8px 10px; border:1px solid #cfe4d4; border-radius:10px; color:#14532d; background:#f8fcf9; font:inherit; font-size:12px; outline:none; }
 .bb-store-brand-selector select:focus { border-color:#087f45; box-shadow:0 0 0 3px #087f4518; }
 .bb-picker-choice select { width:100%; min-height:38px; padding:8px 30px 8px 10px; border:1px solid #cfe4d4; border-radius:10px; color:#14532d; background:#f8fcf9; font:inherit; font-size:12px; }
+
+
+/* Compact rice quantity field, matching the storefront variant selector */
+.bb-rice-quantity-row { display:flex; align-items:center; gap:7px; width:100%; }
+.bb-rice-quantity-row button { flex:0 0 34px; width:34px; height:38px; border:1px solid #cfe4d4; border-radius:10px; color:#14532d; background:#f8fcf9; font-size:18px; font-weight:700; }
+.bb-rice-quantity-input { flex:1 1 auto; min-width:0; width:100%; height:38px; padding:8px 10px; border:1px solid #cfe4d4; border-radius:10px; color:#14532d; background:#f8fcf9; font:inherit; font-size:12px; outline:none; text-align:center; }
+.bb-rice-quantity-input:focus { border-color:#087f45; box-shadow:0 0 0 3px #087f4518; }
+.bb-rice-quantity-row > span { color:#52685a; white-space:nowrap; font-size:11px; }
