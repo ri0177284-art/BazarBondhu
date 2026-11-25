@@ -32,7 +32,7 @@ function FamilyChoiceDropdown({ value, options, onChange, label }) {
   );
 }
 
-export default function FamilyAssistantDashboard({ user, products = [] }) {
+export default function FamilyAssistantDashboard({ user, products = [], onCheckout }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [family, setFamily] = useState(null);
@@ -525,6 +525,26 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
           <button type="button" className="bb-fa-primary" onClick={addProduct} disabled={busy || !selectedProductId}>+ তালিকায় যোগ</button>
         </div>
         {(error || message) && <div className={"bb-fa-alert" + (error ? " is-error" : "")} role={error ? "alert" : "status"}>{error || message}</div>}
+        <section className="bb-fa-shared-list-panel" aria-label="পরিবারের বাজারের তালিকা">
+          <div className="bb-fa-panel-heading"><div><span>SHARED SHOPPING LIST</span><h2>পরিবারের বাজারের তালিকা ({items.length.toLocaleString("bn-BD")}টি)</h2></div><span>🧺</span></div>
+          {items.length ? (
+            <div className="bb-fa-shared-list">
+              {items.map((item) => {
+                const product = productById.get(String(item.product_id));
+                return <article key={item.id} className="bb-fa-shared-item">
+                  <div className="bb-fa-item-image">{product?.image_url ? <img src={product.image_url} alt="" /> : "🛒"}</div>
+                  <div className="bb-fa-item-copy"><strong>{product?.name || item.custom_name || "পণ্য"}</strong><small>{[product?.brand, product?.variant].filter(Boolean).join(" · ") || "পরিবারের বাজার"}</small><span>৳{money(product?.price)} / {product?.unit || "টি"}</span><small>যোগ করেছেন: {members.find((member) => member.user_id === item.added_by)?.display_name || (item.added_by === user.id ? "আপনি" : "পরিবারের সদস্য")}</small></div>
+                  <div className="bb-fa-qty"><button type="button" aria-label="এক কমান" onClick={() => updateQuantity(item, Number(item.quantity) - 1)}>−</button><b>{Number(item.quantity).toLocaleString("bn-BD")}</b><button type="button" aria-label="এক বাড়ান" onClick={() => updateQuantity(item, Number(item.quantity) + 1)}>+</button></div>
+                  <strong className="bb-fa-line-total">৳{money((product?.price || 0) * item.quantity)}</strong>
+                  <button type="button" className="bb-fa-remove" onClick={() => removeItem(item.id)} aria-label="তালিকা থেকে সরান">×</button>
+                </article>;
+              })}
+            </div>
+          ) : <div className="bb-fa-empty-list compact">🧺<strong>এখনো কোনো পণ্য যোগ হয়নি</strong><span>নিচের পণ্য থেকে পরিবারের বাজার যোগ করুন।</span></div>}
+          <div className="bb-fa-list-footer"><span>তালিকার মোট সম্ভাব্য পণ্যমূল্য <small>· ডেলিভারি ও সার্ভিস চার্জ ছাড়া</small></span><strong>৳{money(plannedTotal)}</strong></div>
+          {isOwner ? <button type="button" className="bb-fa-order-button" onClick={() => onCheckout?.(items, family.package_id || "family-monthly", family.id)} disabled={!items.some((item) => item.product_id) || busy}>✓ Checkout পেজে যান</button>
+            : <div className="bb-fa-owner-notice">🔒 শুধু Family Owner চূড়ান্ত Checkout করতে পারবেন। পরিবারের তালিকা এখানে দেখা ও পরিবর্তন করা যাবে।</div>}
+        </section>
         <div className="bb-fa-product-picker" aria-label="ছবিসহ পণ্য নির্বাচন">
           {filteredProductGroups.slice(0, 24).map(({ name, variants }) => {
             const brandOptions = [...new Set(variants.map((product) => product.brand).filter(Boolean))];
@@ -554,37 +574,7 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
           {!filteredProductGroups.length && <div className="bb-fa-empty-list compact">কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।</div>}
           {filteredProductGroups.length > 24 && <small className="bb-fa-muted">আরও পণ্য দেখতে সার্চে নাম লিখুন। প্রথম ২৪টি পণ্য দেখানো হচ্ছে।</small>}
         </div>
-        {items.length ? (
-          <div className="bb-fa-shared-list">
-            {items.map((item) => {
-              const product = productById.get(String(item.product_id));
-              return <article key={item.id} className="bb-fa-shared-item">
-                <div className="bb-fa-item-image">{product?.image_url ? <img src={product.image_url} alt="" /> : "🛒"}</div>
-                <div className="bb-fa-item-copy"><strong>{product?.name || item.custom_name || "পণ্য"}</strong><small>{[product?.brand, product?.variant].filter(Boolean).join(" · ") || "পরিবারের বাজার"}</small><span>৳{money(product?.price)} / {product?.unit || "টি"}</span><small>যোগ করেছেন: {members.find((member) => member.user_id === item.added_by)?.display_name || (item.added_by === user.id ? "আপনি" : "পরিবারের সদস্য")}</small></div>
-                <div className="bb-fa-qty"><button type="button" aria-label="এক কমান" onClick={() => updateQuantity(item, Number(item.quantity) - 1)}>−</button><b>{Number(item.quantity).toLocaleString("bn-BD")}</b><button type="button" aria-label="এক বাড়ান" onClick={() => updateQuantity(item, Number(item.quantity) + 1)}>+</button></div>
-                <strong className="bb-fa-line-total">৳{money((product?.price || 0) * item.quantity)}</strong>
-                <button type="button" className="bb-fa-remove" onClick={() => removeItem(item.id)} aria-label="তালিকা থেকে সরান">×</button>
-              </article>;
-            })}
-          </div>
-        ) : <div className="bb-fa-empty-list">🧺<strong>এখনো কোনো পণ্য যোগ হয়নি</strong><span>উপরের সার্চ থেকে পরিবারের প্রয়োজনীয় পণ্য যোগ করুন।</span></div>}
-        <div className="bb-fa-list-footer"><span>তালিকার মোট সম্ভাব্য পণ্যমূল্য <small>· ডেলিভারি ও সার্ভিস চার্জ ছাড়া</small></span><strong>৳{money(plannedTotal)}</strong></div>
-        {isOwner ? <button type="button" className="bb-fa-order-button" onClick={() => setShowOrderForm((value) => !value)} disabled={!items.some((item) => item.product_id)}>✓ পরিবারের অর্ডার করুন</button>
-          : <div className="bb-fa-owner-notice">🔒 শুধু Family Owner চূড়ান্ত অর্ডার করতে পারবেন। তালিকা প্রস্তুত হলে Owner-কে জানিয়ে দিন।</div>}
-        {showOrderForm && isOwner && (
-          <form className="bb-fa-order-form" onSubmit={placeFamilyOrder}>
-            <h3>Owner-এর অর্ডার নিশ্চিতকরণ</h3>
-            <p>এই অর্ডারটি পরিবারের Owner-এর অ্যাকাউন্ট থেকে তৈরি হবে।</p>
-            <div className="bb-fa-form-grid">
-              <label>নাম<input value={customerName} onChange={(event) => setCustomerName(event.target.value)} required /></label>
-              <label>মোবাইল<input value={phone} onChange={(event) => setPhone(event.target.value)} required /></label>
-              <label className="full">ডেলিভারি ঠিকানা<textarea value={address} onChange={(event) => setAddress(event.target.value)} required rows={2} /></label>
-              <label>পেমেন্ট<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cod">Cash on Delivery</option><option value="bkash">বিকাশ</option><option value="nagad">নগদ</option></select></label>
-              {paymentMethod !== "cod" && <label>Transaction ID<input value={transactionId} onChange={(event) => setTransactionId(event.target.value)} required /></label>}
-            </div>
-            <div className="bb-fa-order-actions"><button type="button" className="bb-fa-secondary" onClick={() => setShowOrderForm(false)}>বাতিল</button><button className="bb-fa-primary" disabled={busy}>{busy ? "অর্ডার হচ্ছে…" : "অর্ডার কনফার্ম করুন"}</button></div>
-          </form>
-        )}
+        
       </div>
 
       <div className="bb-fa-two-column">
