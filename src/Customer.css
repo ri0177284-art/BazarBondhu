@@ -1794,3 +1794,25 @@
 .bb-rice-quantity-input { flex:1 1 auto; min-width:0; width:100%; height:38px; padding:8px 10px; border:1px solid #cfe4d4; border-radius:10px; color:#14532d; background:#f8fcf9; font:inherit; font-size:12px; outline:none; text-align:center; }
 .bb-rice-quantity-input:focus { border-color:#087f45; box-shadow:0 0 0 3px #087f4518; }
 .bb-rice-quantity-row > span { color:#52685a; white-space:nowrap; font-size:11px; }
+
+
+/* Editable rice quantity field inside the cart */
+.bb-cart-rice-quantity-input {
+  width: 76px;
+  min-width: 64px;
+  height: 36px;
+  padding: 6px 7px;
+  border: 1px solid #cfe4d4;
+  border-radius: 10px;
+  color: #14532d;
+  background: #f8fcf9;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  outline: none;
+}
+.bb-cart-rice-quantity-input:focus {
+  border-color: #087f45;
+  box-shadow: 0 0 0 3px #087f4518;
+}
