@@ -3703,14 +3703,27 @@ boxSizing: "border-box"
             {productName === "চাল" && (
               <div className="bb-store-brand-selector">
                 <span>কত কেজি চাল নিবেন?</span>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0" }}>
-                  {[10, 15, 20].map((qty) => (
-                    <button key={qty} type="button" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: qty }))} style={{ padding: "6px 9px", borderRadius: 8, border: (Number(riceQuantities[product.id]) || 10) === qty ? "2px solid #087f45" : "1px solid #d5dfd8", background: (Number(riceQuantities[product.id]) || 10) === qty ? "#e8f5ec" : "white" }}>{qty} কেজি</button>
-                  ))}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="bb-rice-quantity-row">
                   <button type="button" aria-label="এক কেজি কমান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.max(1, (Number(current[product.id]) || 10) - 1) }))}>−</button>
-                  <strong>{Number(riceQuantities[product.id]) || 10} কেজি</strong>
+                  <input
+                    className="bb-rice-quantity-input"
+                    type="number"
+                    min="1"
+                    max={Number(product.stock) || 100}
+                    step="1"
+                    value={riceQuantities[product.id] ?? 10}
+                    aria-label="চালের পরিমাণ কেজিতে"
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "") {
+                        setRiceQuantities((current) => ({ ...current, [product.id]: "" }));
+                        return;
+                      }
+                      const quantity = Math.max(1, Math.min(Number(product.stock) || 100, Math.floor(Number(value) || 1)));
+                      setRiceQuantities((current) => ({ ...current, [product.id]: quantity }));
+                    }}
+                  />
+                  <span>কেজি</span>
                   <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.min(Number(product.stock) || 100, (Number(current[product.id]) || 10) + 1) }))}>+</button>
                 </div>
                 <small>মোট দাম: ৳{(Number(product.price) * (Number(riceQuantities[product.id]) || 10)).toLocaleString("en-IN")}</small>
