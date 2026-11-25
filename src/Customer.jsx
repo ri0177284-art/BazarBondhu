@@ -2186,7 +2186,7 @@ fontWeight: "bold"
         )}
 
         </>}
-        {pendingCustomItems.length === 0 && <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
+        {pendingCustomItems.length === 0 && Number(rewardSummary?.balance || 0) >= 100 && <div style={{ marginTop: 18, padding: 15, borderRadius: 14, border: "1px solid #cce8d5", background: "#f4faf5" }}>
           <strong style={{ display: "block", color: "#176b40", marginBottom: 8 }}>🎁 Reward পয়েন্ট ব্যবহার</strong>
           <p style={{ color: "#68786d", fontSize: 12, margin: "0 0 9px" }}>আপনার ব্যালেন্স: {Number(rewardSummary?.balance || 0).toLocaleString("bn-BD")} পয়েন্ট · সর্বোচ্চ ছাড় ৳{Math.floor(cartTotal * 0.1).toLocaleString("bn-BD")}</p>
           <input type="number" min="0" step="10" max={Number(rewardSummary?.balance || 0)} value={rewardPointsToUse || ""} onChange={(event) => setRewardPointsToUse(Math.max(0, Number(event.target.value) || 0))} placeholder="ব্যবহার করতে পয়েন্ট লিখুন (সর্বনিম্ন ১০০)" style={inputStyle} />
