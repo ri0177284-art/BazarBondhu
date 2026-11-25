@@ -2476,6 +2476,24 @@ function updateQuantity(productId, change) {
       .filter(item => item.quantity > 0)
   );
 }
+
+function updateRiceCartQuantity(productId, value) {
+  setCart((current) => current.map((item) => {
+    if (item.id !== productId) return item;
+    if (value === "") return { ...item, quantity: "" };
+    const stock = Number(item.stock) || 100;
+    const quantity = Math.max(1, Math.min(stock, Math.floor(Number(value) || 1)));
+    return { ...item, quantity };
+  }));
+}
+
+function finishRiceCartQuantity(productId) {
+  setCart((current) => current.map((item) => (
+    item.id === productId && (!Number(item.quantity) || Number(item.quantity) < 1)
+      ? { ...item, quantity: 1 }
+      : item
+  )));
+}
   
   
 const selectedShoppingProducts = shoppingList
@@ -3460,9 +3478,22 @@ const productPickerPageNumbers = Array.from(
               −
             </button>
 
-            <strong style={{ fontSize: 16, textAlign: "center" }}>
-              {item.quantity || 1}<small style={{ display: "block", color: "#718076", fontSize: 10 }}>{getProductUnit(item)}</small>
-            </strong>
+            {item.name === "চাল" ? (
+              <input
+                type="number"
+                min="1"
+                max={Number(item.stock) || 100}
+                className="bb-cart-rice-quantity-input"
+                aria-label="কত কেজি চাল নিবেন"
+                value={item.quantity ?? 1}
+                onChange={(event) => updateRiceCartQuantity(item.id, event.target.value)}
+                onBlur={() => finishRiceCartQuantity(item.id)}
+              />
+            ) : (
+              <strong style={{ fontSize: 16, textAlign: "center" }}>
+                {item.quantity || 1}<small style={{ display: "block", color: "#718076", fontSize: 10 }}>{getProductUnit(item)}</small>
+              </strong>
+            )}
 
             <button
               onClick={() => updateQuantity(item.id, 1)}
