@@ -3119,6 +3119,11 @@ const productPickerPageNumbers = Array.from(
                     const alreadyAdded = shoppingList.some((item) => item.productId === selectedProduct.id);
                     return (
                       <article className="bb-picker-product" key={productName}>
+                        <div className="bb-picker-product-image">
+                          {selectedProduct.image_url
+                            ? <img src={selectedProduct.image_url} alt={selectedProduct.name} loading="lazy" />
+                            : <span aria-hidden="true">🛒</span>}
+                        </div>
                         <div className="bb-picker-product-details">
                           <strong>{productName}</strong>
                           {brandOptions.length > 0 && (
