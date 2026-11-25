@@ -479,12 +479,31 @@ export default function FamilyAssistantDashboard({ user, products = [] }) {
         <p className="bb-fa-helper">পণ্য খুঁজুন, ব্র্যান্ড ও সাইজ বেছে নিন, তারপর পরিমাণ দিয়ে তালিকায় যোগ করুন। পরিবারের সবাই এই তালিকা দেখতে ও পরিবর্তন করতে পারবেন।</p>
         <div className="bb-fa-add-row">
           <input value={productSearch} onChange={(event) => setProductSearch(event.target.value)} placeholder="পণ্য, ব্র্যান্ড বা সাইজ খুঁজুন…" aria-label="পণ্য খুঁজুন" />
-          <select value={selectedProductId} onChange={(event) => setSelectedProductId(event.target.value)} aria-label="পণ্য নির্বাচন করুন">
-            <option value="">পণ্য বেছে নিন</option>
-            {filteredProducts.map((product) => <option key={product.id} value={product.id}>{product.name}{product.brand ? " · " + product.brand : ""}{product.variant ? " · " + product.variant : ""} — ৳{money(product.price)}</option>)}
-          </select>
           <input type="number" min="1" max="10000" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} aria-label="পরিমাণ" />
           <button type="button" className="bb-fa-primary" onClick={addProduct} disabled={busy || !selectedProductId}>+ তালিকায় যোগ</button>
+        </div>
+        <div className="bb-fa-product-picker" aria-label="ছবিসহ পণ্য নির্বাচন">
+          {filteredProducts.slice(0, 24).map((product) => (
+            <button
+              type="button"
+              key={product.id}
+              className={"bb-fa-product-choice" + (String(selectedProductId) === String(product.id) ? " is-selected" : "")}
+              onClick={() => setSelectedProductId(String(product.id))}
+              aria-pressed={String(selectedProductId) === String(product.id)}
+            >
+              <span className="bb-fa-product-choice-image">
+                {product.image_url ? <img src={product.image_url} alt="" loading="lazy" /> : <span aria-hidden="true">🛒</span>}
+              </span>
+              <span className="bb-fa-product-choice-copy">
+                <strong>{product.name}</strong>
+                <small>{[product.brand, product.variant].filter(Boolean).join(" · ") || product.unit || "সাধারণ"}</small>
+                <b>৳{money(product.price)}</b>
+              </span>
+              <span className="bb-fa-product-choice-check" aria-hidden="true">{String(selectedProductId) === String(product.id) ? "✓" : "+"}</span>
+            </button>
+          ))}
+          {!filteredProducts.length && <div className="bb-fa-empty-list compact">কোনো পণ্য পাওয়া যায়নি। অন্য নামে খুঁজুন।</div>}
+          {filteredProducts.length > 24 && <small className="bb-fa-muted">আরও পণ্য দেখতে সার্চে নাম লিখুন। প্রথম ২৪টি ফলাফল দেখানো হচ্ছে।</small>}
         </div>
         {items.length ? (
           <div className="bb-fa-shared-list">
