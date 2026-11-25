@@ -1858,3 +1858,16 @@
 .bb-custom-dropdown-option.is-selected { font-weight:750; }
 .bb-custom-dropdown-check { flex:none; color:#087f45; font-size:16px; font-weight:900; }
 .bb-picker-choice .bb-custom-dropdown { margin-top:2px; }
+
+
+/* Improve dropdown contrast and keep all choices crisp on mobile */
+.bb-custom-dropdown,
+.bb-custom-dropdown * { opacity:1 !important; filter:none !important; -webkit-font-smoothing:antialiased; }
+.bb-custom-dropdown-trigger { background:#ffffff !important; color:#173d27 !important; -webkit-text-fill-color:#173d27; font-size:14px; font-weight:750; border:1.5px solid #a9cfb2; box-shadow:0 1px 3px rgba(20,65,37,.06); }
+.bb-custom-dropdown-menu { background:#ffffff !important; opacity:1 !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; border:1px solid #b8d8c0; }
+.bb-custom-dropdown-option { background:#ffffff !important; color:#243b2c !important; -webkit-text-fill-color:#243b2c; font-size:14px; font-weight:600; opacity:1 !important; min-height:44px; }
+.bb-custom-dropdown-option.is-selected { background:#e7f5eb !important; color:#075d31 !important; -webkit-text-fill-color:#075d31; font-weight:800; }
+.bb-custom-dropdown-check { color:#087f45 !important; -webkit-text-fill-color:#087f45; }
+.bb-picker-choice .bb-custom-dropdown-trigger { min-height:38px; font-size:13px; }
+.bb-picker-choice .bb-custom-dropdown-option { font-size:13px; }
+.bb-store-brand-selector .bb-custom-dropdown-trigger { min-height:40px; }
