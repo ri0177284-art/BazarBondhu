@@ -3550,7 +3550,7 @@ const productPickerPageNumbers = Array.from(
             }}>
               {item.name}
             </strong>
-            {(item.brand || item.variant) && <small style={{ display: "block", marginTop: 4, color: "#087f45", fontSize: 11, fontWeight: 700 }}>{[item.brand, item.variant].filter(Boolean).join(" · ")}</small>}
+            {(item.brand || item.color_variant || item.variant) && <small style={{ display: "block", marginTop: 4, color: "#087f45", fontSize: 11, fontWeight: 700 }}>{[item.brand, item.color_variant, item.variant].filter(Boolean).join(" · ")}</small>}
 
             <p style={{
               color: "#888",
@@ -3730,6 +3730,8 @@ gap: 12
         const product = variants.find((item) => item.id === selectedProductId) || variants[0];
         const brandOptions = Array.from(new Set(variants.map((item) => item.brand).filter(Boolean)));
         const brandVariants = variants.filter((item) => (item.brand || "") === (product.brand || ""));
+        const brandColorOptions = Array.from(new Set(brandVariants.map((item) => item.color_variant).filter(Boolean)));
+        const brandColorVariants = brandVariants.filter((item) => (item.color_variant || "") === (product.color_variant || ""));
         return (
         <div
           key={productName}
@@ -3784,7 +3786,7 @@ boxSizing: "border-box"
             <div className="bb-product-name-row">
               <div className="bb-product-title-group">
                 <h3 className="bb-product-name">{product.name}</h3>
-                {(product.brand || product.variant) && <small className="bb-store-product-variant">{[product.brand, product.variant].filter(Boolean).join(" · ")}</small>}
+                {(product.brand || product.color_variant || product.variant) && <small className="bb-store-product-variant">{[product.brand, product.color_variant, product.variant].filter(Boolean).join(" · ")}</small>}
               </div>
               <button
                 type="button"
@@ -3861,7 +3863,35 @@ boxSizing: "border-box"
                 />
               </label>
             )}
-            {(brandVariants.length > 1 || productName === "খাবার সোডা" || (productName === "গোসলের সাবান" && product.brand === "Dettol")) && (
+            {productName === "গোসলের সাবান" ? (
+              <>
+                {brandColorOptions.length > 0 && (
+                  <label className="bb-store-brand-selector">
+                    <span>পছন্দের কালার / ধরন নির্বাচন করুন</span>
+                    <BrandDropdown
+                      value={product.color_variant || ""}
+                      ariaLabel={productName + " কালার বা ধরন নির্বাচন"}
+                      options={brandColorOptions.map((colorName) => ({ value: colorName, label: colorName }))}
+                      onChange={(colorName) => {
+                        const nextColorProduct = brandVariants.find((item) => item.color_variant === colorName);
+                        if (nextColorProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextColorProduct.id }));
+                      }}
+                    />
+                  </label>
+                )}
+                {brandColorVariants.length > 1 && (
+                  <label className="bb-store-brand-selector">
+                    <span>সাইজ নির্বাচন করুন</span>
+                    <BrandDropdown
+                      value={product.id}
+                      ariaLabel={productName + " সাইজ নির্বাচন"}
+                      options={brandColorVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
+                      onChange={(variantId) => setProductCardSelectionIds((current) => ({ ...current, [productName]: variantId }))}
+                    />
+                  </label>
+                )}
+              </>
+            ) : (brandVariants.length > 1 || productName === "খাবার সোডা") && (
               <label className="bb-store-brand-selector">
                 <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
                 <BrandDropdown
