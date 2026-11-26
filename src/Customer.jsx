@@ -60,22 +60,6 @@ function getProductUnit(product = {}) {
   return String(product.unit || "").trim() || "টি";
 }
 
-function getQuantityConfig(product = {}) {
-  const name = String(product.name || "").trim();
-  const unit = String(product.unit || "").trim().toLowerCase();
-  if (unit !== "kg" && unit !== "কেজি") return { step: 1, initial: 1, min: 1, decimals: 0 };
-  if (name === "চাল") return { step: 1, initial: 25, min: 1, decimals: 0 };
-  if (/আদা|কাঁচামরিচ/.test(name)) return { step: 0.05, initial: 0.05, min: 0.05, decimals: 2 };
-  if (/রসুন|বাদাম/.test(name)) return { step: 0.1, initial: 0.1, min: 0.1, decimals: 1 };
-  if (/আলু|পেঁয়াজ|পেঁয়াজ|টমেটো|মৌসুমি সবজি|মৌসুমি ফল|ব্রয়লার মুরগি|রুই মাছ/.test(name)) return { step: 0.5, initial: 0.5, min: 0.5, decimals: 1 };
-  if (/ডাল|আটা|ময়দা|ময়দা|বেসন|সুজি|চিঁড়া|চিড়া|চিনি|লবণ|মুড়ি|মুড়ি/.test(name)) return { step: 0.5, initial: 0.5, min: 0.5, decimals: 1 };
-  if (/তেল/.test(name)) return { step: 0.5, initial: 1, min: 0.5, decimals: 1 };
-  return { step: 0.5, initial: 0.5, min: 0.5, decimals: 1 };
-}
-function formatProductQuantity(value, product = {}) {
-  return (Number(value) || 0).toLocaleString("bn-BD", { maximumFractionDigits: getQuantityConfig(product).decimals });
-}
-
 const DEFAULT_FAMILY_PREFERENCES = {
   familyMembers: 4,
   monthlyBudget: 5000,
@@ -375,7 +359,7 @@ function BrandDropdown({ value, options, onChange, ariaLabel }) {
 function Customer() {
   const [products, setProducts] = useState([]);
   const [productCardSelectionIds, setProductCardSelectionIds] = useState({});
-  const [productQuantities, setRiceQuantities] = useState({});
+  const [riceQuantities, setRiceQuantities] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("সব");
   const [search, setSearch] = useState("");
   const [showSearchBar, setShowSearchBar] = useState(false);
@@ -2577,19 +2561,27 @@ const pageNumbers = Array.from(
   { length: Math.min(5, totalProductPages) },
   (_, index) => Math.max(1, Math.min(totalProductPages - 4, currentPage - 2)) + index
 );
-function updateQuantity(productId, direction) {
-  setCart((prevCart) => prevCart.map((item) => {
-    if (item.id !== productId) return item;
-    const config = getQuantityConfig(item);
-    const currentQuantity = Number(item.quantity) || config.initial;
-    const stock = Number(item.stock) || 0;
-    const nextQuantity = Number((currentQuantity + config.step * direction).toFixed(config.decimals));
-    if (direction > 0 && nextQuantity > stock) {
-      alert("দুঃখিত! এই পণ্যের পর্যাপ্ত স্টক নেই।");
-      return item;
-    }
-    return { ...item, quantity: Math.max(0, nextQuantity) };
-  }).filter((item) => Number(item.quantity) > 0));
+function updateQuantity(productId, change) {
+  setCart(prevCart =>
+    prevCart
+      .map(item => {
+        if (item.id !== productId) return item;
+
+        const currentQuantity = Number(item.quantity) || 1;
+        const stock = Number(item.stock) || 0;
+
+        if (change > 0 && currentQuantity >= stock) {
+          alert("দুঃখিত! এই পণ্যের পর্যাপ্ত স্টক নেই।");
+          return item;
+        }
+
+        return {
+          ...item,
+          quantity: currentQuantity + change
+        };
+      })
+      .filter(item => item.quantity > 0)
+  );
 }
 
 function updateRiceCartQuantity(productId, value) {
@@ -2597,16 +2589,15 @@ function updateRiceCartQuantity(productId, value) {
     if (item.id !== productId) return item;
     if (value === "") return { ...item, quantity: "" };
     const stock = Number(item.stock) || 100;
-    const config = getQuantityConfig(item);
-    const quantity = Math.max(config.min, Math.min(stock, Number(Number(value).toFixed(config.decimals)) || config.initial));
+    const quantity = Math.max(1, Math.min(stock, Math.floor(Number(value) || 1)));
     return { ...item, quantity };
   }));
 }
 
 function finishRiceCartQuantity(productId) {
   setCart((current) => current.map((item) => (
-    item.id === productId && (!Number(item.quantity) || Number(item.quantity) < getQuantityConfig(item).min)
-      ? { ...item, quantity: getQuantityConfig(item).initial }
+    item.id === productId && (!Number(item.quantity) || Number(item.quantity) < 1)
+      ? { ...item, quantity: 1 }
       : item
   )));
 }
@@ -3630,15 +3621,22 @@ const productPickerPageNumbers = Array.from(
               −
             </button>
 
-            <input
-              type="number" min={getQuantityConfig(item).min}
-              max={Number(item.stock) || 100} step={getQuantityConfig(item).step}
-              className="bb-cart-rice-quantity-input"
-              aria-label={`কত ${getProductUnit(item)} ${item.name} নিবেন`}
-              value={item.quantity ?? getQuantityConfig(item).initial}
-              onChange={(event) => updateRiceCartQuantity(item.id, event.target.value)}
-              onBlur={() => finishRiceCartQuantity(item.id)}
-            />
+            {item.name === "চাল" ? (
+              <input
+                type="number"
+                min="1"
+                max={Number(item.stock) || 100}
+                className="bb-cart-rice-quantity-input"
+                aria-label="কত কেজি চাল নিবেন"
+                value={item.quantity ?? 1}
+                onChange={(event) => updateRiceCartQuantity(item.id, event.target.value)}
+                onBlur={() => finishRiceCartQuantity(item.id)}
+              />
+            ) : (
+              <strong style={{ fontSize: 16, textAlign: "center" }}>
+                {item.quantity || 1}<small style={{ display: "block", color: "#718076", fontSize: 10 }}>{getProductUnit(item)}</small>
+              </strong>
+            )}
 
             <button
               onClick={() => updateQuantity(item.id, 1)}
@@ -3799,8 +3797,7 @@ boxSizing: "border-box"
                   const existing = cart.find(item => item.id === product.id);
                   const currentQuantity = existing?.quantity || 0;
 
-                  const quantityConfig = getQuantityConfig(product);
-                  const addQuantity = Number(productQuantities[product.id]) || quantityConfig.initial;
+                  const addQuantity = productName === "চাল" ? (Number(riceQuantities[product.id]) || 25) : 1;
                   if (currentQuantity + addQuantity > currentStock) {
                     alert("দুঃখিত! এই পরিমাণ স্টকে নেই।");
                     return;
@@ -3820,7 +3817,7 @@ boxSizing: "border-box"
                     return [...prevCart, { ...product, quantity: addQuantity }];
                   });
 
-                  alert(product.name + " · " + formatProductQuantity(addQuantity, product) + " " + getProductUnit(product) + " কার্টে যোগ হয়েছে!");
+                  alert(product.name + (productName === "চাল" ? " · " + addQuantity + " কেজি" : "") + " কার্টে যোগ হয়েছে!");
                 }}
               >
                 <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -3875,27 +3872,34 @@ boxSizing: "border-box"
                 />
               </label>
             )}
-            {(String(product.unit || "").trim() === "কেজি" || String(product.unit || "").trim().toLowerCase() === "kg") && (() => {
-              const config = getQuantityConfig(product);
-              const quantity = Number(productQuantities[product.id]) || config.initial;
-              const stock = Number(product.stock) || 100;
-              return <div className="bb-store-brand-selector">
-                <span>কত {getProductUnit(product)} নিবেন?</span>
+            {productName === "চাল" && (
+              <div className="bb-store-brand-selector">
+                <span>কত কেজি চাল নিবেন?</span>
                 <div className="bb-rice-quantity-row">
-                  <button type="button" aria-label="পরিমাণ কমান" onClick={() => setProductQuantities((current) => ({ ...current, [product.id]: Math.max(config.min, Number((quantity - config.step).toFixed(config.decimals))) }))}>−</button>
-                  <input className="bb-rice-quantity-input" type="number" min={config.min} max={stock} step={config.step}
-                    value={productQuantities[product.id] ?? config.initial}
-                    aria-label={`${product.name} এর পরিমাণ ${getProductUnit(product)}`}
+                  <button type="button" aria-label="এক কেজি কমান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.max(1, (Number(current[product.id]) || 25) - 1) }))}>−</button>
+                  <input
+                    className="bb-rice-quantity-input"
+                    type="number"
+                    min="1"
+                    max={Number(product.stock) || 100}
+                    step="1"
+                    value={riceQuantities[product.id] ?? 25}
+                    aria-label="চালের পরিমাণ কেজিতে"
                     onChange={(event) => {
                       const value = event.target.value;
-                      if (value === "") { setProductQuantities((current) => ({ ...current, [product.id]: "" })); return; }
-                      setProductQuantities((current) => ({ ...current, [product.id]: Math.max(config.min, Math.min(stock, Number(Number(value).toFixed(config.decimals)) || config.initial)) }));
-                    }} />
-                  <button type="button" aria-label="পরিমাণ বাড়ান" onClick={() => setProductQuantities((current) => ({ ...current, [product.id]: Math.min(stock, Number((quantity + config.step).toFixed(config.decimals))) }))}>+</button>
+                      if (value === "") {
+                        setRiceQuantities((current) => ({ ...current, [product.id]: "" }));
+                        return;
+                      }
+                      const quantity = Math.max(1, Math.min(Number(product.stock) || 100, Math.floor(Number(value) || 1)));
+                      setRiceQuantities((current) => ({ ...current, [product.id]: quantity }));
+                    }}
+                  />
+                  <button type="button" aria-label="এক কেজি বাড়ান" onClick={() => setRiceQuantities((current) => ({ ...current, [product.id]: Math.min(Number(product.stock) || 100, (Number(current[product.id]) || 25) + 1) }))}>+</button>
                 </div>
-                <small>মোট দাম: ৳{(Number(product.price) * quantity).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</small>
-              </div>;
-            })()}
+                <small>মোট দাম: ৳{(Number(product.price) * (Number(riceQuantities[product.id]) || 25)).toLocaleString("en-IN")}</small>
+              </div>
+            )}
           </div>
         </div>
         );
