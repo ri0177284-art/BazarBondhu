@@ -1,39 +1,10 @@
-import { Component, lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
 import "./App.css";
 
 const Customer = lazy(() => import("./Customer"));
 const DashboardChart = lazy(() => import("./DashboardChart"));
 
-
-class CustomerErrorBoundary extends Component {
-  state = { error: null };
-
-  static getDerivedStateFromError(error) {
-    return { error };
-  }
-
-  componentDidCatch(error, info) {
-    console.error("BazarBondhu Customer App render error:", error, info.componentStack);
-  }
-
-  render() {
-    if (this.state.error) {
-      const message = this.state.error?.message || String(this.state.error);
-      return (
-        <main style={{ minHeight: "100vh", padding: 24, boxSizing: "border-box", background: "#fff7f7", color: "#7f1d1d", fontFamily: "Arial, sans-serif" }}>
-          <section style={{ maxWidth: 720, margin: "40px auto", padding: 20, border: "1px solid #fecaca", borderRadius: 12, background: "#fff" }}>
-            <h2 style={{ marginTop: 0 }}>Customer App চালু হতে সমস্যা হয়েছে</h2>
-            <p style={{ lineHeight: 1.6 }}>সমস্যাটি শনাক্ত করার জন্য নিচের error message দেখানো হচ্ছে।</p>
-            <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", padding: 12, borderRadius: 8, background: "#fef2f2", color: "#991b1b" }}>{message}</pre>
-            <button type="button" onClick={() => window.location.reload()} style={{ padding: "10px 16px", border: 0, borderRadius: 8, background: "#087f45", color: "#fff", fontWeight: 700 }}>আবার চেষ্টা করুন</button>
-          </section>
-        </main>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const navigation = [
   { id: "Dashboard", label: "ড্যাশবোর্ড", icon: "⌂" },
@@ -455,7 +426,7 @@ function App() {
   const totalSales = deliveredOrders.reduce((total, order) => total + (Number(order.total) || 0), 0);
   const lowStockProducts = products.filter((product) => Number(product.stock) > 0 && Number(product.stock) <= 5);
 
-  if (isCustomerRoute) return <CustomerErrorBoundary><Suspense fallback={<div className="bb-customer-loading-screen" role="status" aria-live="polite"><div className="bb-customer-loading-card"><span className="bb-customer-loading-mark" aria-hidden="true">🛒</span><span className="bb-spinner" /><div><strong>BazarBondhu</strong><p>আপনার বাজারের তথ্য প্রস্তুত হচ্ছে…</p></div></div></div>}><Customer /></Suspense></CustomerErrorBoundary>;
+  if (isCustomerRoute) return <Suspense fallback={<div className="bb-customer-loading-screen" role="status" aria-live="polite"><div className="bb-customer-loading-card"><span className="bb-customer-loading-mark" aria-hidden="true">🛒</span><span className="bb-spinner" /><div><strong>BazarBondhu</strong><p>আপনার বাজারের তথ্য প্রস্তুত হচ্ছে…</p></div></div></div>}><Customer /></Suspense>;
 
   if (checking) {
     return <div className="bb-loading-screen"><span className="bb-spinner" />অ্যাডমিন অ্যাক্সেস যাচাই হচ্ছে…</div>;
