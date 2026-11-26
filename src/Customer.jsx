@@ -3861,7 +3861,7 @@ boxSizing: "border-box"
                 />
               </label>
             )}
-            {(brandVariants.length > 1 || productName === "খাবার সোডা") && (
+            {(brandVariants.length > 1 || productName === "খাবার সোডা" || (productName === "গোসলের সাবান" && product.brand === "Dettol")) && (
               <label className="bb-store-brand-selector">
                 <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
                 <BrandDropdown
