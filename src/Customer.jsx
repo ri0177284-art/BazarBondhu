@@ -3861,7 +3861,7 @@ boxSizing: "border-box"
                 />
               </label>
             )}
-            {brandVariants.length > 1 && (
+            {(brandVariants.length > 1 || productName === "খাবার সোডা") && (
               <label className="bb-store-brand-selector">
                 <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
                 <BrandDropdown
