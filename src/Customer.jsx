@@ -298,18 +298,25 @@ function RoseWelcome({ petalCount, onTouch }) {
   );
 }
 
-function BrandDropdown({ value, options, onChange, ariaLabel }) {
+function SoapBrandDropdown({ value, brandOptions, colorOptions, selectedColor, onBrandChange, onColorChange, ariaLabel }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [expandedBrand, setExpandedBrand] = useState("");
   const dropdownRef = useRef(null);
-  const selectedLabel = options.find((option) => option.value === value)?.label || value || "ব্র্যান্ড নির্বাচন করুন";
+  const selectedLabel = value || "ব্র্যান্ড নির্বাচন করুন";
 
   useEffect(() => {
     if (!isOpen) return undefined;
     const handleOutsideClick = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setExpandedBrand("");
+      }
     };
     const handleEscape = (event) => {
-      if (event.key === "Escape") setIsOpen(false);
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        setExpandedBrand("");
+      }
     };
     document.addEventListener("pointerdown", handleOutsideClick);
     document.addEventListener("keydown", handleEscape);
@@ -327,29 +334,67 @@ function BrandDropdown({ value, options, onChange, ariaLabel }) {
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          setIsOpen((open) => {
+            if (open) setExpandedBrand("");
+            return !open;
+          });
+        }}
       >
         <span>{selectedLabel}</span>
         <span className="bb-custom-dropdown-chevron" aria-hidden="true">⌄</span>
       </button>
       {isOpen && (
         <div className="bb-custom-dropdown-menu" role="listbox" aria-label={ariaLabel}>
-          {options.map((option) => (
-            <button
-              type="button"
-              key={option.value}
-              role="option"
-              aria-selected={option.value === value}
-              className={`bb-custom-dropdown-option ${option.value === value ? "is-selected" : ""}`}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-            >
-              <span>{option.label}</span>
-              {option.value === value && <span className="bb-custom-dropdown-check" aria-hidden="true">✓</span>}
-            </button>
-          ))}
+          {brandOptions.map((brandName) => {
+            const isSelected = brandName === value;
+            const isExpanded = expandedBrand === brandName;
+            return (
+              <div key={brandName}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-expanded={isExpanded}
+                  className={`bb-custom-dropdown-option ${isSelected ? "is-selected" : ""}`}
+                  onClick={() => {
+                    if (!isSelected) {
+                      onBrandChange(brandName);
+                      setExpandedBrand("");
+                    } else {
+                      setExpandedBrand((current) => current === brandName ? "" : brandName);
+                    }
+                  }}
+                >
+                  <span>{brandName}</span>
+                  <span className="bb-custom-dropdown-check" aria-hidden="true">{isSelected ? (isExpanded ? "⌃" : "✓") : ""}</span>
+                </button>
+                {isSelected && isExpanded && (
+                  <div className="bb-custom-dropdown-menu" role="listbox" aria-label={brandName + " কালার বা ধরন"} style={{ position: "static", boxShadow: "none", border: "0", padding: "2px 8px 8px 14px", margin: 0 }}>
+                    {colorOptions.length > 0 ? colorOptions.map((colorName) => (
+                      <button
+                        type="button"
+                        key={colorName}
+                        role="option"
+                        aria-selected={colorName === selectedColor}
+                        className={`bb-custom-dropdown-option ${colorName === selectedColor ? "is-selected" : ""}`}
+                        onClick={() => {
+                          onColorChange(colorName);
+                          setIsOpen(false);
+                          setExpandedBrand("");
+                        }}
+                      >
+                        <span>{colorName}</span>
+                        {colorName === selectedColor && <span className="bb-custom-dropdown-check" aria-hidden="true">✓</span>}
+                      </button>
+                    )) : (
+                      <small style={{ display: "block", padding: "8px 10px", color: "#718076" }}>এই ব্র্যান্ডের ধরন এখনো যোগ করা হয়নি</small>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -3849,58 +3894,53 @@ boxSizing: "border-box"
             </h2>
             <small style={{ color: "#718076", marginBottom: 9 }}>প্রতি {getProductUnit(product)}</small>
 
-            {brandOptions.length > 0 && (
+            {productName === "গোসলের সাবান" ? (
               <label className="bb-store-brand-selector">
                 <span>পছন্দের ব্র্যান্ড নির্বাচন করুন</span>
-                <BrandDropdown
+                <SoapBrandDropdown
                   value={product.brand || ""}
-                  ariaLabel={productName + " পছন্দের ব্র্যান্ড নির্বাচন"}
-                  options={brandOptions.map((brandName) => ({ value: brandName, label: brandName }))}
-                  onChange={(brandName) => {
+                  brandOptions={brandOptions}
+                  colorOptions={brandColorOptions}
+                  selectedColor={product.color_variant || ""}
+                  ariaLabel={productName + " ব্র্যান্ড ও কালার নির্বাচন"}
+                  onBrandChange={(brandName) => {
                     const nextBrandProduct = variants.find((item) => item.brand === brandName);
                     if (nextBrandProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextBrandProduct.id }));
                   }}
+                  onColorChange={(colorName) => {
+                    const nextColorProduct = brandVariants.find((item) => item.color_variant === colorName);
+                    if (nextColorProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextColorProduct.id }));
+                  }}
                 />
               </label>
-            )}
-            {productName === "গোসলের সাবান" ? (
+            ) : (
               <>
-                {brandColorOptions.length > 0 && (
+                {brandOptions.length > 0 && (
                   <label className="bb-store-brand-selector">
-                    <span>পছন্দের কালার / ধরন নির্বাচন করুন</span>
+                    <span>পছন্দের ব্র্যান্ড নির্বাচন করুন</span>
                     <BrandDropdown
-                      value={product.color_variant || ""}
-                      ariaLabel={productName + " কালার বা ধরন নির্বাচন"}
-                      options={brandColorOptions.map((colorName) => ({ value: colorName, label: colorName }))}
-                      onChange={(colorName) => {
-                        const nextColorProduct = brandVariants.find((item) => item.color_variant === colorName);
-                        if (nextColorProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextColorProduct.id }));
+                      value={product.brand || ""}
+                      ariaLabel={productName + " পছন্দের ব্র্যান্ড নির্বাচন"}
+                      options={brandOptions.map((brandName) => ({ value: brandName, label: brandName }))}
+                      onChange={(brandName) => {
+                        const nextBrandProduct = variants.find((item) => item.brand === brandName);
+                        if (nextBrandProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextBrandProduct.id }));
                       }}
                     />
                   </label>
                 )}
-                {brandColorVariants.length > 1 && (
+                {(brandVariants.length > 1 || productName === "খাবার সোডা") && (
                   <label className="bb-store-brand-selector">
-                    <span>সাইজ নির্বাচন করুন</span>
+                    <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
                     <BrandDropdown
                       value={product.id}
                       ariaLabel={productName + " সাইজ নির্বাচন"}
-                      options={brandColorVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
+                      options={brandVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
                       onChange={(variantId) => setProductCardSelectionIds((current) => ({ ...current, [productName]: variantId }))}
                     />
                   </label>
                 )}
               </>
-            ) : (brandVariants.length > 1 || productName === "খাবার সোডা") && (
-              <label className="bb-store-brand-selector">
-                <span>সাইজ / ভ্যারিয়েন্ট নির্বাচন</span>
-                <BrandDropdown
-                  value={product.id}
-                  ariaLabel={productName + " সাইজ নির্বাচন"}
-                  options={brandVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
-                  onChange={(variantId) => setProductCardSelectionIds((current) => ({ ...current, [productName]: variantId }))}
-                />
-              </label>
             )}
             {productName === "চাল" && (
               <div className="bb-store-brand-selector">
