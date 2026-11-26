@@ -3912,6 +3912,17 @@ boxSizing: "border-box"
                     if (nextColorProduct) setProductCardSelectionIds((current) => ({ ...current, [productName]: nextColorProduct.id }));
                   }}
                 />
+                {brandColorVariants.length > 1 && (
+                  <div className="bb-store-brand-selector" style={{ marginTop: 9 }}>
+                    <span>সাইজ নির্বাচন করুন</span>
+                    <BrandDropdown
+                      value={product.id}
+                      ariaLabel={productName + " সাইজ নির্বাচন"}
+                      options={brandColorVariants.map((item) => ({ value: item.id, label: item.variant || item.unit || "সাধারণ" }))}
+                      onChange={(variantId) => setProductCardSelectionIds((current) => ({ ...current, [productName]: variantId }))}
+                    />
+                  </div>
+                )}
               </label>
             ) : (
               <>
