@@ -5,6 +5,7 @@ import "./App.css";
 const Customer = lazy(() => import("./Customer"));
 const DashboardChart = lazy(() => import("./DashboardChart"));
 
+
 const navigation = [
   { id: "Dashboard", label: "ড্যাশবোর্ড", icon: "⌂" },
   { id: "Products", label: "পণ্য", icon: "▦" },

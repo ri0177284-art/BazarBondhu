@@ -298,6 +298,68 @@ function RoseWelcome({ petalCount, onTouch }) {
   );
 }
 
+function BrandDropdown({ value, options = [], onChange, ariaLabel }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const selectedOption = options.find((option) => String(option.value) === String(value));
+  const selectedLabel = selectedOption?.label || "নির্বাচন করুন";
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const handleOutsideClick = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setIsOpen(false);
+    };
+    const handleEscape = (event) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+    document.addEventListener("pointerdown", handleOutsideClick);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="bb-custom-dropdown" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`bb-custom-dropdown-trigger ${isOpen ? "is-open" : ""}`}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span>{selectedLabel}</span>
+        <span className="bb-custom-dropdown-chevron" aria-hidden="true">⌄</span>
+      </button>
+      {isOpen && (
+        <div className="bb-custom-dropdown-menu" role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => {
+            const isSelected = String(option.value) === String(value);
+            return (
+              <button
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`bb-custom-dropdown-option ${isSelected ? "is-selected" : ""}`}
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+              >
+                <span>{option.label}</span>
+                {isSelected && <span className="bb-custom-dropdown-check" aria-hidden="true">✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SoapBrandDropdown({ value, brandOptions, colorOptions, selectedColor, onBrandChange, onColorChange, ariaLabel }) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedBrand, setExpandedBrand] = useState("");
